@@ -1,3 +1,3 @@
 pub struct Config {
-    tmp: str
+    tmp: str,
 }

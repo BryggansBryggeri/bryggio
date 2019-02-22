@@ -6,11 +6,11 @@ struct Brewery {
 }
 
 struct MashTun {
-    liquid: bool
+    liquid: bool,
 }
 
 struct Kettle {
-    liquid: bool
+    liquid: bool,
 }
 
 pub trait Vessel {

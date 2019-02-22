@@ -1,5 +1,5 @@
-pub mod config;
 pub mod brewery;
+pub mod config;
 pub mod control;
 pub mod hardware;
 
