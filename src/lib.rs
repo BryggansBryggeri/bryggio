@@ -1,3 +1,4 @@
+pub mod actor;
 pub mod brewery;
 pub mod config;
 pub mod control;

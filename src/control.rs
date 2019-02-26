@@ -1,4 +1,9 @@
+use crate::actor;
+use crate::actor::Actor;
+use crate::hardware;
 use gpio_cdev::{Chip, LineRequestFlags};
+use std::error;
+use std::fmt;
 use std::{thread, time};
 
 pub enum Mode {
@@ -8,61 +13,63 @@ pub enum Mode {
     Inactive,
 }
 
-enum HysteresisState {
-    Below,
-    Within,
-    Over,
-    Unmeasured,
-}
-
 pub struct HysteresisControl {
-    pub offset: f32,
     pub target: f32,
     pub current_power: f32,
     pub mode: Mode,
-    actor: Actor,
-    sensor: Sensor,
-    current_state: HysteresisState,
-    previous_state: HysteresisState,
+    actor: actor::DummyActor,
+    //sensor: Sensor,
+    offset_on: f32,
+    offset_off: f32,
+}
+
+#[derive(Debug, Clone)]
+pub struct ParamError;
+
+impl fmt::Display for ParamError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Invalid param values.")
+    }
+}
+// This is important for other errors to wrap this one.
+impl error::Error for ParamError {
+    fn description(&self) -> &str {
+        "Invalid param values."
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        // Generic error, underlying cause isn't tracked.
+        None
+    }
 }
 
 impl HysteresisControl {
-    pub fn new(offset: f32) -> HysteresisControl {
-        HysteresisControl {
-            offset: offset,
-            target: 68.0,
-            current_power: 0.0,
-            mode: Mode::Inactive,
-            current_state: HysteresisState::Unmeasured,
-            previous_state: HysteresisState::Unmeasured,
-        }
-    }
-
-    fn get_state(&self, value: &f32) -> HysteresisState {
-        if value - self.target < -self.offset {
-            return HysteresisState::Below;
-        } else if value - self.target > self.offset {
-            return HysteresisState::Over;
+    pub fn new(offset_on: f32, offset_off: f32) -> Result<HysteresisControl, ParamError> {
+        if offset_off >= 0.0 && offset_on > offset_off {
+            Ok(HysteresisControl {
+                target: 0.0,
+                current_power: 0.0,
+                mode: Mode::Inactive,
+                actor: actor::DummyActor {
+                    id: "dummy".to_string(),
+                },
+                offset_on: offset_on,
+                offset_off: offset_off,
+            })
         } else {
-            return HysteresisState::Within;
+            Err(ParamError)
         }
     }
 }
 
 impl Control for HysteresisControl {
     fn run(&self) {
-        let pin_number = 21;
-        let label = "rustbeer";
-        let mut chip = Chip::new("/dev/gpiochip0").unwrap();
-        let handle = chip.get_line(pin_number).unwrap();
-        handle.request(LineRequestFlags::OUTPUT, 1, label).unwrap();
-
         match &self.mode {
             Mode::Inactive => {}
             _ => {
                 let measurement = self.get_measurement();
                 let power = self.calculate_power(&measurement);
-                self.hardware_control(power, self.get_period());
+                self.actor.set_power(power);
                 thread::sleep(self.get_sleep_time());
             }
         }
@@ -72,20 +79,14 @@ impl Control for HysteresisControl {
         65.0
     }
 
-    fn calculate_power(&self, measurement: &f32) -> f32 {
-        match self.get_state(measurement) {
-            HysteresisState::Below => {
-                return 100.0;
-            }
-            HysteresisState::Over => {
-                return 0.0;
-            }
-            HysteresisState::Within => {
-                return 50.0;
-            }
-            HysteresisState::Unmeasured => {
-                return 0.0;
-            }
+    fn calculate_power(&self, value: &f32) -> f32 {
+        let diff = self.target - value;
+        if diff > self.offset_on {
+            return 100.0;
+        } else if diff <= self.offset_off {
+            return 0.0;
+        } else {
+            self.current_power
         }
     }
 
@@ -100,8 +101,6 @@ impl Control for HysteresisControl {
     fn is_active(&self) -> bool {
         true
     }
-
-    fn hardware_control(&self, power: f32, period: time::Duration) {}
 }
 
 pub trait Control {
@@ -111,5 +110,4 @@ pub trait Control {
     fn get_sleep_time(&self) -> time::Duration;
     fn get_period(&self) -> time::Duration;
     fn is_active(&self) -> bool;
-    fn hardware_control(&self, power: f32, period: time::Duration);
 }
