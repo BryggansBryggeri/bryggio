@@ -1,6 +1,8 @@
 use crate::actor;
 use crate::actor::Actor;
 use crate::hardware;
+use crate::sensor;
+use crate::sensor::Sensor;
 use gpio_cdev::{Chip, LineRequestFlags};
 use std::error;
 use std::fmt;
@@ -18,7 +20,7 @@ pub struct HysteresisControl {
     pub current_power: f32,
     pub mode: Mode,
     actor: actor::DummyActor,
-    //sensor: Sensor,
+    sensor: sensor::DummySensor,
     offset_on: f32,
     offset_off: f32,
 }
@@ -50,9 +52,8 @@ impl HysteresisControl {
                 target: 0.0,
                 current_power: 0.0,
                 mode: Mode::Inactive,
-                actor: actor::DummyActor {
-                    id: "dummy".to_string(),
-                },
+                sensor: sensor::DummySensor::new("dummy"),
+                actor: actor::DummyActor::new("dummy", None),
                 offset_on: offset_on,
                 offset_off: offset_off,
             })
@@ -67,7 +68,13 @@ impl Control for HysteresisControl {
         match &self.mode {
             Mode::Inactive => {}
             _ => {
-                let measurement = self.get_measurement();
+                let measurement = match self.sensor.get_measurement() {
+                    Ok(measurement) => measurement,
+                    Err(e) => panic!(
+                        "Error getting measurment from sensor {}: {}",
+                        self.sensor.id, e
+                    ),
+                };
                 let power = self.calculate_power(&measurement);
                 self.actor.set_power(power);
                 thread::sleep(self.get_sleep_time());
