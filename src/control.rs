@@ -47,7 +47,7 @@ impl HysteresisControl {
     pub fn new(offset_on: f32, offset_off: f32) -> Result<HysteresisControl, ParamError> {
         if offset_off >= 0.0 && offset_on > offset_off {
             Ok(HysteresisControl {
-                target: 0.0,
+                target: 85.0,
                 current_power: 0.0,
                 mode: Mode::Inactive,
                 sensor: sensor::DummySensor::new("dummy"),
@@ -62,26 +62,32 @@ impl HysteresisControl {
 }
 
 impl Control for HysteresisControl {
-    fn run(&self) {
-        match &self.mode {
-            Mode::Inactive => {}
-            _ => {
-                let measurement = match self.sensor.get_measurement() {
-                    Ok(measurement) => measurement,
-                    Err(e) => panic!(
-                        "Error getting measurment from sensor {}: {}",
-                        self.sensor.id, e
-                    ),
-                };
-                let power = self.calculate_power(&measurement);
-                self.actor.set_power(power);
-                thread::sleep(self.get_sleep_time());
+    fn run(&mut self) {
+        let start_time = time::SystemTime::now();
+        loop {
+            match &self.mode {
+                Mode::Inactive => {}
+                _ => {
+                    let measurement = match self.sensor.get_measurement() {
+                        Ok(measurement) => measurement,
+                        Err(e) => panic!(
+                            "Error getting measurment from sensor {}: {}",
+                            self.sensor.id, e
+                        ),
+                    };
+                    let power = self.calculate_power(&measurement);
+                    self.actor.set_power(power);
+                    self.sensor.prediction += power * 0.01;
+                    println!(
+                        "{}, {}, {}.",
+                        start_time.elapsed().unwrap().as_secs(),
+                        measurement,
+                        power
+                    );
+                }
             }
+            thread::sleep(self.get_sleep_time());
         }
-    }
-
-    fn get_measurement(&self) -> f32 {
-        65.0
     }
 
     fn calculate_power(&self, value: &f32) -> f32 {
@@ -96,7 +102,7 @@ impl Control for HysteresisControl {
     }
 
     fn get_sleep_time(&self) -> time::Duration {
-        time::Duration::from_secs(3)
+        time::Duration::from_secs(1)
     }
 
     fn get_period(&self) -> time::Duration {
@@ -109,8 +115,7 @@ impl Control for HysteresisControl {
 }
 
 pub trait Control {
-    fn run(&self);
-    fn get_measurement(&self) -> f32;
+    fn run(&mut self);
     fn calculate_power(&self, measurement: &f32) -> f32;
     fn get_sleep_time(&self) -> time::Duration;
     fn get_period(&self) -> time::Duration;

@@ -30,7 +30,7 @@ fn main() {
     //rocket::ignite().mount("/", routes![index, get_temp, set_target_temp]).launch();
     let offset_on = 5.0;
     let offset_off = 3.0;
-    let control = control::HysteresisControl::new(offset_on, offset_off).unwrap();
+    let mut control = control::HysteresisControl::new(offset_on, offset_off).unwrap();
     control.run();
     println!("Power: {}", control.current_power);
 }
