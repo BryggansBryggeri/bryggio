@@ -1,9 +1,7 @@
 use crate::actor;
 use crate::actor::Actor;
-use crate::hardware;
 use crate::sensor;
 use crate::sensor::Sensor;
-use gpio_cdev::{Chip, LineRequestFlags};
 use std::error;
 use std::fmt;
 use std::{thread, time};

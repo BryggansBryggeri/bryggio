@@ -7,8 +7,6 @@ use rocket::http::RawStr;
 use rustbeer::config::Config;
 use rustbeer::control;
 use rustbeer::control::Control;
-use rustbeer::hardware;
-use rustbeer::run;
 
 #[get("/")]
 fn index() -> &'static str {

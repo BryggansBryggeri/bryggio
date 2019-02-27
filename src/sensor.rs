@@ -1,4 +1,3 @@
-use crate::hardware;
 use gpio_cdev;
 
 pub struct DummySensor {
@@ -14,7 +13,7 @@ impl Sensor for DummySensor {
         }
     }
     fn get_measurement(&self) -> Result<f32, gpio_cdev::errors::Error> {
-        1.0
+        Ok(1.0)
     }
 }
 
