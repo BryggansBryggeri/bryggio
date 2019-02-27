@@ -11,7 +11,6 @@ impl Actor for DummyActor {
         DummyActor { id: id }
     }
     fn set_power(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
-        println!("Setting power {}.", power);
         Ok(())
     }
 }

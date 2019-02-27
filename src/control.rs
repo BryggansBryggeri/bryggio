@@ -47,9 +47,9 @@ impl HysteresisControl {
     pub fn new(offset_on: f32, offset_off: f32) -> Result<HysteresisControl, ParamError> {
         if offset_off >= 0.0 && offset_on > offset_off {
             Ok(HysteresisControl {
-                target: 85.0,
+                target: 20.0,
                 current_power: 0.0,
-                mode: Mode::Inactive,
+                mode: Mode::Automatic,
                 sensor: sensor::DummySensor::new("dummy"),
                 actor: actor::DummyActor::new("dummy", None),
                 offset_on: offset_on,
@@ -76,8 +76,9 @@ impl Control for HysteresisControl {
                         ),
                     };
                     let power = self.calculate_power(&measurement);
-                    self.actor.set_power(power);
-                    self.sensor.prediction += power * 0.01;
+                    self.actor.set_power(power).unwrap();
+                    self.sensor.prediction += power * 0.05;
+                    self.sensor.prediction *= 0.90;
                     println!(
                         "{}, {}, {}.",
                         start_time.elapsed().unwrap().as_secs(),
