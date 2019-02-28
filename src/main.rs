@@ -3,6 +3,7 @@
 #[macro_use]
 extern crate rocket;
 use rocket::http::RawStr;
+use std::thread;
 
 use rustbeer::config::Config;
 use rustbeer::control;
@@ -10,6 +11,10 @@ use rustbeer::control::Control;
 
 #[get("/")]
 fn index() -> &'static str {
+    let offset_on = 5.0;
+    let offset_off = 3.0;
+    let mut control = control::HysteresisControl::new(offset_on, offset_off).unwrap();
+    thread::spawn(move || control.run());
     "BRYGGANS BRYGGERI BÄRS BB"
 }
 
@@ -27,10 +32,7 @@ fn get_temp() -> String {
 }
 
 fn main() {
-    //rocket::ignite().mount("/", routes![index, get_temp, set_target_temp]).launch();
-    let offset_on = 5.0;
-    let offset_off = 3.0;
-    let mut control = control::HysteresisControl::new(offset_on, offset_off).unwrap();
-    control.run();
-    println!("Power: {}", control.current_power);
+    rocket::ignite()
+        .mount("/", routes![index, get_temp, set_target_temp])
+        .launch();
 }
