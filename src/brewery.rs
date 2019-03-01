@@ -1,8 +1,18 @@
+use crate::config;
 use std::io;
 
-struct Brewery {
+pub struct Brewery {
     mash_tun: MashTun,
     kettle: Kettle,
+}
+
+impl Brewery {
+    pub fn new(config: &config::Config) -> Brewery {
+        Brewery {
+            mash_tun: MashTun { liquid: true },
+            kettle: Kettle { liquid: true },
+        }
+    }
 }
 
 struct MashTun {

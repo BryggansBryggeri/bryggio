@@ -9,6 +9,12 @@ Rustbeer takes the opposite approach: Given a simple and slow system, we have th
 
 The idea is that the inherent inertia in the objective (heating a lot of water) we can have quite long time between signal updates, providing time to calculate a nearly optimal control sequence.
 
+## GPIO
+
+Switch to this perhaps?
+
+https://crates.io/crates/rppal#gpio
+
 ### Literature
 http://www.iiisci.org/journal/CV$/sci/pdfs/ZA191KB18.pdf
 
