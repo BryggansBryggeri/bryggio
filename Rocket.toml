@@ -24,3 +24,4 @@ limits = { forms = 32768 }
 
 [global]
 address = "0.0.0.0"
+template_dir = "templates/"

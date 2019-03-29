@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <head>
+    <title>BBB BB</title>
+
+    <link rel="stylesheet" type="text/css" href="css/style.css" />
+    <meta name="viewport" 
+          charset="utf-8"
+          content="width=device-width, initial-scale=1">
+    <link rel="icon" 
+          type="image/png" 
+          href="/static/logo.png">
+  </head>
+  <body>
+    <h1>Bryggans bryggeri bärs BB</h1>
+
+    <div class="w3-content">
+      {% block content %}
+      {% endblock content %}
+    </div>
+  </body>
+</html>
