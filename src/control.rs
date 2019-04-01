@@ -4,6 +4,8 @@ use crate::sensor;
 use crate::sensor::Sensor;
 use std::error;
 use std::fmt;
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::{thread, time};
 
 pub enum Mode {
@@ -21,6 +23,7 @@ pub struct HysteresisControl {
     sensor: sensor::DummySensor,
     offset_on: f32,
     offset_off: f32,
+    state: Arc<Mutex<bool>>,
 }
 
 #[derive(Debug, Clone)]
@@ -44,7 +47,11 @@ impl error::Error for ParamError {
 }
 
 impl HysteresisControl {
-    pub fn new(offset_on: f32, offset_off: f32) -> Result<HysteresisControl, ParamError> {
+    pub fn new(
+        offset_on: f32,
+        offset_off: f32,
+        state: Arc<Mutex<bool>>,
+    ) -> Result<HysteresisControl, ParamError> {
         if offset_off >= 0.0 && offset_on > offset_off {
             Ok(HysteresisControl {
                 target: 20.0,
@@ -54,6 +61,7 @@ impl HysteresisControl {
                 actor: actor::DummyActor::new("dummy", None),
                 offset_on: offset_on,
                 offset_off: offset_off,
+                state: state,
             })
         } else {
             Err(ParamError)
@@ -62,9 +70,10 @@ impl HysteresisControl {
 }
 
 impl Control for HysteresisControl {
-    fn run(&mut self) {
+    fn run(&mut self, sleep_time: u64) {
         let start_time = time::SystemTime::now();
         loop {
+            &self.process_command();
             match &self.mode {
                 Mode::Inactive => {}
                 _ => {
@@ -87,7 +96,14 @@ impl Control for HysteresisControl {
                     );
                 }
             }
-            thread::sleep(self.get_sleep_time());
+            thread::sleep(time::Duration::from_millis(sleep_time));
+        }
+    }
+
+    fn process_command(&mut self) {
+        match *self.state.lock().unwrap() {
+            true => self.mode = Mode::Automatic,
+            false => self.mode = Mode::Inactive,
         }
     }
 
@@ -101,24 +117,10 @@ impl Control for HysteresisControl {
             self.current_power
         }
     }
-
-    fn get_sleep_time(&self) -> time::Duration {
-        time::Duration::from_secs(1)
-    }
-
-    fn get_period(&self) -> time::Duration {
-        std::time::Duration::from_millis(10000)
-    }
-
-    fn is_active(&self) -> bool {
-        true
-    }
 }
 
 pub trait Control {
-    fn run(&mut self);
+    fn run(&mut self, sleep_time: u64);
     fn calculate_power(&self, measurement: &f32) -> f32;
-    fn get_sleep_time(&self) -> time::Duration;
-    fn get_period(&self) -> time::Duration;
-    fn is_active(&self) -> bool;
+    fn process_command(&mut self);
 }

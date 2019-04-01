@@ -1,16 +1,26 @@
 use rocket::http::RawStr;
 use rocket::response::Redirect;
-use std::thread;
+use rocket::State;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use rustbeer::control;
 use rustbeer::control::Control;
 
-#[get("/measure")]
-pub fn measure() -> Redirect {
-    let offset_on = 5.0;
-    let offset_off = 3.0;
-    let mut control = control::HysteresisControl::new(offset_on, offset_off).unwrap();
-    thread::spawn(move || control.run());
+#[get("/start_measure")]
+pub fn start_measure(brew_state: State<Arc<Mutex<bool>>>) -> Redirect {
+    println!("Starting measurement");
+    let mut state = brew_state.lock().unwrap();
+    *state = true;
+    Redirect::to("/")
+}
+
+#[get("/stop_measure")]
+pub fn stop_measure(brew_state: State<Arc<Mutex<bool>>>) -> Redirect {
+    println!("Stopping measurement");
+    let mut state = brew_state.lock().unwrap();
+    *state = false;
     Redirect::to("/")
 }
 

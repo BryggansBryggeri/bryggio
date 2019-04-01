@@ -3,9 +3,9 @@
 {% block content %}
 <h2>Control interface</h2>
 <p>
-    <a href="/measure">Start measurement</a>
+    <a href="/start_measure">Start measurement</a>
 </p>
 <p>
-    <a href="https://www.rust-lang.org">Stop measurement</a>
+    <a href="/stop_measure">Stop measurement</a>
 </p>
 {% endblock content %}

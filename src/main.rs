@@ -6,16 +6,21 @@ use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
 use rustbeer::brewery;
 use rustbeer::config;
+use rustbeer::control::Control;
 use std::sync::atomic::AtomicBool;
+use std::sync::mpsc;
 use std::sync::Arc;
+use std::sync::Mutex;
+use std::thread;
 
 mod routes;
 
 fn main() {
     let config_file = "./config.toml";
     let config = config::Config::new(&config_file);
-    let brew_state = Arc::new(AtomicBool::new(false));
-    let brewery = brewery::Brewery::new(&config);
+    let brew_state = Arc::new(Mutex::new(false));
+    let mut brewery = brewery::Brewery::new(&config, brew_state.clone());
+    thread::spawn(move || brewery.mash_tun.controller.run(1000));
 
     rocket::ignite()
         .mount(
@@ -23,7 +28,8 @@ fn main() {
             routes![
                 routes::serve_static::files,
                 routes::index::index,
-                routes::control::measure,
+                routes::control::start_measure,
+                routes::control::stop_measure,
                 routes::control::get_temp,
                 routes::control::set_target_temp
             ],
