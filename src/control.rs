@@ -9,6 +9,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use std::{thread, time};
 
+#[derive(Clone)]
 pub enum Mode {
     Automatic,
     Manual,
@@ -74,7 +75,7 @@ impl Control for HysteresisControl {
     fn run(&mut self, sleep_time: u64) {
         let start_time = time::SystemTime::now();
         loop {
-            &self.process_command();
+            &self.update_mode();
             match &self.mode {
                 Mode::Inactive => {}
                 _ => {
@@ -101,11 +102,8 @@ impl Control for HysteresisControl {
         }
     }
 
-    fn process_command(&mut self) {
-        match *self.state.controller.lock().unwrap() {
-            true => self.mode = Mode::Automatic,
-            false => self.mode = Mode::Inactive,
-        }
+    fn update_mode(&mut self) {
+        self.mode = self.state.controller.read().unwrap().clone();
     }
 
     fn calculate_power(&self, value: &f32) -> f32 {
@@ -123,5 +121,5 @@ impl Control for HysteresisControl {
 pub trait Control {
     fn run(&mut self, sleep_time: u64);
     fn calculate_power(&self, measurement: &f32) -> f32;
-    fn process_command(&mut self);
+    fn update_mode(&mut self);
 }

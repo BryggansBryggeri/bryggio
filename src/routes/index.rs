@@ -1,7 +1,7 @@
+use bryggio::brewery::BrewState;
 use rocket::State;
 use rocket_contrib::json::Json;
 use rocket_contrib::templates::Template;
-use rustbeer::brewery::BrewState;
 use serde_json;
 use std::collections::HashMap;
 

@@ -2,11 +2,11 @@
 
 #[macro_use]
 extern crate rocket;
+use bryggio::brewery;
+use bryggio::config;
+use bryggio::control::Control;
 use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
-use rustbeer::brewery;
-use rustbeer::config;
-use rustbeer::control::Control;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -16,7 +16,7 @@ use std::thread;
 mod routes;
 
 fn main() {
-    let config_file = "./config.toml";
+    let config_file = "./Bryggio.toml";
     let config = config::Config::new(&config_file);
     let brew_state = brewery::Brewery::generate_state(&config);
 
