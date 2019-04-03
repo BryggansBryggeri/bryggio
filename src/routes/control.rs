@@ -5,21 +5,22 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use rustbeer::brewery::BrewState;
 use rustbeer::control;
 use rustbeer::control::Control;
 
 #[get("/start_measure")]
-pub fn start_measure(brew_state: State<Arc<Mutex<bool>>>) -> Redirect {
+pub fn start_measure(brew_state: State<BrewState>) -> Redirect {
     println!("Starting measurement");
-    let mut state = brew_state.lock().unwrap();
+    let mut state = brew_state.controller.lock().unwrap();
     *state = true;
     Redirect::to("/")
 }
 
 #[get("/stop_measure")]
-pub fn stop_measure(brew_state: State<Arc<Mutex<bool>>>) -> Redirect {
+pub fn stop_measure(brew_state: State<BrewState>) -> Redirect {
     println!("Stopping measurement");
-    let mut state = brew_state.lock().unwrap();
+    let mut state = brew_state.controller.lock().unwrap();
     *state = false;
     Redirect::to("/")
 }

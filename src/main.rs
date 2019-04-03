@@ -18,9 +18,10 @@ mod routes;
 fn main() {
     let config_file = "./config.toml";
     let config = config::Config::new(&config_file);
-    let brew_state = Arc::new(Mutex::new(false));
+    let brew_state = brewery::Brewery::generate_state(&config);
+
     let mut brewery = brewery::Brewery::new(&config, brew_state.clone());
-    thread::spawn(move || brewery.mash_tun.controller.run(1000));
+    thread::spawn(move || brewery.run());
 
     rocket::ignite()
         .mount(

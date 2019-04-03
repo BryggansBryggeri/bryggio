@@ -12,7 +12,7 @@
           href="/static/logo.png">
   </head>
   <body>
-    <h1>Bryggans bryggeri bärs BB</h1>
+    <h1>{{name}}</h1>
 
     <div class="w3-content">
       {% block content %}

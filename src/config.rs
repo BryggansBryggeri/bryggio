@@ -5,7 +5,7 @@ use toml;
 
 #[derive(Deserialize)]
 pub struct Config {
-    name: String,
+    pub name: String,
 }
 
 impl Config {

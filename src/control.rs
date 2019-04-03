@@ -1,5 +1,6 @@
 use crate::actor;
 use crate::actor::Actor;
+use crate::brewery::BrewState;
 use crate::sensor;
 use crate::sensor::Sensor;
 use std::error;
@@ -23,7 +24,7 @@ pub struct HysteresisControl {
     sensor: sensor::DummySensor,
     offset_on: f32,
     offset_off: f32,
-    state: Arc<Mutex<bool>>,
+    state: BrewState,
 }
 
 #[derive(Debug, Clone)]
@@ -50,7 +51,7 @@ impl HysteresisControl {
     pub fn new(
         offset_on: f32,
         offset_off: f32,
-        state: Arc<Mutex<bool>>,
+        state: BrewState,
     ) -> Result<HysteresisControl, ParamError> {
         if offset_off >= 0.0 && offset_on > offset_off {
             Ok(HysteresisControl {
@@ -101,7 +102,7 @@ impl Control for HysteresisControl {
     }
 
     fn process_command(&mut self) {
-        match *self.state.lock().unwrap() {
+        match *self.state.controller.lock().unwrap() {
             true => self.mode = Mode::Automatic,
             false => self.mode = Mode::Inactive,
         }
