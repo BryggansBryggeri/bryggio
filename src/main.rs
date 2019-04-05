@@ -27,7 +27,8 @@ fn main() {
         .mount(
             "/",
             routes![
-                routes::serve_static::files,
+                routes::serve_static::general_files,
+                routes::serve_static::javascript,
                 routes::index::index,
                 routes::control::start_measure,
                 routes::control::stop_measure,
