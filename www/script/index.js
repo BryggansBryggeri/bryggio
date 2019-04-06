@@ -1,8 +1,18 @@
-var app = new Vue({ 
-    el: '#app',
+const app = new Vue({ 
+    el: "#app",
     data: {
-        message: 'Hello Vue!'
-        name: 'BRYGGANS BRYGGERI BÄRS BB',
-        counter: 0
+        name: "BRYGGANS BRYGGERI BÄRS BB",
+        message: "Närstrid och torrhumling",
+        counter: 0,
+        recipe: "Lager",
+        temp: 20.2,
+    },
+    created() {
+			console.log("Creating brew app")
     }
 });
+
+function update(app) {
+  console.log("Updating " + app.name);
+  fetch("/start_measure");
+}

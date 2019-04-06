@@ -6,7 +6,6 @@ use bryggio::brewery;
 use bryggio::config;
 use bryggio::control::Control;
 use rocket_contrib::serve::StaticFiles;
-use rocket_contrib::templates::Template;
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -37,6 +36,5 @@ fn main() {
             ],
         )
         .manage(brew_state.clone())
-        .attach(Template::fairing())
         .launch();
 }

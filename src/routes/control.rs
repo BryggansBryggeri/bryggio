@@ -1,13 +1,9 @@
 use rocket::http::RawStr;
 use rocket::response::Redirect;
 use rocket::State;
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
-use std::sync::Mutex;
 
 use bryggio::brewery::BrewState;
 use bryggio::control;
-use bryggio::control::Control;
 
 // TODO: Return JSON objects instead of templates?
 // {success: true, other_key, val}

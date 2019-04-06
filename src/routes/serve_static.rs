@@ -9,5 +9,5 @@ pub fn general_files(file: PathBuf) -> Option<response::NamedFile> {
 
 #[get("/www/script/<file..>")]
 pub fn javascript(file: PathBuf) -> Option<response::NamedFile> {
-    response::NamedFile::open(Path::new("www/static/").join(file)).ok()
+    response::NamedFile::open(Path::new("www/script/").join(file)).ok()
 }
