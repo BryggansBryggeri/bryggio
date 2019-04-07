@@ -4,12 +4,6 @@
 extern crate rocket;
 use bryggio::brewery;
 use bryggio::config;
-use bryggio::control::Control;
-use rocket_contrib::serve::StaticFiles;
-use std::sync::atomic::AtomicBool;
-use std::sync::mpsc;
-use std::sync::Arc;
-use std::sync::Mutex;
 use std::thread;
 
 mod routes;

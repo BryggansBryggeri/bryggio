@@ -2,7 +2,7 @@
 
 ## Get started
 
- - Install rust from here [here](https://www.rust-lang.org/tools/install).
+ - Install rust from [here](https://www.rust-lang.org/tools/install).
 
  - Rocket needs nightly build so run
    ```bash
