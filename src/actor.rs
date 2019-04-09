@@ -27,8 +27,8 @@ impl SimpleGpio {
         let pin_number = pin_number.unwrap();
         let handle = match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &id) {
             Ok(handle) => handle,
-            Err(e) => {
-                panic!("Could not get handle, {}.", e);
+            Err(err) => {
+                panic!("Could not get handle, {}.", err);
             }
         };
         SimpleGpio {
@@ -60,8 +60,8 @@ impl XorActor {
         let pin_number = pin_number.unwrap();
         let handle = match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &own_id) {
             Ok(handle) => handle,
-            Err(e) => {
-                panic!("Could not get handle, {}.", e);
+            Err(err) => {
+                panic!("Could not get handle, {}.", err);
             }
         };
         XorActor {

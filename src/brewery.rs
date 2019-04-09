@@ -32,7 +32,10 @@ impl Brewery {
             };
             let response = match request.command {
                 Command::StartController => {
-                    println!("Received from web: Start controller");
+                    println!(
+                        "Received from web: Start controller {}",
+                        request.id.unwrap_or("".to_string())
+                    );
                     api::Response {
                         result: None,
                         success: true,

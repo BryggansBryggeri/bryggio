@@ -1,54 +1,42 @@
 use crate::api;
 use crate::brewery;
-use rocket::http::RawStr;
 use rocket::State;
 use rocket_contrib::json;
 use std::collections::HashMap;
 
-#[get("/start_measure")]
-pub fn start_measure(api_endpoint: State<api::WebEndpoint>) -> json::Json<HashMap<String, String>> {
-    let mut response = HashMap::new();
-
+#[get("/start_controller?<id>")]
+pub fn start_controller(
+    id: Option<String>,
+    api_endpoint: State<api::WebEndpoint>,
+) -> json::Json<HashMap<String, String>> {
     let request = api::Request {
         command: brewery::Command::StartController,
-        id: None,
+        id: id,
         parameter: None,
     };
-    match api_endpoint.send_and_wait_for_response(request) {
-        Ok(api_response) => {
-            response.insert("success".to_string(), api_response.success.to_string());
-        }
-        Err(e) => {
-            response.insert("success".to_string(), "false".to_string());
-            response.insert("response".to_string(), "error".to_string());
-        }
-    }
+    let api_response = api_endpoint.send_and_wait_for_response(request);
+    let response = api::generate_web_response(api_response);
     json::Json(response)
 }
 
-#[get("/stop_measure")]
-pub fn stop_measure(api_endpoint: State<api::WebEndpoint>) -> json::Json<HashMap<String, String>> {
-    let mut response = HashMap::new();
+#[get("/stop_controller")]
+pub fn stop_controller(
+    api_endpoint: State<api::WebEndpoint>,
+) -> json::Json<HashMap<String, String>> {
     let request = api::Request {
         command: brewery::Command::StopController,
         id: None,
         parameter: None,
     };
-    match api_endpoint.send_and_wait_for_response(request) {
-        Ok(api_response) => {
-            response.insert("success".to_string(), api_response.success.to_string());
-        }
-        Err(e) => {
-            response.insert("success".to_string(), "false".to_string());
-            response.insert("response".to_string(), "error".to_string());
-        }
-    }
+    let api_response = api_endpoint.send_and_wait_for_response(request);
+    let response = api::generate_web_response(api_response);
     json::Json(response)
 }
 
-#[get("/set_target_temp?<temp>")]
+#[get("/set_target_temp?<controller_id>&<temp>")]
 pub fn set_target_temp(
-    temp: Option<&RawStr>,
+    controller_id: Option<f32>,
+    temp: Option<f32>,
     api_endpoint: State<api::WebEndpoint>,
 ) -> json::Json<HashMap<String, String>> {
     let mut response = HashMap::new();

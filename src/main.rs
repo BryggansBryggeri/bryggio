@@ -24,11 +24,11 @@ fn main() {
                 routes::serve_static::general_files,
                 routes::serve_static::javascript,
                 routes::index::index,
-                routes::control::start_measure,
-                routes::control::stop_measure,
-                routes::control::get_temp,
-                routes::control::set_target_temp,
-                routes::control::get_full_state
+                routes::backend::start_controller,
+                routes::backend::stop_controller,
+                routes::backend::get_temp,
+                routes::backend::set_target_temp,
+                routes::backend::get_full_state
             ],
         )
         .manage(web_endpoint)
