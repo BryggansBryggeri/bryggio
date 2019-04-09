@@ -4,7 +4,8 @@
 extern crate rocket;
 use bryggio::brewery;
 use bryggio::config;
-use rocket_contrib::templates::Template;
+use bryggio::control::Control;
+use rocket_contrib::serve::StaticFiles;
 use std::thread;
 
 mod routes;
@@ -21,7 +22,8 @@ fn main() {
         .mount(
             "/",
             routes![
-                routes::serve_static::files,
+                routes::serve_static::general_files,
+                routes::serve_static::javascript,
                 routes::index::index,
                 routes::control::start_measure,
                 routes::control::stop_measure,
@@ -31,6 +33,5 @@ fn main() {
             ],
         )
         .manage(web_endpoint)
-        .attach(Template::fairing())
         .launch();
 }

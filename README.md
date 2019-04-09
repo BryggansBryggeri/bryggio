@@ -1,5 +1,21 @@
 # BRYGGIO
 
+## Get started
+
+ - Install rust from here [here](https://www.rust-lang.org/tools/install).
+
+ - Rocket needs nightly build so run
+   ```bash
+   rustup default nightly
+   ```
+
+ - Clone the repo and run it
+   ```bash
+   git clone git@github.com:BryggansBryggeri/bryggio.git bryggio
+   cd bryggio
+   cargo run
+   ```
+
 ## Control
 
 Standard is to use a simple PID controller. This is slightly nihilistic given the almost complete model information one usually has when dealing with a simple brewery.

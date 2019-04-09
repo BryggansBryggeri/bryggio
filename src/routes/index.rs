@@ -1,9 +1,7 @@
-use rocket_contrib::templates::Template;
-use std::collections::HashMap;
+use rocket::response;
+use std::io;
 
 #[get("/")]
-pub fn index() -> Template {
-    let mut context = HashMap::new();
-    context.insert("dump", true);
-    Template::render("index", &context)
+pub fn index() -> io::Result<response::NamedFile> {
+    response::NamedFile::open("www/index.html")
 }
