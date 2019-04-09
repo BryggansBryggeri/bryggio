@@ -4,13 +4,7 @@
 extern crate rocket;
 use bryggio::brewery;
 use bryggio::config;
-use bryggio::control::Control;
-use rocket_contrib::serve::StaticFiles;
 use rocket_contrib::templates::Template;
-use std::sync::atomic::AtomicBool;
-use std::sync::mpsc;
-use std::sync::Arc;
-use std::sync::Mutex;
 use std::thread;
 
 mod routes;
@@ -18,9 +12,9 @@ mod routes;
 fn main() {
     let config_file = "./Bryggio.toml";
     let config = config::Config::new(&config_file);
-    let brew_state = brewery::Brewery::generate_state(&config);
+    let (web_endpoint, brew_endpoint) = brewery::create_api_endpoints();
 
-    let mut brewery = brewery::Brewery::new(&config, brew_state.clone());
+    let mut brewery = brewery::Brewery::new(&config, brew_endpoint);
     thread::spawn(move || brewery.run());
 
     rocket::ignite()
@@ -32,10 +26,11 @@ fn main() {
                 routes::control::start_measure,
                 routes::control::stop_measure,
                 routes::control::get_temp,
-                routes::control::set_target_temp
+                routes::control::set_target_temp,
+                routes::control::get_full_state
             ],
         )
-        .manage(brew_state.clone())
+        .manage(web_endpoint)
         .attach(Template::fairing())
         .launch();
 }

@@ -12,7 +12,7 @@ impl DummyActor {
 }
 
 impl Actor for DummyActor {
-    fn set_power(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
+    fn set_signal(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
         Ok(())
     }
 }
@@ -39,7 +39,7 @@ impl SimpleGpio {
 }
 
 impl Actor for SimpleGpio {
-    fn set_power(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
+    fn set_signal(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
         let gpio_state = match power {
             power if power > 0.0 => 1,
             power if power <= 0.0 => 0,
@@ -73,7 +73,7 @@ impl XorActor {
 }
 
 impl Actor for XorActor {
-    fn set_power(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
+    fn set_signal(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
         let gpio_state = match power {
             power if power > 0.0 => 1,
             power if power <= 0.0 => 0,
@@ -84,5 +84,5 @@ impl Actor for XorActor {
 }
 
 pub trait Actor {
-    fn set_power(&self, power: f32) -> Result<(), gpio_cdev::errors::Error>;
+    fn set_signal(&self, power: f32) -> Result<(), gpio_cdev::errors::Error>;
 }

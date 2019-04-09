@@ -1,52 +1,54 @@
 use crate::config;
 use crate::control;
 use crate::control::Control;
-use serde::ser::{Serialize, SerializeStruct, Serializer};
-use std::io;
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
-use std::sync::RwLock;
+use std::sync;
+use std::sync::mpsc;
 
-#[derive(Clone)]
-pub struct BrewState {
-    pub name: Arc<RwLock<String>>,
-    pub controller: Arc<RwLock<control::Mode>>,
+pub struct APIWebEndpoint {
+    pub sender: sync::Mutex<mpsc::Sender<String>>,
+    pub receiver: sync::Mutex<mpsc::Receiver<String>>,
 }
 
-impl Serialize for BrewState {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut state = serializer.serialize_struct("BrewState", 1)?;
-        state.serialize_field("name", &self.name.read().unwrap().clone())?;
-        state.end()
-    }
+pub struct APIBreweryEndpoint {
+    pub sender: mpsc::Sender<String>,
+    pub receiver: mpsc::Receiver<String>,
+}
+
+pub fn create_api_endpoints() -> (APIWebEndpoint, APIBreweryEndpoint) {
+    let (tx_web, rx_brew) = mpsc::channel();
+    let (tx_brew, rx_web) = mpsc::channel();
+    let api_web = APIWebEndpoint {
+        sender: sync::Mutex::new(tx_web),
+        receiver: sync::Mutex::new(rx_web),
+    };
+    let api_brew = APIBreweryEndpoint {
+        sender: tx_brew,
+        receiver: rx_brew,
+    };
+    (api_web, api_brew)
 }
 
 pub struct Brewery {
-    pub mash_tun: MashTun,
-    kettle: Kettle,
-    state: BrewState,
+    mash_tun: MashTun,
+    api_endpoint: APIBreweryEndpoint,
 }
 
 impl Brewery {
-    pub fn new(config: &config::Config, state: BrewState) -> Brewery {
+    pub fn new(config: &config::Config, api_endpoint: APIBreweryEndpoint) -> Brewery {
         Brewery {
-            mash_tun: MashTun::new(state.clone()),
-            kettle: Kettle { controller: 7 },
-            state: state,
+            mash_tun: MashTun::new(),
+            api_endpoint: api_endpoint,
         }
     }
 
     pub fn run(&mut self) {
-        self.mash_tun.run();
-    }
-
-    pub fn generate_state(config: &config::Config) -> BrewState {
-        BrewState {
-            name: Arc::new(RwLock::new(config.name.clone())),
-            controller: Arc::new(RwLock::new(control::Mode::Inactive)),
+        loop {
+            let command = match self.api_endpoint.receiver.recv() {
+                Ok(command) => command,
+                Err(e) => panic!("Command error: {}", e),
+            };
+            println!("Received from web: {}", command);
+            self.api_endpoint.sender.send("Got it".to_string()).unwrap();
         }
     }
 }
@@ -56,17 +58,13 @@ pub struct MashTun {
 }
 
 impl MashTun {
-    pub fn new(state: BrewState) -> MashTun {
+    pub fn new() -> MashTun {
         MashTun {
-            controller: control::HysteresisControl::new(2.0, 1.0, state).unwrap(),
+            controller: control::HysteresisControl::new(2.0, 1.0).unwrap(),
         }
     }
 
     pub fn run(&mut self) {
         self.controller.run(1000);
     }
-}
-
-struct Kettle {
-    controller: u8,
 }

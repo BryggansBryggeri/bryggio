@@ -1,12 +1,9 @@
 use crate::actor;
 use crate::actor::Actor;
-use crate::brewery::BrewState;
 use crate::sensor;
 use crate::sensor::Sensor;
 use std::error;
 use std::fmt;
-use std::sync::Arc;
-use std::sync::Mutex;
 use std::{thread, time};
 
 #[derive(Clone)]
@@ -25,7 +22,6 @@ pub struct HysteresisControl {
     sensor: sensor::DummySensor,
     offset_on: f32,
     offset_off: f32,
-    state: BrewState,
 }
 
 #[derive(Debug, Clone)]
@@ -49,11 +45,7 @@ impl error::Error for ParamError {
 }
 
 impl HysteresisControl {
-    pub fn new(
-        offset_on: f32,
-        offset_off: f32,
-        state: BrewState,
-    ) -> Result<HysteresisControl, ParamError> {
+    pub fn new(offset_on: f32, offset_off: f32) -> Result<HysteresisControl, ParamError> {
         if offset_off >= 0.0 && offset_on > offset_off {
             Ok(HysteresisControl {
                 target: 20.0,
@@ -63,7 +55,6 @@ impl HysteresisControl {
                 actor: actor::DummyActor::new("dummy", None),
                 offset_on: offset_on,
                 offset_off: offset_off,
-                state: state,
             })
         } else {
             Err(ParamError)
@@ -86,8 +77,8 @@ impl Control for HysteresisControl {
                             self.sensor.id, e
                         ),
                     };
-                    let power = self.calculate_power(&measurement);
-                    self.actor.set_power(power).unwrap();
+                    let power = self.calculate_signal(&measurement);
+                    self.actor.set_signal(power).unwrap();
                     self.sensor.prediction += power * 0.05;
                     self.sensor.prediction *= 0.90;
                     println!(
@@ -102,11 +93,9 @@ impl Control for HysteresisControl {
         }
     }
 
-    fn update_mode(&mut self) {
-        self.mode = self.state.controller.read().unwrap().clone();
-    }
+    fn update_mode(&mut self) {}
 
-    fn calculate_power(&self, value: &f32) -> f32 {
+    fn calculate_signal(&self, value: &f32) -> f32 {
         let diff = self.target - value;
         if diff > self.offset_on {
             return 100.0;
@@ -120,6 +109,6 @@ impl Control for HysteresisControl {
 
 pub trait Control {
     fn run(&mut self, sleep_time: u64);
-    fn calculate_power(&self, measurement: &f32) -> f32;
+    fn calculate_signal(&self, measurement: &f32) -> f32;
     fn update_mode(&mut self);
 }
