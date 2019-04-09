@@ -15,10 +15,10 @@ use bryggio::control;
 pub fn start_measure(
     api_endpoint: State<brewery::APIWebEndpoint>,
 ) -> json::Json<HashMap<String, String>> {
-    let mut sender = api_endpoint.sender.lock().unwrap();
+    let sender = api_endpoint.sender.lock().unwrap();
     sender.send("test".to_string());
 
-    let mut receiver = api_endpoint.receiver.lock().unwrap();
+    let receiver = api_endpoint.receiver.lock().unwrap();
     let answer = receiver.recv().unwrap();
     println!("Brew to web: {}", answer);
 
