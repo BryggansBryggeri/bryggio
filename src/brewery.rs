@@ -1,40 +1,23 @@
+use crate::api;
 use crate::config;
 use crate::control;
 use crate::control::Control;
-use std::sync;
-use std::sync::mpsc;
 
-pub struct APIWebEndpoint {
-    pub sender: sync::Mutex<mpsc::Sender<String>>,
-    pub receiver: sync::Mutex<mpsc::Receiver<String>>,
-}
-
-pub struct APIBreweryEndpoint {
-    pub sender: mpsc::Sender<String>,
-    pub receiver: mpsc::Receiver<String>,
-}
-
-pub fn create_api_endpoints() -> (APIWebEndpoint, APIBreweryEndpoint) {
-    let (tx_web, rx_brew) = mpsc::channel();
-    let (tx_brew, rx_web) = mpsc::channel();
-    let api_web = APIWebEndpoint {
-        sender: sync::Mutex::new(tx_web),
-        receiver: sync::Mutex::new(rx_web),
-    };
-    let api_brew = APIBreweryEndpoint {
-        sender: tx_brew,
-        receiver: rx_brew,
-    };
-    (api_web, api_brew)
+pub enum Command {
+    GetTemperature,
+    SetTemperature,
+    StartController,
+    StopController,
+    GetFullState,
 }
 
 pub struct Brewery {
     mash_tun: MashTun,
-    api_endpoint: APIBreweryEndpoint,
+    api_endpoint: api::BreweryEndpoint,
 }
 
 impl Brewery {
-    pub fn new(config: &config::Config, api_endpoint: APIBreweryEndpoint) -> Brewery {
+    pub fn new(config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
         Brewery {
             mash_tun: MashTun::new(),
             api_endpoint: api_endpoint,
@@ -43,12 +26,24 @@ impl Brewery {
 
     pub fn run(&mut self) {
         loop {
-            let command = match self.api_endpoint.receiver.recv() {
-                Ok(command) => command,
+            let request = match self.api_endpoint.receiver.recv() {
+                Ok(request) => request,
                 Err(e) => panic!("Command error: {}", e),
             };
-            println!("Received from web: {}", command);
-            self.api_endpoint.sender.send("Got it".to_string()).unwrap();
+            let response = match request.command {
+                Command::StartController => {
+                    println!("Received from web: Start controller");
+                    api::Response {
+                        result: None,
+                        success: true,
+                    }
+                }
+                _ => api::Response {
+                    result: None,
+                    success: false,
+                },
+            };
+            self.api_endpoint.sender.send(response).unwrap();
         }
     }
 }

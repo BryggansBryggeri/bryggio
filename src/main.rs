@@ -2,10 +2,9 @@
 
 #[macro_use]
 extern crate rocket;
+use bryggio::api;
 use bryggio::brewery;
 use bryggio::config;
-use bryggio::control::Control;
-use rocket_contrib::serve::StaticFiles;
 use std::thread;
 
 mod routes;
@@ -13,7 +12,7 @@ mod routes;
 fn main() {
     let config_file = "./Bryggio.toml";
     let config = config::Config::new(&config_file);
-    let (web_endpoint, brew_endpoint) = brewery::create_api_endpoints();
+    let (web_endpoint, brew_endpoint) = api::create_api_endpoints();
 
     let mut brewery = brewery::Brewery::new(&config, brew_endpoint);
     thread::spawn(move || brewery.run());
