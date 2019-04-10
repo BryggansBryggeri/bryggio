@@ -2,15 +2,9 @@
 
 #[macro_use]
 extern crate rocket;
+use bryggio::api;
 use bryggio::brewery;
 use bryggio::config;
-use bryggio::control::Control;
-use rocket_contrib::serve::StaticFiles;
-use rocket_contrib::templates::Template;
-use std::sync::atomic::AtomicBool;
-use std::sync::mpsc;
-use std::sync::Arc;
-use std::sync::Mutex;
 use std::thread;
 
 mod routes;
@@ -18,24 +12,25 @@ mod routes;
 fn main() {
     let config_file = "./Bryggio.toml";
     let config = config::Config::new(&config_file);
-    let brew_state = brewery::Brewery::generate_state(&config);
+    let (web_endpoint, brew_endpoint) = api::create_api_endpoints();
 
-    let mut brewery = brewery::Brewery::new(&config, brew_state.clone());
+    let mut brewery = brewery::Brewery::new(&config, brew_endpoint);
     thread::spawn(move || brewery.run());
 
     rocket::ignite()
         .mount(
             "/",
             routes![
-                routes::serve_static::files,
+                routes::serve_static::general_files,
+                routes::serve_static::javascript,
                 routes::index::index,
-                routes::control::start_measure,
-                routes::control::stop_measure,
-                routes::control::get_temp,
-                routes::control::set_target_temp
+                routes::backend::start_controller,
+                routes::backend::stop_controller,
+                routes::backend::get_temp,
+                routes::backend::set_target_temp,
+                routes::backend::get_full_state
             ],
         )
-        .manage(brew_state.clone())
-        .attach(Template::fairing())
+        .manage(web_endpoint)
         .launch();
 }

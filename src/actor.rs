@@ -12,7 +12,7 @@ impl DummyActor {
 }
 
 impl Actor for DummyActor {
-    fn set_power(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
+    fn set_signal(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
         Ok(())
     }
 }
@@ -27,8 +27,8 @@ impl SimpleGpio {
         let pin_number = pin_number.unwrap();
         let handle = match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &id) {
             Ok(handle) => handle,
-            Err(e) => {
-                panic!("Could not get handle, {}.", e);
+            Err(err) => {
+                panic!("Could not get handle, {}.", err);
             }
         };
         SimpleGpio {
@@ -39,7 +39,7 @@ impl SimpleGpio {
 }
 
 impl Actor for SimpleGpio {
-    fn set_power(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
+    fn set_signal(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
         let gpio_state = match power {
             power if power > 0.0 => 1,
             power if power <= 0.0 => 0,
@@ -60,8 +60,8 @@ impl XorActor {
         let pin_number = pin_number.unwrap();
         let handle = match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &own_id) {
             Ok(handle) => handle,
-            Err(e) => {
-                panic!("Could not get handle, {}.", e);
+            Err(err) => {
+                panic!("Could not get handle, {}.", err);
             }
         };
         XorActor {
@@ -73,7 +73,7 @@ impl XorActor {
 }
 
 impl Actor for XorActor {
-    fn set_power(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
+    fn set_signal(&self, power: f32) -> Result<(), gpio_cdev::errors::Error> {
         let gpio_state = match power {
             power if power > 0.0 => 1,
             power if power <= 0.0 => 0,
@@ -84,5 +84,5 @@ impl Actor for XorActor {
 }
 
 pub trait Actor {
-    fn set_power(&self, power: f32) -> Result<(), gpio_cdev::errors::Error>;
+    fn set_signal(&self, power: f32) -> Result<(), gpio_cdev::errors::Error>;
 }
