@@ -77,15 +77,15 @@ impl Control for HysteresisControl {
                             self.sensor.id, e
                         ),
                     };
-                    let power = self.calculate_signal(&measurement);
-                    self.actor.set_signal(power).unwrap();
-                    self.sensor.prediction += power * 0.05;
+                    let signal = self.calculate_signal(&measurement);
+                    self.actor.set_signal(signal).unwrap();
+                    self.sensor.prediction += signal * 0.05;
                     self.sensor.prediction *= 0.90;
                     println!(
                         "{}, {}, {}.",
                         start_time.elapsed().unwrap().as_secs(),
                         measurement,
-                        power
+                        signal
                     );
                 }
             }

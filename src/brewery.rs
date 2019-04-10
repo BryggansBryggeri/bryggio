@@ -38,11 +38,13 @@ impl Brewery {
                     );
                     api::Response {
                         result: None,
-                        success: true,
+                        message: Some(String::from("Not implemented yet")),
+                        success: false,
                     }
                 }
                 _ => api::Response {
                     result: None,
+                    message: Some(String::from("Not implemented yet")),
                     success: false,
                 },
             };

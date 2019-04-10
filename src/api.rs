@@ -11,8 +11,10 @@ pub struct Request {
     pub parameter: Option<f32>,
 }
 
+// TODO: Derive Serialize to autobuild json response
 pub struct Response {
     pub result: Option<f32>,
+    pub message: Option<String>,
     pub success: bool,
 }
 
@@ -85,6 +87,7 @@ pub fn generate_web_response(api_response: Result<Response, Error>) -> HashMap<S
     match api_response {
         Ok(api_response) => {
             response.insert("success".to_string(), api_response.success.to_string());
+            response.insert(String::from("message:"), api_response.success.to_string());
         }
         Err(err) => {
             response.insert("success".to_string(), "false".to_string());
