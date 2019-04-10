@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #ccc;
+      }
+
+      .cls-2 {
+        fill: none;
+        stroke: #e6e6e6;
+        stroke-miterlimit: 10;
+        stroke-width: 0.25px;
+        opacity: 0.01;
+      }
+    </style>
+  </defs>
+  <title>bryggio_ui_1</title>
+  <g id="pipe-tee-middle">
+    <g id="Pipe">
+      <rect y="87" width="100" height="3"/>
+      <polygon points="90 10 90 0 87 0 87 10 87 13 87 13 90 13 90 13 100 13 100 10 90 10"/>
+      <polygon points="10 13 13 13 13 13 13 10 13 0 10 0 10 10 0 10 0 13 10 13 10 13"/>
+    </g>
+    <polygon id="content" class="cls-1" points="87 13 87 0 13 0 13 13 0 13 0 87 100 87 100 13 87 13"/>
+    <rect id="boun" class="cls-2" width="100" height="100"/>
+  </g>
+</svg>
