@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #969696;
+      }
+
+      .cls-2 {
+        fill: #ccc;
+      }
+
+      .cls-3 {
+        fill: none;
+        stroke: #e6e6e6;
+        stroke-miterlimit: 10;
+        stroke-width: 0.25px;
+        opacity: 0.01;
+      }
+    </style>
+  </defs>
+  <title>bryggio_ui_1</title>
+  <g id="Valve-closed">
+    <path id="Content2" class="cls-1" d="M51.5,13V45.254a4.968,4.968,0,0,1,0,9.492V87H100V13Z"/>
+    <path id="Content1" class="cls-2" d="M45,50a4.985,4.985,0,0,1,3.5-4.746V13H0V87H48.5V54.746A4.985,4.985,0,0,1,45,50Z"/>
+    <path id="valve-stem" d="M55,50a4.985,4.985,0,0,0-3.5-4.746V13h-3V45.254a4.968,4.968,0,0,0,0,9.492V87h3V54.746A4.985,4.985,0,0,0,55,50Z"/>
+    <rect id="Bound" class="cls-3" width="100" height="100"/>
+    <g id="Pipe">
+      <polygon points="97 5 97 10 3 10 3 5 0 5 0 10 0 13 3 13 97 13 100 13 100 10 100 5 97 5"/>
+      <polygon points="97 87 3 87 0 87 0 90 0 95 3 95 3 90 97 90 97 95 100 95 100 90 100 87 97 87"/>
+    </g>
+  </g>
+</svg>
