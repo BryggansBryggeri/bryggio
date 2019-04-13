@@ -1,9 +1,10 @@
 [development]
 address = "0.0.0.0"
-port = 8080
+port = 8000
 workers = 8
 keep_alive = 5
 log = "normal"
+template_dir = "templates/"
 limits = { forms = 32768 }
 
 [staging]
@@ -21,7 +22,3 @@ workers = 8
 keep_alive = 5
 log = "critical"
 limits = { forms = 32768 }
-
-[global]
-address = "0.0.0.0"
-template_dir = "templates/"

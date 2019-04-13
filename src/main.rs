@@ -1,5 +1,4 @@
 #![feature(proc_macro_hygiene, decl_macro)]
-
 #[macro_use]
 extern crate rocket;
 use bryggio::api;
@@ -21,9 +20,9 @@ fn main() {
         .mount(
             "/",
             routes![
-                routes::serve_static::general_files,
-                routes::serve_static::javascript,
-                routes::index::index,
+                routes::serve_files::index,
+                routes::serve_files::general_files,
+                routes::serve_files::javascript,
                 routes::backend::start_controller,
                 routes::backend::stop_controller,
                 routes::backend::get_temp,
