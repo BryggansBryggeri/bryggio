@@ -1,4 +1,6 @@
 use crate::brewery;
+use rocket_contrib::json;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::error;
 use std::fmt;
@@ -12,6 +14,7 @@ pub struct Request {
 }
 
 // TODO: Derive Serialize to autobuild json response
+#[derive(Serialize)]
 pub struct Response {
     pub result: Option<f32>,
     pub message: Option<String>,
@@ -30,7 +33,7 @@ impl WebEndpoint {
             Err(err) => {
                 return Err(Error {
                     message: format!("Could not aquire web sender lock: {}", err),
-                })
+                });
             }
         };
 
@@ -39,7 +42,7 @@ impl WebEndpoint {
             Err(err) => {
                 return Err(Error {
                     message: format!("Could not send request: {}", err),
-                })
+                });
             }
         };
 
@@ -48,7 +51,7 @@ impl WebEndpoint {
             Err(err) => {
                 return Err(Error {
                     message: format!("Could not aquire web receiver lock: {}", err),
-                })
+                });
             }
         };
 
@@ -57,7 +60,7 @@ impl WebEndpoint {
             Err(err) => {
                 return Err(Error {
                     message: format!("Could not aquire receiver response: {}", err),
-                })
+                });
             }
         };
     }
@@ -82,19 +85,18 @@ pub fn create_api_endpoints() -> (WebEndpoint, BreweryEndpoint) {
     (api_web, api_brew)
 }
 
-pub fn generate_web_response(api_response: Result<Response, Error>) -> HashMap<String, String> {
-    let mut response = HashMap::new();
+pub fn generate_web_response(api_response: Result<Response, Error>) -> json::Json<Response> {
     match api_response {
-        Ok(api_response) => {
-            response.insert("success".to_string(), api_response.success.to_string());
-            response.insert(String::from("message:"), api_response.success.to_string());
-        }
+        Ok(response) => json::Json(response),
         Err(err) => {
-            response.insert("success".to_string(), "false".to_string());
-            response.insert("response".to_string(), err.message);
+            let error_response = Response {
+                success: false,
+                result: None,
+                message: Some(err.to_string()),
+            };
+            json::Json(error_response)
         }
-    };
-    response
+    }
 }
 
 #[derive(Debug, Clone)]

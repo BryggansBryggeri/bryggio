@@ -8,29 +8,25 @@ use std::collections::HashMap;
 pub fn start_controller(
     id: Option<String>,
     api_endpoint: State<api::WebEndpoint>,
-) -> json::Json<HashMap<String, String>> {
+) -> json::Json<api::Response> {
     let request = api::Request {
         command: brewery::Command::StartController,
         id: id,
         parameter: None,
     };
     let api_response = api_endpoint.send_and_wait_for_response(request);
-    let response = api::generate_web_response(api_response);
-    json::Json(response)
+    api::generate_web_response(api_response)
 }
 
 #[get("/stop_controller")]
-pub fn stop_controller(
-    api_endpoint: State<api::WebEndpoint>,
-) -> json::Json<HashMap<String, String>> {
+pub fn stop_controller(api_endpoint: State<api::WebEndpoint>) -> json::Json<api::Response> {
     let request = api::Request {
         command: brewery::Command::StopController,
         id: None,
         parameter: None,
     };
     let api_response = api_endpoint.send_and_wait_for_response(request);
-    let response = api::generate_web_response(api_response);
-    json::Json(response)
+    api::generate_web_response(api_response)
 }
 
 #[get("/set_target_temp?<controller_id>&<temp>")]

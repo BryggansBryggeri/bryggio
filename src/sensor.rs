@@ -7,8 +7,17 @@ pub struct DummySensor {
     noise_level: f32,
 }
 
+impl DummySensor {
+    pub fn new(id: &'static str) -> DummySensor {
+        DummySensor {
+            id: id,
+            prediction: 0.0,
+            noise_level: 0.1,
+        }
+    }
+}
+
 impl Sensor for DummySensor {
-    type SensorData = f32;
     fn new(id: &'static str) -> DummySensor {
         DummySensor {
             id: id,
@@ -22,6 +31,9 @@ impl Sensor for DummySensor {
         let measurement = true_measurement + normal.sample(&mut rand::thread_rng()) as f32;
         Ok(measurement)
     }
+    fn get_id(&self) -> &'static str {
+        self.id
+    }
 }
 
 pub struct OneWireSensor {
@@ -29,8 +41,6 @@ pub struct OneWireSensor {
 }
 
 impl Sensor for OneWireSensor {
-    type SensorData = f32;
-
     fn new(id: &'static str) -> OneWireSensor {
         OneWireSensor { id: id }
     }
@@ -38,11 +48,15 @@ impl Sensor for OneWireSensor {
     fn get_measurement(&self) -> Result<f32, gpio_cdev::errors::Error> {
         Ok(10.0)
     }
+    fn get_id(&self) -> &'static str {
+        self.id
+    }
 }
 
 pub trait Sensor {
-    type SensorData;
+    //type SensorData;
 
     fn new(id: &'static str) -> Self;
-    fn get_measurement(&self) -> Result<Self::SensorData, gpio_cdev::errors::Error>;
+    fn get_measurement(&self) -> Result<f32, gpio_cdev::errors::Error>;
+    fn get_id(&self) -> &'static str;
 }

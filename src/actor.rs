@@ -6,7 +6,7 @@ pub struct DummyActor {
 }
 
 impl DummyActor {
-    pub fn new(id: &'static str, _: Option<u32>) -> DummyActor {
+    pub fn new(id: &'static str) -> DummyActor {
         DummyActor { id: id }
     }
 }

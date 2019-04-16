@@ -1,7 +1,5 @@
 use crate::actor;
-use crate::actor::Actor;
 use crate::sensor;
-use crate::sensor::Sensor;
 use std::error;
 use std::fmt;
 use std::{thread, time};
@@ -16,32 +14,10 @@ pub enum Mode {
 
 pub struct HysteresisControl {
     pub target: f32,
-    pub current_power: f32,
+    pub current_signal: f32,
     pub mode: Mode,
-    actor: actor::DummyActor,
-    sensor: sensor::DummySensor,
     offset_on: f32,
     offset_off: f32,
-}
-
-#[derive(Debug, Clone)]
-pub struct ParamError;
-
-impl fmt::Display for ParamError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Invalid param values.")
-    }
-}
-// This is important for other errors to wrap this one.
-impl error::Error for ParamError {
-    fn description(&self) -> &str {
-        "Invalid param values."
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        // Generic error, underlying cause isn't tracked.
-        None
-    }
 }
 
 impl HysteresisControl {
@@ -49,10 +25,8 @@ impl HysteresisControl {
         if offset_off >= 0.0 && offset_on > offset_off {
             Ok(HysteresisControl {
                 target: 20.0,
-                current_power: 0.0,
+                current_signal: 0.0,
                 mode: Mode::Automatic,
-                sensor: sensor::DummySensor::new("dummy"),
-                actor: actor::DummyActor::new("dummy", None),
                 offset_on: offset_on,
                 offset_off: offset_off,
             })
@@ -63,24 +37,30 @@ impl HysteresisControl {
 }
 
 impl Control for HysteresisControl {
-    fn run(&mut self, sleep_time: u64) {
+    fn run<A, S>(&mut self, sleep_time: u64, actor: A, sensor: S)
+    where
+        A: actor::Actor,
+        S: sensor::Sensor,
+    {
         let start_time = time::SystemTime::now();
         loop {
             &self.update_mode();
             match &self.mode {
                 Mode::Inactive => {}
                 _ => {
-                    let measurement = match self.sensor.get_measurement() {
+                    let measurement = match sensor.get_measurement() {
                         Ok(measurement) => measurement,
-                        Err(e) => panic!(
+                        Err(err) => panic!(
                             "Error getting measurment from sensor {}: {}",
-                            self.sensor.id, e
+                            sensor.get_id(),
+                            err
                         ),
                     };
                     let signal = self.calculate_signal(&measurement);
-                    self.actor.set_signal(signal).unwrap();
-                    self.sensor.prediction += signal * 0.05;
-                    self.sensor.prediction *= 0.90;
+                    match actor.set_signal(signal) {
+                        Ok(()) => {}
+                        Err(err) => println!("Error setting signal: {}", err),
+                    };
                     println!(
                         "{}, {}, {}.",
                         start_time.elapsed().unwrap().as_secs(),
@@ -102,13 +82,36 @@ impl Control for HysteresisControl {
         } else if diff <= self.offset_off {
             return 0.0;
         } else {
-            self.current_power
+            self.current_signal
         }
     }
 }
 
 pub trait Control {
-    fn run(&mut self, sleep_time: u64);
+    fn run<A, S>(&mut self, sleep_time: u64, actor: A, sensor: S)
+    where
+        A: actor::Actor,
+        S: sensor::Sensor;
     fn calculate_signal(&self, measurement: &f32) -> f32;
     fn update_mode(&mut self);
+}
+
+#[derive(Debug, Clone)]
+pub struct ParamError;
+
+impl fmt::Display for ParamError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Invalid param values.")
+    }
+}
+// This is important for other errors to wrap this one.
+impl error::Error for ParamError {
+    fn description(&self) -> &str {
+        "Invalid param values."
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        // Generic error, underlying cause isn't tracked.
+        None
+    }
 }

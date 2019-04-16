@@ -1,7 +1,9 @@
+use crate::actor;
 use crate::api;
 use crate::config;
 use crate::control;
-use crate::control::Control;
+use crate::sensor;
+use std::collections::HashMap;
 
 pub enum Command {
     GetTemperature,
@@ -12,15 +14,27 @@ pub enum Command {
 }
 
 pub struct Brewery {
-    mash_tun: MashTun,
     api_endpoint: api::BreweryEndpoint,
+    sensors: HashMap<String, sensor::DummySensor>,
+    actors: HashMap<String, actor::DummyActor>,
 }
 
 impl Brewery {
     pub fn new(config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
+        let mut sensors = HashMap::new();
+        sensors.insert(
+            String::from("mash_tun"),
+            sensor::DummySensor::new("mash_tun_dummy"),
+        );
+        let mut actors = HashMap::new();
+        actors.insert(
+            String::from("mash_tun"),
+            actor::DummyActor::new("mash_tun_dummy"),
+        );
         Brewery {
-            mash_tun: MashTun::new(),
-            api_endpoint: api_endpoint,
+            api_endpoint,
+            sensors,
+            actors,
         }
     }
 
@@ -53,18 +67,10 @@ impl Brewery {
     }
 }
 
-pub struct MashTun {
-    pub controller: control::HysteresisControl,
-}
+pub struct MashTun {}
 
 impl MashTun {
     pub fn new() -> MashTun {
-        MashTun {
-            controller: control::HysteresisControl::new(2.0, 1.0).unwrap(),
-        }
-    }
-
-    pub fn run(&mut self) {
-        self.controller.run(1000);
+        MashTun {}
     }
 }
