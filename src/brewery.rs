@@ -15,12 +15,18 @@ pub enum Command {
 
 pub struct Brewery {
     api_endpoint: api::BreweryEndpoint,
+    controllers: HashMap<String, control::HysteresisControl>,
     sensors: HashMap<String, sensor::DummySensor>,
     actors: HashMap<String, actor::DummyActor>,
 }
 
 impl Brewery {
     pub fn new(config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
+        let mut controllers = HashMap::new();
+        controllers.insert(
+            String::from("mash_tun"),
+            control::HysteresisControl::new(1.0, 0.0).unwrap(),
+        );
         let mut sensors = HashMap::new();
         sensors.insert(
             String::from("mash_tun"),
@@ -33,6 +39,7 @@ impl Brewery {
         );
         Brewery {
             api_endpoint,
+            controllers,
             sensors,
             actors,
         }

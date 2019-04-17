@@ -1,7 +1,6 @@
 use crate::brewery;
 use rocket_contrib::json;
 use serde::Serialize;
-use std::collections::HashMap;
 use std::error;
 use std::fmt;
 use std::sync;
@@ -13,7 +12,6 @@ pub struct Request {
     pub parameter: Option<f32>,
 }
 
-// TODO: Derive Serialize to autobuild json response
 #[derive(Serialize)]
 pub struct Response {
     pub result: Option<f32>,
