@@ -2,46 +2,40 @@ use crate::actor;
 use crate::api;
 use crate::config;
 use crate::control;
+use crate::control::Control;
+use crate::error;
 use crate::sensor;
-use std::collections::HashMap;
+use rand::distributions::{Distribution, Normal};
+use std::error as std_error;
+use std::sync;
+use std::thread;
 
 pub enum Command {
-    GetTemperature,
-    SetTemperature,
+    GetMeasurement,
+    SetMeasurement,
     StartController,
     StopController,
     GetFullState,
+    Error,
 }
 
 pub struct Brewery {
     api_endpoint: api::BreweryEndpoint,
-    controllers: HashMap<String, control::HysteresisControl>,
-    sensors: HashMap<String, sensor::DummySensor>,
-    actors: HashMap<String, actor::DummyActor>,
+    //controller: sync::Arc<control::HysteresisControl>,
+    sensor: sync::Arc<sync::Mutex<sensor::DummySensor>>,
+    actor: sync::Arc<sync::Mutex<actor::DummyActor>>,
 }
 
 impl Brewery {
     pub fn new(config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
-        let mut controllers = HashMap::new();
-        controllers.insert(
-            String::from("mash_tun"),
-            control::HysteresisControl::new(1.0, 0.0).unwrap(),
-        );
-        let mut sensors = HashMap::new();
-        sensors.insert(
-            String::from("mash_tun"),
-            sensor::DummySensor::new("mash_tun_dummy"),
-        );
-        let mut actors = HashMap::new();
-        actors.insert(
-            String::from("mash_tun"),
-            actor::DummyActor::new("mash_tun_dummy"),
-        );
+        //let controller = sync::Arc::new(control::HysteresisControl::new(1.0, 0.0).unwrap());
+        let actor = sync::Arc::new(sync::Mutex::new(actor::DummyActor::new("mash_tun_dummy")));
+        let sensor = sync::Arc::new(sync::Mutex::new(sensor::DummySensor::new("mash_tun_dummy")));
         Brewery {
             api_endpoint,
-            controllers,
-            sensors,
-            actors,
+            //controller,
+            sensor,
+            actor,
         }
     }
 
@@ -49,20 +43,37 @@ impl Brewery {
         loop {
             let request = match self.api_endpoint.receiver.recv() {
                 Ok(request) => request,
-                Err(e) => panic!("Command error: {}", e),
+                Err(_) => api::Request {
+                    command: Command::Error,
+                    id: None,
+                    parameter: None,
+                },
             };
             let response = match request.command {
-                Command::StartController => {
-                    println!(
-                        "Received from web: Start controller {}",
-                        request.id.unwrap_or("".to_string())
-                    );
-                    api::Response {
+                Command::StartController => match self.start_controller() {
+                    Ok(_) => api::Response {
                         result: None,
-                        message: Some(String::from("Not implemented yet")),
+                        message: None,
+                        success: true,
+                    },
+                    Err(err) => api::Response {
+                        result: None,
+                        message: Some(err.to_string()),
                         success: false,
-                    }
-                }
+                    },
+                },
+                Command::GetMeasurement => match sensor::get_measurement(&self.sensor) {
+                    Ok(measurement) => api::Response {
+                        result: Some(measurement),
+                        message: None,
+                        success: true,
+                    },
+                    Err(err) => api::Response {
+                        result: None,
+                        message: Some(err.to_string()),
+                        success: false,
+                    },
+                },
                 _ => api::Response {
                     result: None,
                     message: Some(String::from("Not implemented yet")),
@@ -71,6 +82,19 @@ impl Brewery {
             };
             self.api_endpoint.sender.send(response).unwrap();
         }
+    }
+
+    fn start_controller(&self) -> Result<(), Box<std_error::Error>> {
+        let tmp_state = control::State::Inactive;
+        match tmp_state {
+            control::State::Inactive => {}
+            _ => return Err(Box::new(error::KeyError)), // TODO impl. warning
+        };
+        let mut controller = control::HysteresisControl::new(1.0, 0.0).unwrap();
+        let actor = self.actor.clone();
+        let sensor = self.sensor.clone();
+        thread::spawn(move || controller.run(1000, actor, sensor));
+        Ok(())
     }
 }
 

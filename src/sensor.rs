@@ -1,5 +1,27 @@
+use crate::error;
 use gpio_cdev;
 use rand::distributions::{Distribution, Normal};
+use std::error as std_error;
+use std::sync;
+
+pub fn get_measurement<S>(
+    sensor_mut: &sync::Arc<sync::Mutex<S>>,
+) -> Result<f32, Box<std_error::Error>>
+where
+    S: Sensor,
+{
+    let sensor = match sensor_mut.lock() {
+        Ok(sensor) => sensor,
+        Err(err) => {
+            return Err(Box::new(error::KeyError)); // TODO: correct error
+        }
+    };
+
+    match sensor.get_measurement() {
+        Ok(measurement) => Ok(measurement),
+        Err(e) => Err(Box::new(e)),
+    }
+}
 
 pub struct DummySensor {
     pub id: &'static str,

@@ -25,8 +25,8 @@ fn main() {
                 routes::serve_files::javascript,
                 routes::backend::start_controller,
                 routes::backend::stop_controller,
-                routes::backend::get_temp,
-                routes::backend::set_target_temp,
+                routes::backend::get_measurement,
+                routes::backend::set_target_signal,
                 routes::backend::get_full_state
             ],
         )

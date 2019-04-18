@@ -1,11 +1,11 @@
 use crate::actor;
+use crate::error;
 use crate::sensor;
-use std::error;
-use std::fmt;
+use std::sync;
 use std::{thread, time};
 
 #[derive(Clone)]
-pub enum Mode {
+pub enum State {
     Automatic,
     Manual,
     Boil,
@@ -15,44 +15,52 @@ pub enum Mode {
 pub struct HysteresisControl {
     pub target: f32,
     pub current_signal: f32,
-    pub mode: Mode,
+    pub state: State,
     offset_on: f32,
     offset_off: f32,
 }
 
 impl HysteresisControl {
-    pub fn new(offset_on: f32, offset_off: f32) -> Result<HysteresisControl, ParamError> {
+    pub fn new(offset_on: f32, offset_off: f32) -> Result<HysteresisControl, error::ParamError> {
         if offset_off >= 0.0 && offset_on > offset_off {
             Ok(HysteresisControl {
                 target: 20.0,
                 current_signal: 0.0,
-                mode: Mode::Automatic,
+                state: State::Automatic,
                 offset_on: offset_on,
                 offset_off: offset_off,
             })
         } else {
-            Err(ParamError)
+            Err(error::ParamError)
         }
     }
 }
 
 impl Control for HysteresisControl {
-    fn run<A, S>(&mut self, sleep_time: u64, actor: A, sensor: S)
-    where
+    fn run<A, S>(
+        &mut self,
+        sleep_time: u64,
+        actor_mut: sync::Arc<sync::Mutex<A>>,
+        sensor: sync::Arc<sync::Mutex<S>>,
+    ) where
         A: actor::Actor,
         S: sensor::Sensor,
     {
         let start_time = time::SystemTime::now();
+        let actor = match actor_mut.lock() {
+            Ok(actor) => actor,
+            Err(err) => panic!("Could not acquire actor lock"),
+        };
         loop {
             &self.update_mode();
-            match &self.mode {
-                Mode::Inactive => {}
+            match &self.state {
+                State::Inactive => {}
                 _ => {
-                    let measurement = match sensor.get_measurement() {
+                    let measurement = match sensor::get_measurement(&sensor) {
                         Ok(measurement) => measurement,
                         Err(err) => panic!(
                             "Error getting measurment from sensor {}: {}",
-                            sensor.get_id(),
+                            "some_id", //sensor.get_id(),
                             err
                         ),
                     };
@@ -85,33 +93,22 @@ impl Control for HysteresisControl {
             self.current_signal
         }
     }
+
+    fn get_state(&self) -> State {
+        self.state.clone()
+    }
 }
 
 pub trait Control {
-    fn run<A, S>(&mut self, sleep_time: u64, actor: A, sensor: S)
-    where
+    fn run<A, S>(
+        &mut self,
+        sleep_time: u64,
+        actor: sync::Arc<sync::Mutex<A>>,
+        sensor: sync::Arc<sync::Mutex<S>>,
+    ) where
         A: actor::Actor,
         S: sensor::Sensor;
     fn calculate_signal(&self, measurement: &f32) -> f32;
     fn update_mode(&mut self);
-}
-
-#[derive(Debug, Clone)]
-pub struct ParamError;
-
-impl fmt::Display for ParamError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Invalid param values.")
-    }
-}
-// This is important for other errors to wrap this one.
-impl error::Error for ParamError {
-    fn description(&self) -> &str {
-        "Invalid param values."
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        // Generic error, underlying cause isn't tracked.
-        None
-    }
+    fn get_state(&self) -> State;
 }

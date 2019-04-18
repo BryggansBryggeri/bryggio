@@ -30,7 +30,7 @@ pub fn stop_controller(api_endpoint: State<api::WebEndpoint>) -> json::Json<api:
 }
 
 #[get("/set_target_temp?<controller_id>&<temp>")]
-pub fn set_target_temp(
+pub fn set_target_signal(
     controller_id: Option<f32>,
     temp: Option<f32>,
     api_endpoint: State<api::WebEndpoint>,
@@ -41,12 +41,18 @@ pub fn set_target_temp(
     json::Json(response)
 }
 
-#[get("/get_temp")]
-pub fn get_temp(api_endpoint: State<api::WebEndpoint>) -> json::Json<HashMap<String, String>> {
-    let mut response = HashMap::new();
-    response.insert("success".to_string(), "false".to_string());
-    response.insert("message".to_string(), "Not implemented yet".to_string());
-    json::Json(response)
+#[get("/get_measurement?<sensor_id>")]
+pub fn get_measurement(
+    sensor_id: Option<f32>,
+    api_endpoint: State<api::WebEndpoint>,
+) -> json::Json<api::Response> {
+    let request = api::Request {
+        command: brewery::Command::GetMeasurement,
+        id: None,
+        parameter: None,
+    };
+    let api_response = api_endpoint.send_and_wait_for_response(request);
+    api::generate_web_response(api_response)
 }
 
 #[get("/get_full_state")]
