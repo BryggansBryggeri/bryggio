@@ -5,7 +5,6 @@ use crate::control;
 use crate::control::Control;
 use crate::error;
 use crate::sensor;
-use rand::distributions::{Distribution, Normal};
 use std::error as std_error;
 use std::sync;
 use std::thread;
@@ -49,51 +48,58 @@ impl Brewery {
                     parameter: None,
                 },
             };
-            let response = match request.command {
-                Command::StartController => match self.start_controller() {
-                    Ok(_) => api::Response {
-                        result: None,
-                        message: None,
-                        success: true,
-                    },
-                    Err(err) => api::Response {
-                        result: None,
-                        message: Some(err.to_string()),
-                        success: false,
-                    },
-                },
-                Command::GetMeasurement => match sensor::get_measurement(&self.sensor) {
-                    Ok(measurement) => api::Response {
-                        result: Some(measurement),
-                        message: None,
-                        success: true,
-                    },
-                    Err(err) => api::Response {
-                        result: None,
-                        message: Some(err.to_string()),
-                        success: false,
-                    },
-                },
-                _ => api::Response {
+            let response = self.process_command(&request.command);
+            self.api_endpoint.sender.send(response).unwrap();
+        }
+    }
+
+    fn process_command(&mut self, command: &Command) -> api::Response {
+        match command {
+            Command::StartController => match self.start_controller() {
+                Ok(_) => api::Response {
                     result: None,
-                    message: Some(String::from("Not implemented yet")),
+                    message: None,
+                    success: true,
+                },
+                Err(err) => api::Response {
+                    result: None,
+                    message: Some(err.to_string()),
                     success: false,
                 },
-            };
-            self.api_endpoint.sender.send(response).unwrap();
+            },
+            Command::GetMeasurement => match sensor::get_measurement(&self.sensor) {
+                Ok(measurement) => api::Response {
+                    result: Some(measurement),
+                    message: None,
+                    success: true,
+                },
+                Err(err) => api::Response {
+                    result: None,
+                    message: Some(err.to_string()),
+                    success: false,
+                },
+            },
+            _ => api::Response {
+                result: None,
+                message: Some(String::from("Not implemented yet")),
+                success: false,
+            },
         }
     }
 
     fn start_controller(&self) -> Result<(), Box<std_error::Error>> {
         let tmp_state = control::State::Inactive;
         match tmp_state {
-            control::State::Inactive => {}
-            _ => return Err(Box::new(error::KeyError)), // TODO impl. warning
+            control::State::Inactive => {
+                let mut controller = control::HysteresisControl::new(1.0, 0.0).unwrap();
+                let actor = self.actor.clone();
+                let sensor = self.sensor.clone();
+                thread::spawn(move || controller.run(1000, actor, sensor));
+            }
+            control::State::Automatic => {}
+            control::State::Manual => {}
+            control::State::Boil => {} //_ => return Err(Box::new(error::KeyError)), // TODO impl. warning
         };
-        let mut controller = control::HysteresisControl::new(1.0, 0.0).unwrap();
-        let actor = self.actor.clone();
-        let sensor = self.sensor.clone();
-        thread::spawn(move || controller.run(1000, actor, sensor));
         Ok(())
     }
 }
