@@ -10,7 +10,7 @@ use std::thread;
 
 pub enum Command {
     GetMeasurement,
-    SetMeasurement,
+    SetTarget,
     StartController,
     StopController,
     GetFullState,
@@ -49,13 +49,13 @@ impl Brewery {
                     parameter: None,
                 },
             };
-            let response = self.process_command(&request.command);
+            let response = self.process_request(&request);
             self.api_endpoint.sender.send(response).unwrap();
         }
     }
 
-    fn process_command(&mut self, command: &Command) -> api::Response {
-        match command {
+    fn process_request(&mut self, request: &api::Request) -> api::Response {
+        match request.command {
             Command::StartController => match self.start_controller() {
                 Ok(_) => api::Response {
                     result: None,
@@ -68,6 +68,21 @@ impl Brewery {
                     success: false,
                 },
             },
+
+            Command::StopController => match self.change_controller_state(control::State::Inactive)
+            {
+                Ok(_) => api::Response {
+                    result: None,
+                    message: None,
+                    success: true,
+                },
+                Err(err) => api::Response {
+                    result: None,
+                    message: Some(err.to_string()),
+                    success: false,
+                },
+            },
+
             Command::GetMeasurement => match sensor::get_measurement(&self.sensor) {
                 Ok(measurement) => api::Response {
                     result: Some(measurement),
@@ -80,6 +95,20 @@ impl Brewery {
                     success: false,
                 },
             },
+
+            Command::SetTarget => match self.change_controller_target(request.parameter) {
+                Ok(measurement) => api::Response {
+                    result: None,
+                    message: None,
+                    success: true,
+                },
+                Err(err) => api::Response {
+                    result: None,
+                    message: Some(err.to_string()),
+                    success: false,
+                },
+            },
+
             _ => api::Response {
                 result: None,
                 message: Some(String::from("Not implemented yet")),
@@ -103,8 +132,34 @@ impl Brewery {
             }
             control::State::Automatic => println!("Already running"),
             control::State::Manual => {}
-            control::State::Boil => {} //_ => return Err(Box::new(error::KeyError)), // TODO impl. warning
         };
+        Ok(())
+    }
+
+    fn change_controller_state(
+        &mut self,
+        new_state: control::State,
+    ) -> Result<(), Box<std_error::Error>> {
+        let mut controller = match self.controller.lock() {
+            Ok(controller) => controller,
+            Err(err) => panic!("Could not acquire controller lock"),
+        };
+        controller.state = new_state;
+        Ok(())
+    }
+
+    fn change_controller_target(
+        &mut self,
+        new_target: Option<f32>,
+    ) -> Result<(), Box<std_error::Error>> {
+        let mut controller = match self.controller.lock() {
+            Ok(controller) => controller,
+            Err(err) => panic!("Could not acquire controller lock"),
+        };
+        match new_target {
+            Some(new_target) => controller.target = new_target,
+            None => {}
+        }
         Ok(())
     }
 }
