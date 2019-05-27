@@ -12,6 +12,55 @@ pub enum State {
     Inactive,
 }
 
+pub fn run_controller<C, A, S>(
+    controller_lock: sync::Arc<sync::Mutex<C>>,
+    actor_lock: sync::Arc<sync::Mutex<A>>,
+    sensor: sync::Arc<sync::Mutex<S>>,
+) where
+    C: Control,
+    A: actor::Actor,
+    S: sensor::Sensor,
+{
+    let start_time = time::SystemTime::now();
+    let sleep_time = 1000;
+    let actor = match actor_lock.lock() {
+        Ok(actor) => actor,
+        Err(err) => panic!("Could not acquire actor lock"),
+    };
+    loop {
+        let mut controller = match controller_lock.lock() {
+            Ok(controller) => controller,
+            Err(err) => panic!("Could not acquire controller lock"),
+        };
+        match controller.get_state() {
+            State::Inactive => {}
+            _ => {
+                let measurement = match sensor::get_measurement(&sensor) {
+                    Ok(measurement) => measurement,
+                    Err(err) => panic!(
+                        "Error getting measurment from sensor {}: {}",
+                        "some_id", //sensor.get_id(),
+                        err
+                    ),
+                };
+                let signal = controller.calculate_signal(&measurement);
+                drop(controller);
+                match actor.set_signal(signal) {
+                    Ok(()) => {}
+                    Err(err) => println!("Error setting signal: {}", err),
+                };
+                println!(
+                    "{}, {}, {}.",
+                    start_time.elapsed().unwrap().as_secs(),
+                    measurement,
+                    signal
+                );
+            }
+        }
+        thread::sleep(time::Duration::from_millis(sleep_time));
+    }
+}
+
 pub struct HysteresisControl {
     pub target: f32,
     pub current_signal: f32,
@@ -26,7 +75,7 @@ impl HysteresisControl {
             Ok(HysteresisControl {
                 target: 20.0,
                 current_signal: 0.0,
-                state: State::Automatic,
+                state: State::Inactive,
                 offset_on: offset_on,
                 offset_off: offset_off,
             })
@@ -52,7 +101,7 @@ impl Control for HysteresisControl {
             Err(err) => panic!("Could not acquire actor lock"),
         };
         loop {
-            &self.update_mode();
+            &self.update_state();
             match &self.state {
                 State::Inactive => {}
                 _ => {
@@ -81,20 +130,21 @@ impl Control for HysteresisControl {
         }
     }
 
-    fn update_mode(&mut self) {}
+    fn update_state(&self) {}
 
-    fn calculate_signal(&self, value: &f32) -> f32 {
+    fn calculate_signal(&mut self, value: &f32) -> f32 {
         let diff = self.target - value;
         if diff > self.offset_on {
-            return 100.0;
+            self.current_signal = 100.0;
         } else if diff <= self.offset_off {
-            return 0.0;
+            self.current_signal = 0.0;
         } else {
-            self.current_signal
         }
+        self.current_signal
     }
 
     fn get_state(&self) -> State {
+        // Tmp fix for the run_controller / controller.run mix
         self.state.clone()
     }
 }
@@ -108,7 +158,7 @@ pub trait Control {
     ) where
         A: actor::Actor,
         S: sensor::Sensor;
-    fn calculate_signal(&self, measurement: &f32) -> f32;
-    fn update_mode(&mut self);
+    fn calculate_signal(&mut self, measurement: &f32) -> f32;
+    fn update_state(&self);
     fn get_state(&self) -> State;
 }

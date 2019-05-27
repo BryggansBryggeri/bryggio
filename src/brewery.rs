@@ -3,7 +3,6 @@ use crate::api;
 use crate::config;
 use crate::control;
 use crate::control::Control;
-use crate::error;
 use crate::sensor;
 use std::error as std_error;
 use std::sync;
@@ -20,19 +19,21 @@ pub enum Command {
 
 pub struct Brewery {
     api_endpoint: api::BreweryEndpoint,
-    //controller: sync::Arc<control::HysteresisControl>,
+    controller: sync::Arc<sync::Mutex<control::HysteresisControl>>,
     sensor: sync::Arc<sync::Mutex<sensor::DummySensor>>,
     actor: sync::Arc<sync::Mutex<actor::DummyActor>>,
 }
 
 impl Brewery {
-    pub fn new(config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
-        //let controller = sync::Arc::new(control::HysteresisControl::new(1.0, 0.0).unwrap());
-        let actor = sync::Arc::new(sync::Mutex::new(actor::DummyActor::new("mash_tun_dummy")));
-        let sensor = sync::Arc::new(sync::Mutex::new(sensor::DummySensor::new("mash_tun_dummy")));
+    pub fn new(_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
+        let controller = sync::Arc::new(sync::Mutex::new(
+            control::HysteresisControl::new(1.0, 0.0).unwrap(),
+        ));
+        let actor = sync::Arc::new(sync::Mutex::new(actor::DummyActor::new("mash_tun")));
+        let sensor = sync::Arc::new(sync::Mutex::new(sensor::DummySensor::new("mash_tun")));
         Brewery {
             api_endpoint,
-            //controller,
+            controller,
             sensor,
             actor,
         }
@@ -87,27 +88,23 @@ impl Brewery {
         }
     }
 
-    fn start_controller(&self) -> Result<(), Box<std_error::Error>> {
-        let tmp_state = control::State::Inactive;
-        match tmp_state {
+    fn start_controller(&mut self) -> Result<(), Box<std_error::Error>> {
+        let mut controller = match self.controller.lock() {
+            Ok(controller) => controller,
+            Err(err) => panic!("Could not acquire controller lock"),
+        };
+        match controller.get_state() {
             control::State::Inactive => {
-                let mut controller = control::HysteresisControl::new(1.0, 0.0).unwrap();
+                let controller_send = self.controller.clone();
                 let actor = self.actor.clone();
                 let sensor = self.sensor.clone();
-                thread::spawn(move || controller.run(1000, actor, sensor));
+                thread::spawn(move || control::run_controller(controller_send, actor, sensor));
+                controller.state = control::State::Automatic;
             }
-            control::State::Automatic => {}
+            control::State::Automatic => println!("Already running"),
             control::State::Manual => {}
             control::State::Boil => {} //_ => return Err(Box::new(error::KeyError)), // TODO impl. warning
         };
         Ok(())
-    }
-}
-
-pub struct MashTun {}
-
-impl MashTun {
-    pub fn new() -> MashTun {
-        MashTun {}
     }
 }
