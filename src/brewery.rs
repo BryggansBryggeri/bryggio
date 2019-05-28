@@ -97,7 +97,7 @@ impl Brewery {
             },
 
             Command::SetTarget => match self.change_controller_target(request.parameter) {
-                Ok(measurement) => api::Response {
+                Ok(()) => api::Response {
                     result: None,
                     message: None,
                     success: true,
@@ -122,6 +122,7 @@ impl Brewery {
             Ok(controller) => controller,
             Err(err) => panic!("Could not acquire controller lock"),
         };
+
         match controller.get_state() {
             control::State::Inactive => {
                 let controller_send = self.controller.clone();
