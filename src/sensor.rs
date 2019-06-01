@@ -76,8 +76,6 @@ impl Sensor for OneWireSensor {
 }
 
 pub trait Sensor {
-    //type SensorData;
-
     fn new(id: &'static str) -> Self;
     fn get_measurement(&self) -> Result<f32, gpio_cdev::errors::Error>;
     fn get_id(&self) -> &'static str;
