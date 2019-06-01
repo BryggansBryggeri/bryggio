@@ -1,1 +1,7 @@
-name = "BRYGGANS BRYGGERI BÄRS BB"
+[general]
+brewery = "BRYGGANS BRYGGERI BÄRS BB"
+sw_version = "1.6"
+
+[control]
+offset_on = 1.0
+offset_off = 0.0
