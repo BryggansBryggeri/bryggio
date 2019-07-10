@@ -12,7 +12,7 @@ impl DummyActor {
 }
 
 impl Actor for DummyActor {
-    fn set_signal(&self, signal: f32) -> Result<(), gpio_cdev::errors::Error> {
+    fn set_signal(&self, _signal: f32) -> Result<(), gpio_cdev::errors::Error> {
         Ok(())
     }
 }
@@ -23,8 +23,8 @@ pub struct SimpleGpio {
 }
 
 impl SimpleGpio {
-    pub fn new(id: &'static str, pin_number: Option<u32>) -> SimpleGpio {
-        let pin_number = pin_number.unwrap();
+    pub fn new(id: &'static str, pin_number: u32) -> SimpleGpio {
+        let pin_number = pin_number;
         let handle = match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &id) {
             Ok(handle) => handle,
             Err(err) => {

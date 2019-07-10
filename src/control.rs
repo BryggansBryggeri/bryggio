@@ -24,12 +24,12 @@ pub fn run_controller<C, A, S>(
     let sleep_time = 1000;
     let actor = match actor_lock.lock() {
         Ok(actor) => actor,
-        Err(err) => panic!("Could not acquire actor lock"),
+        Err(err) => panic!("Could not acquire actor lock: {}", err),
     };
     loop {
         let mut controller = match controller_lock.lock() {
             Ok(controller) => controller,
-            Err(err) => panic!("Could not acquire controller lock"),
+            Err(err) => panic!("Could not acquire controller lock {}", err),
         };
         match controller.get_state() {
             State::Inactive => {
@@ -106,41 +106,40 @@ impl Control for HysteresisControl {
         A: actor::Actor,
         S: sensor::Sensor,
     {
+        let start_time = time::SystemTime::now();
+        let actor = match actor_mut.lock() {
+            Ok(actor) => actor,
+            Err(err) => panic!("Could not acquire actor lock"),
+        };
+        loop {
+            &self.update_state();
+            match &self.state {
+                State::Inactive => {}
+                _ => {
+                    let measurement = match sensor::get_measurement(&sensor) {
+                        Ok(measurement) => measurement,
+                        Err(err) => panic!(
+                            "Error getting measurment from sensor {}: {}",
+                            "some_id", //sensor.get_id(),
+                            err
+                        ),
+                    };
+                    let signal = self.calculate_signal(&measurement);
+                    match actor.set_signal(signal) {
+                        Ok(()) => {}
+                        Err(err) => println!("Error setting signal: {}", err),
+                    };
+                    println!(
+                        "{}, {}, {}.",
+                        start_time.elapsed().unwrap().as_secs(),
+                        measurement,
+                        signal
+                    );
+                }
+            }
+            thread::sleep(time::Duration::from_millis(sleep_time));
+        }
     }
-    //    let start_time = time::SystemTime::now();
-    //    let actor = match actor_mut.lock() {
-    //        Ok(actor) => actor,
-    //        Err(err) => panic!("Could not acquire actor lock"),
-    //    };
-    //    loop {
-    //        &self.update_state();
-    //        match &self.state {
-    //            State::Inactive => {}
-    //            _ => {
-    //                let measurement = match sensor::get_measurement(&sensor) {
-    //                    Ok(measurement) => measurement,
-    //                    Err(err) => panic!(
-    //                        "Error getting measurment from sensor {}: {}",
-    //                        "some_id", //sensor.get_id(),
-    //                        err
-    //                    ),
-    //                };
-    //                let signal = self.calculate_signal(&measurement);
-    //                match actor.set_signal(signal) {
-    //                    Ok(()) => {}
-    //                    Err(err) => println!("Error setting signal: {}", err),
-    //                };
-    //                println!(
-    //                    "{}, {}, {}.",
-    //                    start_time.elapsed().unwrap().as_secs(),
-    //                    measurement,
-    //                    signal
-    //                );
-    //            }
-    //        }
-    //        thread::sleep(time::Duration::from_millis(sleep_time));
-    //    }
-    //}
 
     fn update_state(&self) {}
 

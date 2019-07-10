@@ -12,7 +12,6 @@ fn main() {
     let config_file = "./Bryggio.toml";
     let config = config::Config::new(&config_file);
     let (web_endpoint, brew_endpoint) = api::create_api_endpoints();
-
     let mut brewery = brewery::Brewery::new(&config, brew_endpoint);
     thread::spawn(move || brewery.run());
 

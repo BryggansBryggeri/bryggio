@@ -27,7 +27,7 @@ pub struct Brewery {
 impl Brewery {
     pub fn new(_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
         let controller = sync::Arc::new(sync::Mutex::new(
-            control::HysteresisControl::new(1.0, 0.0).unwrap(),
+            control::HysteresisControl::new(1.0, 0.0).expect("Invalid parameters."),
         ));
         let actor = sync::Arc::new(sync::Mutex::new(actor::DummyActor::new("mash_tun")));
         let sensor = sync::Arc::new(sync::Mutex::new(sensor::DummySensor::new("mash_tun")));
