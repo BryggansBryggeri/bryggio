@@ -30,14 +30,30 @@ impl fmt::Display for KeyError {
         write!(f, "Key not in collection.")
     }
 }
-// This is important for other errors to wrap this one.
 impl error::Error for KeyError {
     fn description(&self) -> &str {
         "Key not in collection."
     }
 
     fn cause(&self) -> Option<&error::Error> {
-        // Generic error, underlying cause isn't tracked.
+        None
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SensorError;
+
+impl fmt::Display for SensorError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Sensor error")
+    }
+}
+impl error::Error for SensorError {
+    fn description(&self) -> &str {
+        "Sensor error"
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
         None
     }
 }

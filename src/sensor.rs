@@ -54,32 +54,46 @@ impl Sensor for DummySensor {
     }
 }
 
+#[derive(Debug)]
 pub struct OneWireSensor {
     pub id: &'static str,
-    address: &'static str,
+    address: OneWireAddress,
+}
+
+#[derive(Debug)]
+struct OneWireAddress(String);
+
+impl OneWireAddress {
+    pub fn from_string(s: String) -> Result<OneWireAddress, error::SensorError> {
+        match &s[0..2] {
+            "28" => {}
+            _ => return Err(error::SensorError),
+        }
+        match s.len() {
+            13 => {}
+            _ => return Err(error::SensorError),
+        }
+        Ok(OneWireAddress(s))
+    }
 }
 
 impl OneWireSensor {
     pub fn new(id: &'static str, address: &'static str) -> OneWireSensor {
-        OneWireSensor {
-            id: id,
-            address: address,
-        }
+        let address = OneWireAddress::from_string(String::from(address)).unwrap();
+        OneWireSensor { id, address }
     }
 
-    fn read_one_wire_file(&self) -> Result<f32, ()> {
-        // TODO
-        let device_path = format!("/sys/bus/w1/devices/{}/w1_slave", self.address);
+    fn read_one_wire_file(&self) -> Result<f32, error::SensorError> {
+        let device_path = format!("/sys/bus/w1/devices/{}/w1_slave", self.address.0);
         let raw_read = match utils::read_file_to_string(&device_path) {
             Ok(raw_read) => raw_read,
             Err(err) => panic!("File read error"),
         };
-        let measurement = match raw_read.parse() {
+        let measurement: f32 = match raw_read.parse() {
             Ok(measurement) => measurement,
             Err(err) => panic!("Float convert error"),
         };
-
-        Ok(1.0)
+        Ok(measurement)
     }
 }
 
@@ -97,4 +111,25 @@ pub trait Sensor {
     //type SensorData;
     fn get_measurement(&self) -> Result<f32, gpio_cdev::errors::Error>;
     fn get_id(&self) -> &'static str;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn test_address_wrong_start() {
+        let string = String::from("30FF4E1F69140");
+        let address = OneWireAddress::from_string(string);
+        address.unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_address_too_short() {
+        let string = String::from("284E1F69140");
+        let address = OneWireAddress::from_string(string);
+        address.unwrap();
+    }
 }
