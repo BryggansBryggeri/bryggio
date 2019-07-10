@@ -6,3 +6,4 @@ mod control;
 mod error;
 mod hardware;
 mod sensor;
+mod utils;
