@@ -19,20 +19,20 @@ pub enum Command {
 
 pub struct Brewery {
     api_endpoint: api::BreweryEndpoint,
-    controller: sync::Arc<sync::Mutex<control::HysteresisControl>>,
-    sensor: sync::Arc<sync::Mutex<sensor::OneWireSensor>>,
-    actor: sync::Arc<sync::Mutex<actor::DummyActor>>,
+    controller: sync::Arc<sync::Mutex<control::hysteresis::Controller>>,
+    sensor: sync::Arc<sync::Mutex<sensor::one_wire::OneWireTemp>>,
+    actor: sync::Arc<sync::Mutex<actor::dummy::Actor>>,
 }
 
 impl Brewery {
     pub fn new(brew_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
         let controller = sync::Arc::new(sync::Mutex::new(
-            control::HysteresisControl::new(1.0, 0.0).expect("Invalid parameters."),
+            control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."),
         ));
-        let actor = sync::Arc::new(sync::Mutex::new(actor::DummyActor::new("mash_tun")));
+        let actor = sync::Arc::new(sync::Mutex::new(actor::dummy::Actor::new("mash_tun")));
         // TODO: Fix ugly hack. Remove to handle if no sensor data is provided.
         let sensor_config = brew_config.sensors.clone().unwrap();
-        let sensor = sync::Arc::new(sync::Mutex::new(sensor::OneWireSensor::new(
+        let sensor = sync::Arc::new(sync::Mutex::new(sensor::one_wire::OneWireTemp::new(
             sensor_config.id,
             sensor_config.address,
         )));
