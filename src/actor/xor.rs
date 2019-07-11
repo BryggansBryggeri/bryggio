@@ -26,12 +26,21 @@ impl XOr {
 }
 
 impl actor::Actor for XOr {
-    fn set_signal(&self, signal: f32) -> Result<(), gpio_cdev::errors::Error> {
-        let gpio_state = match signal {
+    fn validate_signal(&self, signal: &f32) -> Result<(), actor::Error> {
+        Ok(())
+    }
+
+    fn set_signal(&self, signal: &f32) -> Result<(), actor::Error> {
+        self.validate_signal(signal)?;
+        let gpio_state = match *signal {
             signal if signal > 0.0 => 1,
             signal if signal <= 0.0 => 0,
             _ => 0,
         };
-        self.handle.set_value(gpio_state)
+
+        match self.handle.set_value(gpio_state) {
+            Ok(()) => Ok(()),
+            Err(err) => Err(actor::Error::ActorError(err.to_string())),
+        }
     }
 }

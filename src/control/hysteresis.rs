@@ -61,7 +61,7 @@ impl control::Control for Controller {
                         ),
                     };
                     let signal = self.calculate_signal(measurement);
-                    match actor.set_signal(signal) {
+                    match actor.set_signal(&signal) {
                         Ok(()) => {}
                         Err(err) => println!("Error setting signal: {}", err),
                     };

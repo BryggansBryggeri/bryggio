@@ -1,5 +1,4 @@
 use crate::actor;
-use gpio_cdev;
 
 pub struct Actor {
     pub id: &'static str,
@@ -12,7 +11,10 @@ impl Actor {
 }
 
 impl actor::Actor for Actor {
-    fn set_signal(&self, _signal: f32) -> Result<(), gpio_cdev::errors::Error> {
+    fn validate_signal(&self, signal: &f32) -> Result<(), actor::Error> {
+        Ok(())
+    }
+    fn set_signal(&self, _signal: &f32) -> Result<(), actor::Error> {
         Ok(())
     }
 }
