@@ -39,11 +39,15 @@ pub fn run_controller<C, A, S>(
             State::Automatic => {
                 let measurement = match sensor::get_measurement(&sensor) {
                     Ok(measurement) => measurement,
-                    Err(err) => panic!(
-                        "Error getting measurment from sensor {}: {}",
-                        "some_id", //sensor.get_id(),
-                        err
-                    ),
+                    Err(err) => {
+                        println!(
+                            "Error getting measurment from sensor: {}. Error: {}",
+                            "some_id", //sensor.get_id(),
+                            err
+                        );
+                        thread::sleep(time::Duration::from_millis(sleep_time));
+                        continue;
+                    }
                 };
                 let signal = controller.calculate_signal(&measurement);
                 drop(controller);
