@@ -26,13 +26,13 @@ where
 }
 
 pub struct DummySensor {
-    pub id: &'static str,
+    pub id: String,
     pub prediction: f32,
     noise_level: f32,
 }
 
 impl DummySensor {
-    pub fn new(id: &'static str) -> DummySensor {
+    pub fn new(id: String) -> DummySensor {
         DummySensor {
             id: id,
             prediction: 0.0,
@@ -48,14 +48,14 @@ impl Sensor for DummySensor {
         let measurement = true_measurement + normal.sample(&mut rand::thread_rng()) as f32;
         Ok(measurement)
     }
-    fn get_id(&self) -> &'static str {
-        self.id
+    fn get_id(&self) -> String {
+        self.id.clone()
     }
 }
 
 #[derive(Debug)]
 pub struct OneWireSensor {
-    pub id: &'static str,
+    pub id: String,
     address: OneWireAddress,
 }
 
@@ -77,7 +77,7 @@ impl OneWireAddress {
 }
 
 impl OneWireSensor {
-    pub fn new(id: &'static str, address: &'static str) -> OneWireSensor {
+    pub fn new(id: String, address: String) -> OneWireSensor {
         let address = OneWireAddress::from_string(String::from(address)).unwrap();
         OneWireSensor { id, address }
     }
@@ -101,14 +101,14 @@ impl Sensor for OneWireSensor {
         Ok(measurement)
     }
 
-    fn get_id(&self) -> &'static str {
-        self.id
+    fn get_id(&self) -> String {
+        self.id.clone()
     }
 }
 
 pub trait Sensor {
     fn get_measurement(&self) -> Result<f32, error::SensorError>;
-    fn get_id(&self) -> &'static str;
+    fn get_id(&self) -> String;
 }
 
 #[cfg(test)]

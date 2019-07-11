@@ -7,6 +7,7 @@ use toml;
 pub struct Config {
     pub general: Option<General>,
     pub control: Option<Control>,
+    pub sensors: Option<Sensor>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -18,6 +19,14 @@ pub struct General {
 pub struct Control {
     pub offset_on: f32,
     pub offset_off: f32,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+// TODO: Implement Deserialize for OneWireAddress
+pub struct Sensor {
+    pub id: String,
+    pub address: String,
+    pub offset: Option<f32>,
 }
 
 impl Config {
@@ -49,6 +58,9 @@ mod tests {
             [control]
             offset_on = 1.0
             offset_off = 0.0
+            [sensors]
+            id = "Mash tun"
+            address = "random address"
         "#,
         );
         assert_eq!(config.control.unwrap().offset_on, 1.0);

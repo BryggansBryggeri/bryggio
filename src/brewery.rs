@@ -25,14 +25,16 @@ pub struct Brewery {
 }
 
 impl Brewery {
-    pub fn new(_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
+    pub fn new(brew_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
         let controller = sync::Arc::new(sync::Mutex::new(
             control::HysteresisControl::new(1.0, 0.0).expect("Invalid parameters."),
         ));
         let actor = sync::Arc::new(sync::Mutex::new(actor::DummyActor::new("mash_tun")));
+        // TODO: Fix ugly hack. Remove to handle if no sensor data is provided.
+        let sensor_config = brew_config.sensors.clone().unwrap();
         let sensor = sync::Arc::new(sync::Mutex::new(sensor::OneWireSensor::new(
-            "mash_tun",
-            "28testaddress",
+            sensor_config.id,
+            sensor_config.address,
         )));
         Brewery {
             api_endpoint,

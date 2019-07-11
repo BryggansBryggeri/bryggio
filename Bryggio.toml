@@ -4,3 +4,8 @@ brewery = "BRYGGANS BRYGGERI BÄRS BB"
 [control]
 offset_on = 1.0
 offset_off = 0.0
+
+[sensors]
+id = "Mash tun"
+address = "28testaddress"
+bias = 0.0
