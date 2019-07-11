@@ -5,5 +5,6 @@ pub mod config;
 mod control;
 mod error;
 mod hardware;
+pub mod routes;
 mod sensor;
 mod utils;

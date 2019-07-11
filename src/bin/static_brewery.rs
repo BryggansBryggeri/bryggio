@@ -4,9 +4,8 @@ extern crate rocket;
 use bryggio::api;
 use bryggio::brewery;
 use bryggio::config;
+use bryggio::routes;
 use std::thread;
-
-mod routes;
 
 fn main() {
     let config_file = "./Bryggio.toml";
