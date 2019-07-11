@@ -3,8 +3,7 @@ use crate::utils;
 use gpio_cdev;
 use rand::distributions::{Distribution, Normal};
 use std::error as std_error;
-use std::fs::File;
-use std::io::prelude::*;
+use std::error::Error;
 use std::sync;
 
 pub fn get_measurement<S>(
@@ -43,7 +42,7 @@ impl DummySensor {
 }
 
 impl Sensor for DummySensor {
-    fn get_measurement(&self) -> Result<f32, gpio_cdev::errors::Error> {
+    fn get_measurement(&self) -> Result<f32, error::SensorError> {
         let true_measurement = self.prediction;
         let normal = Normal::new(0.0, self.noise_level as f64);
         let measurement = true_measurement + normal.sample(&mut rand::thread_rng()) as f32;
@@ -67,11 +66,11 @@ impl OneWireAddress {
     pub fn from_string(s: String) -> Result<OneWireAddress, error::SensorError> {
         match &s[0..2] {
             "28" => {}
-            _ => return Err(error::SensorError),
+            _ => return Err(error::SensorError::InvalidAddressStart(s.clone())),
         }
         match s.len() {
             13 => {}
-            _ => return Err(error::SensorError),
+            _ => return Err(error::SensorError::InvalidAddressLength(s.len())),
         }
         Ok(OneWireAddress(s))
     }
@@ -82,24 +81,24 @@ impl OneWireSensor {
         let address = OneWireAddress::from_string(String::from(address)).unwrap();
         OneWireSensor { id, address }
     }
-
-    fn read_one_wire_file(&self) -> Result<f32, error::SensorError> {
-        let device_path = format!("/sys/bus/w1/devices/{}/w1_slave", self.address.0);
-        let raw_read = match utils::read_file_to_string(&device_path) {
-            Ok(raw_read) => raw_read,
-            Err(err) => panic!("File read error"),
-        };
-        let measurement: f32 = match raw_read.parse() {
-            Ok(measurement) => measurement,
-            Err(err) => panic!("Float convert error"),
-        };
-        Ok(measurement)
-    }
 }
 
 impl Sensor for OneWireSensor {
-    fn get_measurement(&self) -> Result<f32, gpio_cdev::errors::Error> {
-        Ok(10.0)
+    fn get_measurement(&self) -> Result<f32, error::SensorError> {
+        let device_path = format!("/sys/bus/w1/devices/{}/w1_slave", self.address.0);
+        let raw_read = match utils::read_file_to_string(&device_path) {
+            Ok(raw_read) => raw_read,
+            Err(err) => {
+                return Err(error::SensorError::FileReadError(err.to_string()));
+            }
+        };
+        let measurement: f32 = match raw_read.parse() {
+            Ok(measurement) => measurement,
+            Err(_) => {
+                return Err(error::SensorError::FileParseError(raw_read));
+            }
+        };
+        Ok(measurement)
     }
 
     fn get_id(&self) -> &'static str {
@@ -108,7 +107,7 @@ impl Sensor for OneWireSensor {
 }
 
 pub trait Sensor {
-    fn get_measurement(&self) -> Result<f32, gpio_cdev::errors::Error>;
+    fn get_measurement(&self) -> Result<f32, error::SensorError>;
     fn get_id(&self) -> &'static str;
 }
 

@@ -20,7 +20,7 @@ pub enum Command {
 pub struct Brewery {
     api_endpoint: api::BreweryEndpoint,
     controller: sync::Arc<sync::Mutex<control::HysteresisControl>>,
-    sensor: sync::Arc<sync::Mutex<sensor::DummySensor>>,
+    sensor: sync::Arc<sync::Mutex<sensor::OneWireSensor>>,
     actor: sync::Arc<sync::Mutex<actor::DummyActor>>,
 }
 
@@ -30,7 +30,10 @@ impl Brewery {
             control::HysteresisControl::new(1.0, 0.0).expect("Invalid parameters."),
         ));
         let actor = sync::Arc::new(sync::Mutex::new(actor::DummyActor::new("mash_tun")));
-        let sensor = sync::Arc::new(sync::Mutex::new(sensor::DummySensor::new("mash_tun")));
+        let sensor = sync::Arc::new(sync::Mutex::new(sensor::OneWireSensor::new(
+            "mash_tun",
+            "28testaddress",
+        )));
         Brewery {
             api_endpoint,
             controller,
