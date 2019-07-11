@@ -58,7 +58,7 @@ impl fmt::Display for SensorError {
                 write!(f, "Address length must be 13, got {}", address_length)
             }
             &SensorError::FileReadError(io_message) => {
-                write!(f, "Unable to read from file {}", io_message)
+                write!(f, "Unable to read from file: {}", io_message)
             }
             &SensorError::FileParseError(measurement) => {
                 write!(f, "Could not parse value: {}", measurement)

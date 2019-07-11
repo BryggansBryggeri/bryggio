@@ -1,6 +1,7 @@
 use crate::actor;
 use crate::error;
 use crate::sensor;
+use std::f32;
 use std::sync;
 use std::{thread, time};
 
@@ -38,18 +39,17 @@ pub fn run_controller<C, A, S>(
             }
             State::Automatic => {
                 let measurement = match sensor::get_measurement(&sensor) {
-                    Ok(measurement) => measurement,
+                    Ok(measurement) => Some(measurement),
                     Err(err) => {
                         println!(
                             "Error getting measurment from sensor: {}. Error: {}",
                             "some_id", //sensor.get_id(),
                             err
                         );
-                        thread::sleep(time::Duration::from_millis(sleep_time));
-                        continue;
+                        None
                     }
                 };
-                let signal = controller.calculate_signal(&measurement);
+                let signal = controller.calculate_signal(measurement);
                 drop(controller);
                 match actor.set_signal(signal) {
                     Ok(()) => {}
@@ -58,7 +58,7 @@ pub fn run_controller<C, A, S>(
                 println!(
                     "{}, {}, {}.",
                     start_time.elapsed().unwrap().as_secs(),
-                    measurement,
+                    measurement.unwrap_or(f32::NAN),
                     signal
                 );
             }
@@ -79,6 +79,7 @@ pub fn run_controller<C, A, S>(
 pub struct HysteresisControl {
     pub target: f32,
     pub current_signal: f32,
+    previous_measurement: Option<f32>,
     pub state: State,
     offset_on: f32,
     offset_off: f32,
@@ -90,6 +91,7 @@ impl HysteresisControl {
             Ok(HysteresisControl {
                 target: 20.0,
                 current_signal: 0.0,
+                previous_measurement: None,
                 state: State::Inactive,
                 offset_on: offset_on,
                 offset_off: offset_off,
@@ -121,14 +123,14 @@ impl Control for HysteresisControl {
                 State::Inactive => {}
                 _ => {
                     let measurement = match sensor::get_measurement(&sensor) {
-                        Ok(measurement) => measurement,
+                        Ok(measurement) => Some(measurement),
                         Err(err) => panic!(
                             "Error getting measurment from sensor {}: {}",
                             "some_id", //sensor.get_id(),
                             err
                         ),
                     };
-                    let signal = self.calculate_signal(&measurement);
+                    let signal = self.calculate_signal(measurement);
                     match actor.set_signal(signal) {
                         Ok(()) => {}
                         Err(err) => println!("Error setting signal: {}", err),
@@ -136,7 +138,7 @@ impl Control for HysteresisControl {
                     println!(
                         "{}, {}, {}.",
                         start_time.elapsed().unwrap().as_secs(),
-                        measurement,
+                        measurement.unwrap_or(f32::NAN),
                         signal
                     );
                 }
@@ -147,15 +149,27 @@ impl Control for HysteresisControl {
 
     fn update_state(&self) {}
 
-    fn calculate_signal(&mut self, value: &f32) -> f32 {
-        let diff = self.target - value;
-        if diff > self.offset_on {
-            self.current_signal = 100.0;
-        } else if diff <= self.offset_off {
-            self.current_signal = 0.0;
-        } else {
+    fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {
+        let measurement = match measurement {
+            Some(measurement) => Some(measurement),
+            None => match self.previous_measurement {
+                Some(previous_measurement) => Some(previous_measurement),
+                None => None,
+            },
+        };
+        match measurement {
+            Some(measurement) => {
+                let diff = self.target - measurement;
+                if diff > self.offset_on {
+                    self.current_signal = 100.0;
+                } else if diff <= self.offset_off {
+                    self.current_signal = 0.0;
+                } else {
+                }
+                self.current_signal
+            }
+            None => self.current_signal,
         }
-        self.current_signal
     }
 
     fn get_state(&self) -> State {
@@ -181,7 +195,7 @@ pub trait Control {
     ) where
         A: actor::Actor,
         S: sensor::Sensor;
-    fn calculate_signal(&mut self, measurement: &f32) -> f32;
+    fn calculate_signal(&mut self, measurement: Option<f32>) -> f32;
     fn update_state(&self);
     fn get_state(&self) -> State;
     fn get_signal(&self) -> f32;
