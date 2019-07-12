@@ -1,26 +1,23 @@
 pub mod dummy;
 pub mod one_wire;
 
-use crate::error;
 use std::error as std_error;
 use std::sync;
 
-pub fn get_measurement<S>(
-    sensor_mut: &sync::Arc<sync::Mutex<S>>,
-) -> Result<f32, Box<dyn std_error::Error>>
+pub fn get_measurement<S>(sensor_mut: &sync::Arc<sync::Mutex<S>>) -> Result<f32, Error>
 where
     S: Sensor,
 {
     let sensor = match sensor_mut.lock() {
         Ok(sensor) => sensor,
         Err(err) => {
-            return Err(Box::new(error::KeyError)); // TODO: correct error
+            return Err(Error::ThreadLockError(err.to_string()));
         }
     };
 
     match sensor.get_measurement() {
         Ok(measurement) => Ok(measurement),
-        Err(e) => Err(Box::new(e)),
+        Err(err) => Err(err),
     }
 }
 
@@ -35,6 +32,7 @@ pub enum Error {
     InvalidAddressLength(usize),
     FileReadError(String),
     FileParseError(String),
+    ThreadLockError(String),
 }
 
 impl std::fmt::Display for Error {
@@ -52,6 +50,7 @@ impl std::fmt::Display for Error {
             &Error::FileParseError(measurement) => {
                 write!(f, "Could not parse value: {}", measurement)
             }
+            &Error::ThreadLockError(err) => write!(f, "Unable to acquire sensor lock: {}", err),
         }
     }
 }
@@ -62,6 +61,7 @@ impl std_error::Error for Error {
             &Error::InvalidAddressLength(_) => "Address length must be 13",
             &Error::FileReadError(_) => "File read error",
             &Error::FileParseError(_) => "File parse error",
+            &Error::ThreadLockError(_) => "Thread lock error",
         }
     }
 

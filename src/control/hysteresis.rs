@@ -45,7 +45,7 @@ impl control::Control for Controller {
         let start_time = time::SystemTime::now();
         let actor = match actor_mut.lock() {
             Ok(actor) => actor,
-            Err(err) => panic!("Could not acquire actor lock"),
+            Err(err) => panic!("Could not acquire actor lock. Error {}", err),
         };
         loop {
             &self.update_state();

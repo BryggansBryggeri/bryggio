@@ -46,12 +46,12 @@ pub fn set_target_signal(
 
 #[get("/get_measurement?<sensor_id>")]
 pub fn get_measurement(
-    sensor_id: Option<f32>,
+    sensor_id: Option<String>,
     api_endpoint: State<api::WebEndpoint>,
 ) -> json::Json<api::Response> {
     let request = api::Request {
         command: brewery::Command::GetMeasurement,
-        id: None,
+        id: sensor_id,
         parameter: None,
     };
     let api_response = api_endpoint.send_and_wait_for_response(request);
@@ -60,7 +60,7 @@ pub fn get_measurement(
 
 #[get("/get_full_state")]
 pub fn get_full_state(
-    api_endpoint: State<api::WebEndpoint>,
+    _api_endpoint: State<api::WebEndpoint>,
 ) -> json::Json<HashMap<String, String>> {
     let mut response = HashMap::new();
     response.insert("success".to_string(), "false".to_string());

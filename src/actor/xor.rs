@@ -26,7 +26,7 @@ impl XOr {
 }
 
 impl actor::Actor for XOr {
-    fn validate_signal(&self, signal: &f32) -> Result<(), actor::Error> {
+    fn validate_signal(&self, _signal: &f32) -> Result<(), actor::Error> {
         Ok(())
     }
 

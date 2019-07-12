@@ -9,7 +9,17 @@ use std::thread;
 
 fn main() {
     let config_file = "./Bryggio.toml";
-    let config = config::Config::new(&config_file);
+    let config = match config::Config::new(&config_file) {
+        Ok(config) => config,
+        Err(err) => {
+            println!(
+                "Invalid config file '{}'. Error: {}",
+                config_file,
+                err.to_string()
+            );
+            return;
+        }
+    };
     let (web_endpoint, brew_endpoint) = api::create_api_endpoints();
     let mut brewery = brewery::Brewery::new(&config, brew_endpoint);
     thread::spawn(move || brewery.run());

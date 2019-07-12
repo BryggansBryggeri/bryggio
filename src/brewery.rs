@@ -122,10 +122,10 @@ impl Brewery {
         }
     }
 
-    fn start_controller(&mut self) -> Result<(), Box<std_error::Error>> {
+    fn start_controller(&mut self) -> Result<(), Box<dyn std_error::Error>> {
         let mut controller = match self.controller.lock() {
             Ok(controller) => controller,
-            Err(err) => panic!("Could not acquire controller lock"),
+            Err(err) => panic!("Could not acquire controller lock. Error: {}", err),
         };
 
         match controller.get_state() {
@@ -145,10 +145,10 @@ impl Brewery {
     fn change_controller_state(
         &mut self,
         new_state: control::State,
-    ) -> Result<(), Box<std_error::Error>> {
+    ) -> Result<(), Box<dyn std_error::Error>> {
         let mut controller = match self.controller.lock() {
             Ok(controller) => controller,
-            Err(err) => panic!("Could not acquire controller lock"),
+            Err(err) => panic!("Could not acquire controller lock. Error {}.", err),
         };
         controller.state = new_state;
         Ok(())
@@ -157,10 +157,10 @@ impl Brewery {
     fn change_controller_target(
         &mut self,
         new_target: Option<f32>,
-    ) -> Result<(), Box<std_error::Error>> {
+    ) -> Result<(), Box<dyn std_error::Error>> {
         let mut controller = match self.controller.lock() {
             Ok(controller) => controller,
-            Err(err) => panic!("Could not acquire controller lock"),
+            Err(err) => panic!("Could not acquire controller lock. Error {}.", err),
         };
         match new_target {
             Some(new_target) => controller.target = new_target,

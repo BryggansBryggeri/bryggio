@@ -1,5 +1,6 @@
 use serde::Deserialize;
-use std::fs::File;
+use std::fs;
+use std::io;
 use std::io::Read;
 use toml;
 
@@ -30,13 +31,12 @@ pub struct Sensor {
 }
 
 impl Config {
-    pub fn new(config_file: &'static str) -> Config {
-        let mut f = File::open(config_file).expect("Unable to open file");
+    pub fn new(config_file: &'static str) -> Result<Config, io::Error> {
+        let mut f = fs::File::open(config_file)?;
         let mut toml_config = String::new();
-        f.read_to_string(&mut toml_config)
-            .expect("Unable to read string");
+        f.read_to_string(&mut toml_config)?;
         let config: Config = Config::parse_toml(&toml_config);
-        config
+        Ok(config)
     }
 
     fn parse_toml(toml_string: &str) -> Config {
