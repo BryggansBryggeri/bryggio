@@ -33,6 +33,7 @@ pub enum Error {
     FileReadError(String),
     FileParseError(String),
     ThreadLockError(String),
+    InvalidParam(String),
 }
 
 impl std::fmt::Display for Error {
@@ -51,6 +52,7 @@ impl std::fmt::Display for Error {
                 write!(f, "Could not parse value: {}", measurement)
             }
             &Error::ThreadLockError(err) => write!(f, "Unable to acquire sensor lock: {}", err),
+            &Error::InvalidParam(err) => write!(f, "Invalid sensor param: {}", err),
         }
     }
 }
@@ -62,6 +64,7 @@ impl std_error::Error for Error {
             &Error::FileReadError(_) => "File read error",
             &Error::FileParseError(_) => "File parse error",
             &Error::ThreadLockError(_) => "Thread lock error",
+            &Error::InvalidParam(_) => "Invalid param error",
         }
     }
 
