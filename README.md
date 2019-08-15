@@ -1,5 +1,9 @@
 # BRYGGIO
 
+BRYGGANS BRYGGERI's very own brewery software.
+
+Currently under heavy developement.
+
 ## Get started
 
  - Install rust from [here](https://www.rust-lang.org/tools/install).
@@ -13,17 +17,17 @@
    ```bash
    git clone git@github.com:BryggansBryggeri/bryggio.git bryggio
    cd bryggio
-   cargo run
+   cargo run --bin bryggio-server
    ```
 
 ## Control
 
 Standard is to use a simple PID controller. This is slightly nihilistic given the almost complete model information one usually has when dealing with a simple brewery.
-The arguments in favour of PID control are: ignorance, efficiency, laziness; so what if we disregard some informatio? The system is slow and simple and it works fine.
+The arguments in favour of PID control are: ignorance, efficiency, laziness; what if we disregard some information? The system is slow and simple and it works fine.
 
-Bryggio takes the opposite approach: Given a simple and slow system, we have the possibility to have a complicated control. Furthermore, a slow system demands the best possible control in order to save precious time.
+Bryggio takes the opposite approach: Given a simple and slow system, we have the possibility to have a complicated control. Furthermore, a slow system demands the best possible control in order to save precious time and energy.
 
-The idea is that the inherent inertia in the objective (heating a lot of water) we can have quite long time between signal updates, providing time to calculate a nearly optimal control sequence.
+Due to the inherent inertia in the objective (heating a lot of water), we can have quite long time between signal updates, providing time to calculate a nearly optimal control sequence.
 
 ## GPIO
 
