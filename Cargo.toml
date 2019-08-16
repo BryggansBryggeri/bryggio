@@ -1,8 +1,11 @@
+cargo-features = ["default-run"]
+
 [package]
 name = "bryggio"
 version = "0.1.0"
 authors = ["Jakob Lindqvist <jakob.lindqvist.92@gmail.com>"]
 edition = "2018"
+default-run = "bryggio-server"
 
 [dependencies]
 rocket = ">=0.4.2"
