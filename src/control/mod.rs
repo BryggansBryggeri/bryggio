@@ -5,7 +5,7 @@ use std::f32;
 use std::sync;
 use std::{thread, time};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum State {
     Inactive,
     Automatic,
