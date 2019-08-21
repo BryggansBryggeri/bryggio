@@ -1,5 +1,3 @@
-cargo-features = ["default-run"]
-
 [package]
 name = "bryggio"
 version = "0.1.0"
