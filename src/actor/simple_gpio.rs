@@ -16,21 +16,18 @@ impl SimpleGpio {
                 panic!("Could not get handle, {}.", err);
             }
         };
-        SimpleGpio {
-            id: id,
-            handle: handle,
-        }
+        SimpleGpio { id, handle }
     }
 }
 
 impl actor::Actor for SimpleGpio {
-    fn validate_signal(&self, _signal: &f32) -> Result<(), actor::Error> {
+    fn validate_signal(&self, _signal: f32) -> Result<(), actor::Error> {
         Ok(())
     }
 
-    fn set_signal(&self, signal: &f32) -> Result<(), actor::Error> {
+    fn set_signal(&self, signal: f32) -> Result<(), actor::Error> {
         self.validate_signal(signal)?;
-        let gpio_state = match *signal {
+        let gpio_state = match signal {
             signal if signal > 0.0 => 1,
             signal if signal <= 0.0 => 0,
             _ => 0,

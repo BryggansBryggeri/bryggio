@@ -54,14 +54,12 @@ impl WebEndpoint {
         };
 
         match receiver.recv() {
-            Ok(answer) => return Ok(answer),
-            Err(err) => {
-                return Err(Error::APIError(format!(
-                    "Could not aquire receiver response: {}",
-                    err
-                )));
-            }
-        };
+            Ok(answer) => Ok(answer),
+            Err(err) => Err(Error::APIError(format!(
+                "Could not aquire receiver response: {}",
+                err
+            ))),
+        }
     }
 }
 
@@ -105,16 +103,16 @@ pub enum Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &self {
-            &Error::APIError(message) => write!(f, "API error: {}", message),
+        match self {
+            Error::APIError(message) => write!(f, "API error: {}", message),
         }
     }
 }
 
 impl error::Error for Error {
     fn description(&self) -> &str {
-        match self {
-            &Error::APIError(_) => "API error",
+        match *self {
+            Error::APIError(_) => "API error",
         }
     }
 

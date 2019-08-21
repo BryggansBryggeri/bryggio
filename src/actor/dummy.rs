@@ -6,15 +6,15 @@ pub struct Actor {
 
 impl Actor {
     pub fn new(id: &'static str) -> Actor {
-        Actor { id: id }
+        Actor { id }
     }
 }
 
 impl actor::Actor for Actor {
-    fn validate_signal(&self, _signal: &f32) -> Result<(), actor::Error> {
+    fn validate_signal(&self, _signal: f32) -> Result<(), actor::Error> {
         Ok(())
     }
-    fn set_signal(&self, _signal: &f32) -> Result<(), actor::Error> {
+    fn set_signal(&self, _signal: f32) -> Result<(), actor::Error> {
         Ok(())
     }
 }

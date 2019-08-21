@@ -10,7 +10,7 @@ pub struct Sensor {
 impl Sensor {
     pub fn new(id: String) -> Sensor {
         Sensor {
-            id: id,
+            id,
             prediction: 0.0,
             noise_level: 0.1,
         }
