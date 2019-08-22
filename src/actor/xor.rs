@@ -18,21 +18,21 @@ impl XOr {
             }
         };
         XOr {
-            own_id: own_id,
-            paired_id: paired_id,
-            handle: handle,
+            own_id,
+            paired_id,
+            handle,
         }
     }
 }
 
 impl actor::Actor for XOr {
-    fn validate_signal(&self, _signal: &f32) -> Result<(), actor::Error> {
+    fn validate_signal(&self, _signal: f32) -> Result<(), actor::Error> {
         Ok(())
     }
 
-    fn set_signal(&self, signal: &f32) -> Result<(), actor::Error> {
+    fn set_signal(&self, signal: f32) -> Result<(), actor::Error> {
         self.validate_signal(signal)?;
-        let gpio_state = match *signal {
+        let gpio_state = match signal {
             signal if signal > 0.0 => 1,
             signal if signal <= 0.0 => 0,
             _ => 0,

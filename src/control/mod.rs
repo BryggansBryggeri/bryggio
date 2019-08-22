@@ -5,7 +5,7 @@ use std::f32;
 use std::sync;
 use std::{thread, time};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum State {
     Inactive,
     Automatic,
@@ -51,7 +51,7 @@ pub fn run_controller<C, A, S>(
                 };
                 let signal = controller.calculate_signal(measurement);
                 drop(controller);
-                match actor.set_signal(&signal) {
+                match actor.set_signal(signal) {
                     Ok(()) => {}
                     Err(err) => println!("Error setting signal: {}", err),
                 };
@@ -65,7 +65,7 @@ pub fn run_controller<C, A, S>(
             State::Manual => {
                 let signal = controller.get_signal();
                 drop(controller);
-                match actor.set_signal(&signal) {
+                match actor.set_signal(signal) {
                     Ok(()) => {}
                     Err(err) => println!("Error setting signal: {}", err),
                 };

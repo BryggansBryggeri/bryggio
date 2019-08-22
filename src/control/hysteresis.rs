@@ -23,8 +23,8 @@ impl Controller {
                 current_signal: 0.0,
                 previous_measurement: None,
                 state: control::State::Inactive,
-                offset_on: offset_on,
-                offset_off: offset_off,
+                offset_on,
+                offset_off,
             })
         } else {
             Err(error::ParamError)
@@ -48,7 +48,7 @@ impl control::Control for Controller {
             Err(err) => panic!("Could not acquire actor lock. Error {}", err),
         };
         loop {
-            &self.update_state();
+            self.update_state();
             match &self.state {
                 control::State::Inactive => {}
                 _ => {
@@ -61,7 +61,7 @@ impl control::Control for Controller {
                         ),
                     };
                     let signal = self.calculate_signal(measurement);
-                    match actor.set_signal(&signal) {
+                    match actor.set_signal(signal) {
                         Ok(()) => {}
                         Err(err) => println!("Error setting signal: {}", err),
                     };

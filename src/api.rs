@@ -29,38 +29,37 @@ impl WebEndpoint {
         let sender = match self.sender.lock() {
             Ok(sender) => sender,
             Err(err) => {
-                return Err(Error {
-                    message: format!("Could not aquire web sender lock: {}", err),
-                });
+                return Err(Error::APIError(format!(
+                    "Could not aquire web sender lock: {}",
+                    err
+                )));
             }
         };
 
         match sender.send(request) {
             Ok(_) => {}
             Err(err) => {
-                return Err(Error {
-                    message: format!("Could not send request: {}", err),
-                });
+                return Err(Error::APIError(format!("Could not send request: {}", err)));
             }
         };
 
         let receiver = match self.receiver.lock() {
             Ok(receiver) => receiver,
             Err(err) => {
-                return Err(Error {
-                    message: format!("Could not aquire web receiver lock: {}", err),
-                });
+                return Err(Error::APIError(format!(
+                    "Could not aquire web receiver lock: {}",
+                    err
+                )));
             }
         };
 
         match receiver.recv() {
-            Ok(answer) => return Ok(answer),
-            Err(err) => {
-                return Err(Error {
-                    message: format!("Could not aquire receiver response: {}", err),
-                });
-            }
-        };
+            Ok(answer) => Ok(answer),
+            Err(err) => Err(Error::APIError(format!(
+                "Could not aquire receiver response: {}",
+                err
+            ))),
+        }
     }
 }
 
@@ -98,19 +97,23 @@ pub fn generate_web_response(api_response: Result<Response, Error>) -> json::Jso
 }
 
 #[derive(Debug, Clone)]
-pub struct Error {
-    pub message: String,
+pub enum Error {
+    APIError(String),
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.message)
+        match self {
+            Error::APIError(message) => write!(f, "API error: {}", message),
+        }
     }
 }
 
 impl error::Error for Error {
     fn description(&self) -> &str {
-        "API error"
+        match *self {
+            Error::APIError(_) => "API error",
+        }
     }
 
     fn cause(&self) -> Option<&dyn error::Error> {

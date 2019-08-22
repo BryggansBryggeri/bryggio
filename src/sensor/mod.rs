@@ -33,35 +33,38 @@ pub enum Error {
     FileReadError(String),
     FileParseError(String),
     ThreadLockError(String),
+    InvalidParam(String),
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match &self {
-            &Error::InvalidAddressStart(address) => {
+        match self {
+            Error::InvalidAddressStart(address) => {
                 write!(f, "Address must start with 28, got {}", address)
             }
-            &Error::InvalidAddressLength(address_length) => {
+            Error::InvalidAddressLength(address_length) => {
                 write!(f, "Address length must be 13, got {}", address_length)
             }
-            &Error::FileReadError(io_message) => {
+            Error::FileReadError(io_message) => {
                 write!(f, "Unable to read from file: {}", io_message)
             }
-            &Error::FileParseError(measurement) => {
+            Error::FileParseError(measurement) => {
                 write!(f, "Could not parse value: {}", measurement)
             }
-            &Error::ThreadLockError(err) => write!(f, "Unable to acquire sensor lock: {}", err),
+            Error::ThreadLockError(err) => write!(f, "Unable to acquire sensor lock: {}", err),
+            Error::InvalidParam(err) => write!(f, "Invalid sensor param: {}", err),
         }
     }
 }
 impl std_error::Error for Error {
     fn description(&self) -> &str {
-        match self {
-            &Error::InvalidAddressStart(_) => "Address must start with 28",
-            &Error::InvalidAddressLength(_) => "Address length must be 13",
-            &Error::FileReadError(_) => "File read error",
-            &Error::FileParseError(_) => "File parse error",
-            &Error::ThreadLockError(_) => "Thread lock error",
+        match *self {
+            Error::InvalidAddressStart(_) => "Address must start with 28",
+            Error::InvalidAddressLength(_) => "Address length must be 13",
+            Error::FileReadError(_) => "File read error",
+            Error::FileParseError(_) => "File parse error",
+            Error::ThreadLockError(_) => "Thread lock error",
+            Error::InvalidParam(_) => "Invalid param error",
         }
     }
 

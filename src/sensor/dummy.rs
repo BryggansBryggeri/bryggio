@@ -1,5 +1,5 @@
 use crate::sensor;
-use rand::distributions::{Distribution, Normal};
+use rand_distr::{Distribution, Normal};
 
 pub struct Sensor {
     pub id: String,
@@ -10,7 +10,7 @@ pub struct Sensor {
 impl Sensor {
     pub fn new(id: String) -> Sensor {
         Sensor {
-            id: id,
+            id,
             prediction: 0.0,
             noise_level: 0.1,
         }
@@ -20,7 +20,11 @@ impl Sensor {
 impl sensor::Sensor for Sensor {
     fn get_measurement(&self) -> Result<f32, sensor::Error> {
         let true_measurement = self.prediction;
-        let normal = Normal::new(0.0, self.noise_level as f64);
+        let normal = match Normal::new(0.0, self.noise_level) {
+            Ok(normal) => normal,
+            // TODO: Hardcoded error string. Normal::Error cannot be converted to string
+            Err(_) => return Err(sensor::Error::InvalidParam(String::from(""))),
+        };
         let measurement = true_measurement + normal.sample(&mut rand::thread_rng()) as f32;
         Ok(measurement)
     }

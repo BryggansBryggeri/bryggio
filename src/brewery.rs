@@ -33,8 +33,8 @@ impl Brewery {
         // TODO: Fix ugly hack. Remove to handle if no sensor data is provided.
         let sensor_config = brew_config.sensors.clone().unwrap();
         let sensor = sync::Arc::new(sync::Mutex::new(sensor::one_wire::OneWireTemp::new(
-            sensor_config.id,
-            sensor_config.address,
+            &sensor_config.id,
+            &sensor_config.address,
         )));
         Brewery {
             api_endpoint,
@@ -162,10 +162,9 @@ impl Brewery {
             Ok(controller) => controller,
             Err(err) => panic!("Could not acquire controller lock. Error {}.", err),
         };
-        match new_target {
-            Some(new_target) => controller.target = new_target,
-            None => {}
-        }
+        if let Some(new_target) = new_target {
+            controller.target = new_target
+        };
         Ok(())
     }
 }

@@ -11,7 +11,7 @@ pub fn start_controller(
 ) -> json::Json<api::Response> {
     let request = api::Request {
         command: brewery::Command::StartController,
-        id: id,
+        id,
         parameter: None,
     };
     let api_response = api_endpoint.send_and_wait_for_response(request);

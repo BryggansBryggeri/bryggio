@@ -22,7 +22,7 @@ fn main() {
     };
     let (web_endpoint, brew_endpoint) = api::create_api_endpoints();
     let mut brewery = brewery::Brewery::new(&config, brew_endpoint);
-    thread::spawn(move || brewery.run());
+    let brewery_thread = thread::spawn(move || brewery.run());
 
     rocket::ignite()
         .mount(
@@ -40,4 +40,6 @@ fn main() {
         )
         .manage(web_endpoint)
         .launch();
+
+    brewery_thread.join().expect("Brewery thread panicked.");
 }
