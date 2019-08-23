@@ -22,11 +22,14 @@ where
 }
 
 pub trait Sensor {
+    // TODO: it's nice to have this return a common sensor error,
+    // but this might snowball when more sensors are added.
+    // This should be more generic
     fn get_measurement(&self) -> Result<f32, Error>;
     fn get_id(&self) -> String;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     InvalidAddressStart(String),
     InvalidAddressLength(usize),
