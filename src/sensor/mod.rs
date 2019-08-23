@@ -1,5 +1,5 @@
+pub mod ds1820;
 pub mod dummy;
-pub mod one_wire;
 
 use std::error as std_error;
 use std::sync;
