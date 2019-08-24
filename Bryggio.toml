@@ -7,5 +7,5 @@ offset_off = 0.0
 
 [sensors]
 id = "Mash tun"
-address = "28testaddress"
+address = "28-0416802230ff"
 bias = 0.0
