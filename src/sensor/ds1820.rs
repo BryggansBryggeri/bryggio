@@ -14,7 +14,9 @@ pub struct DS1820 {
 // I tried it: it would work if Regex::new() was const fn.
 lazy_static! {
     static ref TEMP_PATTERN: regex::Regex = regex::Regex::new(
-        r"^(?:[a-z0-9]{2} ){9}: crc=[0-9]{2} YES\n(?:[a-z0-9]{2} ){9}t=([0-9]{5})$"
+        // More safe with the full regex, but can't get it to match with file read.
+        //r"(?s:.*)(?:[a-z0-9]{2} ){9}: crc=[0-9]{2} YES(?s:.*)(?:[a-z0-9]{2} ){9}t=([0-9]{5})(?s:.*)"
+        r"t=([0-9]{5})"
     )
     .unwrap();
 }
@@ -87,7 +89,7 @@ impl DS1820Address {
             _ => return Err(sensor::Error::InvalidAddressStart(String::from(s))),
         }
         match s.len() {
-            13 => {}
+            15 => {}
             _ => return Err(sensor::Error::InvalidAddressLength(s.len())),
         }
         Ok(DS1820Address(String::from(s)))
@@ -99,9 +101,16 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_address_correct() {
+        let string = String::from("28-0416802230ff");
+        let address = DS1820Address::from_string(&string);
+        address.unwrap();
+    }
+
+    #[test]
     #[should_panic]
     fn test_address_wrong_start() {
-        let string = String::from("30FF4E1F69140");
+        let string = String::from("29-0416802230ff");
         let address = DS1820Address::from_string(&string);
         address.unwrap();
     }
@@ -119,7 +128,7 @@ mod tests {
         let temp_string = String::from(
             "ca 01 4b 46 7f ff 06 10 65 : crc=65 YES\nca 01 4b 46 7f ff 06 10 65 t=28625",
         );
-        let address = String::from("28FF4E1F69140");
+        let address = String::from("28-0416802230ff");
         let mock_sensor = DS1820::new("test", &address);
         assert_eq!(
             mock_sensor.parse_temp_measurement(&temp_string).unwrap(),
@@ -130,7 +139,7 @@ mod tests {
     #[test]
     fn test_parse_temp_measurement_no_match() {
         let temp_string = String::from("nonsense");
-        let address = String::from("28FF4E1F69140");
+        let address = String::from("28-0416802230ff");
         let mock_sensor = DS1820::new("test", &address);
         assert!(mock_sensor.parse_temp_measurement(&temp_string).is_err(),);
     }
