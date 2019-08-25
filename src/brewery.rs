@@ -20,7 +20,7 @@ pub enum Command {
 pub struct Brewery {
     api_endpoint: api::BreweryEndpoint,
     controller: sync::Arc<sync::Mutex<control::hysteresis::Controller>>,
-    sensor: sync::Arc<sync::Mutex<sensor::ds1820::DS1820>>,
+    sensor: sync::Arc<sync::Mutex<sensor::dsb1820::DSB1820>>,
     actor: sync::Arc<sync::Mutex<actor::dummy::Actor>>,
 }
 
@@ -32,7 +32,7 @@ impl Brewery {
         let actor = sync::Arc::new(sync::Mutex::new(actor::dummy::Actor::new("mash_tun")));
         // TODO: Fix ugly hack. Remove to handle if no sensor data is provided.
         let sensor_config = brew_config.sensors.clone().unwrap();
-        let sensor = sync::Arc::new(sync::Mutex::new(sensor::ds1820::DS1820::new(
+        let sensor = sync::Arc::new(sync::Mutex::new(sensor::dsb1820::DSB1820::new(
             &sensor_config.id,
             &sensor_config.address,
         )));

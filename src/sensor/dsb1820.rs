@@ -4,9 +4,9 @@ use lazy_static::lazy_static;
 use regex;
 
 #[derive(Debug)]
-pub struct DS1820 {
+pub struct DSB1820 {
     pub id: String,
-    address: DS1820Address,
+    address: DSB1820Address,
 }
 
 // TODO: Can this be done with a const fn?
@@ -21,11 +21,11 @@ lazy_static! {
     .unwrap();
 }
 
-impl DS1820 {
-    pub fn new(id: &str, address: &str) -> DS1820 {
-        let address = DS1820Address::from_string(address).unwrap();
+impl DSB1820 {
+    pub fn new(id: &str, address: &str) -> DSB1820 {
+        let address = DSB1820Address::from_string(address).unwrap();
         let id = String::from(id);
-        DS1820 { id, address }
+        DSB1820 { id, address }
     }
 
     fn parse_temp_measurement(&self, raw_read: &str) -> Result<f32, sensor::Error> {
@@ -62,7 +62,7 @@ impl DS1820 {
     }
 }
 
-impl sensor::Sensor for DS1820 {
+impl sensor::Sensor for DSB1820 {
     fn get_measurement(&self) -> Result<f32, sensor::Error> {
         let device_path = format!("/sys/bus/w1/devices/{}/w1_slave", self.address.0);
         let raw_read = match utils::read_file_to_string(&device_path) {
@@ -80,10 +80,10 @@ impl sensor::Sensor for DS1820 {
 }
 
 #[derive(Debug)]
-struct DS1820Address(String);
+struct DSB1820Address(String);
 
-impl DS1820Address {
-    pub fn from_string(s: &str) -> Result<DS1820Address, sensor::Error> {
+impl DSB1820Address {
+    pub fn from_string(s: &str) -> Result<DSB1820Address, sensor::Error> {
         match &s[0..2] {
             "28" => {}
             _ => return Err(sensor::Error::InvalidAddressStart(String::from(s))),
@@ -92,7 +92,7 @@ impl DS1820Address {
             15 => {}
             _ => return Err(sensor::Error::InvalidAddressLength(s.len())),
         }
-        Ok(DS1820Address(String::from(s)))
+        Ok(DSB1820Address(String::from(s)))
     }
 }
 
@@ -103,7 +103,7 @@ mod tests {
     #[test]
     fn test_address_correct() {
         let string = String::from("28-0416802230ff");
-        let address = DS1820Address::from_string(&string);
+        let address = DSB1820Address::from_string(&string);
         address.unwrap();
     }
 
@@ -111,7 +111,7 @@ mod tests {
     #[should_panic]
     fn test_address_wrong_start() {
         let string = String::from("29-0416802230ff");
-        let address = DS1820Address::from_string(&string);
+        let address = DSB1820Address::from_string(&string);
         address.unwrap();
     }
 
@@ -119,7 +119,7 @@ mod tests {
     #[should_panic]
     fn test_address_too_short() {
         let string = String::from("284E1F69140");
-        let address = DS1820Address::from_string(&string);
+        let address = DSB1820Address::from_string(&string);
         address.unwrap();
     }
 
@@ -129,7 +129,7 @@ mod tests {
             "ca 01 4b 46 7f ff 06 10 65 : crc=65 YES\nca 01 4b 46 7f ff 06 10 65 t=28625",
         );
         let address = String::from("28-0416802230ff");
-        let mock_sensor = DS1820::new("test", &address);
+        let mock_sensor = DSB1820::new("test", &address);
         assert_eq!(
             mock_sensor.parse_temp_measurement(&temp_string).unwrap(),
             28.625
@@ -140,7 +140,7 @@ mod tests {
     fn test_parse_temp_measurement_no_match() {
         let temp_string = String::from("nonsense");
         let address = String::from("28-0416802230ff");
-        let mock_sensor = DS1820::new("test", &address);
+        let mock_sensor = DSB1820::new("test", &address);
         assert!(mock_sensor.parse_temp_measurement(&temp_string).is_err(),);
     }
 }

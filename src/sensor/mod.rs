@@ -1,4 +1,4 @@
-pub mod ds1820;
+pub mod dsb1820;
 pub mod dummy;
 
 use std::error as std_error;
