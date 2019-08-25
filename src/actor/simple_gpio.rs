@@ -2,13 +2,13 @@ use crate::actor;
 use crate::hardware;
 use gpio_cdev;
 
-pub struct SimpleGpio {
+pub struct Actor {
     pub id: &'static str,
     handle: gpio_cdev::LineHandle,
 }
 
-impl SimpleGpio {
-    pub fn new(id: &'static str, pin_number: u32) -> SimpleGpio {
+impl Actor {
+    pub fn new(id: &'static str, pin_number: u32) -> Actor {
         let pin_number = pin_number;
         let handle = match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &id) {
             Ok(handle) => handle,
@@ -16,11 +16,11 @@ impl SimpleGpio {
                 panic!("Could not get handle, {}.", err);
             }
         };
-        SimpleGpio { id, handle }
+        Actor { id, handle }
     }
 }
 
-impl actor::Actor for SimpleGpio {
+impl actor::Actor for Actor {
     fn validate_signal(&self, _signal: f32) -> Result<(), actor::Error> {
         Ok(())
     }

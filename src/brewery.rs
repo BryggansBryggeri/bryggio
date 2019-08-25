@@ -21,7 +21,7 @@ pub struct Brewery {
     api_endpoint: api::BreweryEndpoint,
     controller: sync::Arc<sync::Mutex<control::hysteresis::Controller>>,
     sensor: sync::Arc<sync::Mutex<sensor::dsb1820::DSB1820>>,
-    actor: sync::Arc<sync::Mutex<actor::dummy::Actor>>,
+    actor: sync::Arc<sync::Mutex<actor::simple_gpio::Actor>>,
 }
 
 impl Brewery {
@@ -29,7 +29,9 @@ impl Brewery {
         let controller = sync::Arc::new(sync::Mutex::new(
             control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."),
         ));
-        let actor = sync::Arc::new(sync::Mutex::new(actor::dummy::Actor::new("mash_tun")));
+        let actor = sync::Arc::new(sync::Mutex::new(actor::simple_gpio::Actor::new(
+            "mash_tun", 13,
+        )));
         // TODO: Fix ugly hack. Remove to handle if no sensor data is provided.
         let sensor_config = brew_config.sensors.clone().unwrap();
         let sensor = sync::Arc::new(sync::Mutex::new(sensor::dsb1820::DSB1820::new(
