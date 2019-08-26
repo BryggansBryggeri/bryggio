@@ -5,6 +5,8 @@ use std::f32;
 use std::sync;
 use std::{thread, time};
 
+pub type ControllerHandle = sync::Arc<sync::Mutex<Box<dyn Control>>>;
+
 #[derive(Clone, Debug)]
 pub enum State {
     Inactive,
@@ -15,7 +17,7 @@ pub enum State {
 pub fn run_controller<C, A, S>(
     controller_lock: sync::Arc<sync::Mutex<C>>,
     actor_lock: sync::Arc<sync::Mutex<A>>,
-    sensor: sync::Arc<sync::Mutex<S>>,
+    sensor: sync::Arc<sync::Mutex<Box<S>>>,
 ) where
     C: Control,
     A: actor::Actor,

@@ -4,7 +4,9 @@ pub mod dummy;
 use std::error as std_error;
 use std::sync;
 
-pub fn get_measurement<S>(sensor_mut: &sync::Arc<sync::Mutex<S>>) -> Result<f32, Error>
+pub type SensorHandle = sync::Arc<sync::Mutex<Box<dyn Sensor>>>;
+
+pub fn get_measurement<S>(sensor_mut: &sync::Arc<sync::Mutex<Box<S>>>) -> Result<f32, Error>
 where
     S: Sensor,
 {

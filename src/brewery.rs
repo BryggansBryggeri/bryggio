@@ -20,7 +20,7 @@ pub enum Command {
 pub struct Brewery {
     api_endpoint: api::BreweryEndpoint,
     controller: sync::Arc<sync::Mutex<control::hysteresis::Controller>>,
-    sensor: sync::Arc<sync::Mutex<sensor::dsb1820::DSB1820>>,
+    sensor_handle: sensor::SensorHandle,
     actor: sync::Arc<sync::Mutex<actor::simple_gpio::Actor>>,
 }
 
@@ -34,14 +34,15 @@ impl Brewery {
         )));
         // TODO: Fix ugly hack. Remove to handle if no sensor data is provided.
         let sensor_config = brew_config.sensors.clone().unwrap();
-        let sensor = sync::Arc::new(sync::Mutex::new(sensor::dsb1820::DSB1820::new(
+        let sensor: Box<sensor::Sensor> = Box::new(sensor::dsb1820::DSB1820::new(
             &sensor_config.id,
             &sensor_config.address,
-        )));
+        ));
+        let sensor_handle = sync::Arc::new(sync::Mutex::new(sensor));
         Brewery {
             api_endpoint,
             controller,
-            sensor,
+            sensor_handle,
             actor,
         }
     }
@@ -90,7 +91,7 @@ impl Brewery {
                 },
             },
 
-            Command::GetMeasurement => match sensor::get_measurement(&self.sensor) {
+            Command::GetMeasurement => match sensor::get_measurement(&self.sensor_handle) {
                 Ok(measurement) => api::Response {
                     result: Some(measurement),
                     message: None,
@@ -134,7 +135,7 @@ impl Brewery {
             control::State::Inactive => {
                 let controller_send = self.controller.clone();
                 let actor = self.actor.clone();
-                let sensor = self.sensor.clone();
+                let sensor = self.sensor_handle.clone();
                 thread::spawn(move || control::run_controller(controller_send, actor, sensor));
                 controller.state = control::State::Automatic;
             }
