@@ -23,7 +23,7 @@ lazy_static! {
 
 impl DSB1820 {
     pub fn new(id: &str, address: &str) -> DSB1820 {
-        let address = DSB1820Address::from_string(address).unwrap();
+        let address = DSB1820Address::new(address).unwrap();
         let id = String::from(id);
         DSB1820 { id, address }
     }
@@ -83,16 +83,21 @@ impl sensor::Sensor for DSB1820 {
 struct DSB1820Address(String);
 
 impl DSB1820Address {
-    pub fn from_string(s: &str) -> Result<DSB1820Address, sensor::Error> {
-        match &s[0..2] {
+    pub fn new(address: &str) -> Result<DSB1820Address, sensor::Error> {
+        DSB1820Address::verify_address(address)?;
+        Ok(DSB1820Address(String::from(address)))
+    }
+
+    pub fn verify_address(address: &str) -> Result<(), sensor::Error> {
+        match &address[0..2] {
             "28" => {}
-            _ => return Err(sensor::Error::InvalidAddressStart(String::from(s))),
+            _ => return Err(sensor::Error::InvalidAddressStart(String::from(address))),
         }
-        match s.len() {
+        match address.len() {
             15 => {}
-            _ => return Err(sensor::Error::InvalidAddressLength(s.len())),
+            _ => return Err(sensor::Error::InvalidAddressLength(address.len())),
         }
-        Ok(DSB1820Address(String::from(s)))
+        Ok(())
     }
 }
 
@@ -103,7 +108,7 @@ mod tests {
     #[test]
     fn test_address_correct() {
         let string = String::from("28-0416802230ff");
-        let address = DSB1820Address::from_string(&string);
+        let address = DSB1820Address::verify_address(&string);
         address.unwrap();
     }
 
@@ -111,7 +116,7 @@ mod tests {
     #[should_panic]
     fn test_address_wrong_start() {
         let string = String::from("29-0416802230ff");
-        let address = DSB1820Address::from_string(&string);
+        let address = DSB1820Address::verify_address(&string);
         address.unwrap();
     }
 
@@ -119,7 +124,7 @@ mod tests {
     #[should_panic]
     fn test_address_too_short() {
         let string = String::from("284E1F69140");
-        let address = DSB1820Address::from_string(&string);
+        let address = DSB1820Address::verify_address(&string);
         address.unwrap();
     }
 
