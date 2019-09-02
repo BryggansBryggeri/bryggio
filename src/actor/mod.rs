@@ -3,8 +3,24 @@ pub mod simple_gpio;
 pub mod xor;
 
 use std::error as std_error;
+use std::sync;
 
-pub trait Actor {
+pub struct ActorHandle {
+    pub actor: sync::Arc<sync::Mutex<Box<dyn Actor>>>,
+}
+
+impl ActorHandle {
+    pub fn new<A>(actor: A) -> ActorHandle
+    where
+        A: Actor + 'static,
+    {
+        ActorHandle {
+            actor: sync::Arc::new(sync::Mutex::new(Box::new(actor))),
+        }
+    }
+}
+
+pub trait Actor: Send {
     fn validate_signal(&self, signal: f32) -> Result<(), Error>;
     fn set_signal(&self, signal: f32) -> Result<(), Error>;
 }
