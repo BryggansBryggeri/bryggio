@@ -37,7 +37,7 @@ impl control::Control for Controller {
         &mut self,
         sleep_time: u64,
         actor_mut: sync::Arc<sync::Mutex<A>>,
-        sensor: sync::Arc<sync::Mutex<S>>,
+        sensor: sensor::SensorHandle,
     ) where
         A: actor::Actor,
         S: sensor::Sensor,

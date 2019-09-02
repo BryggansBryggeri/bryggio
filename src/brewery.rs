@@ -34,7 +34,7 @@ impl Brewery {
         )));
         // TODO: Fix ugly hack. Remove to handle if no sensor data is provided.
         let sensor_config = brew_config.sensors.clone().unwrap();
-        let sensor: Box<sensor::Sensor> = Box::new(sensor::dsb1820::DSB1820::new(
+        let sensor: Box<dyn sensor::Sensor> = Box::new(sensor::dsb1820::DSB1820::new(
             &sensor_config.id,
             &sensor_config.address,
         ));

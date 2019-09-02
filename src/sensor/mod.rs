@@ -6,7 +6,7 @@ use std::sync;
 
 pub type SensorHandle = sync::Arc<sync::Mutex<Box<dyn Sensor>>>;
 
-pub fn get_measurement<S>(sensor_mut: &sync::Arc<sync::Mutex<Box<S>>>) -> Result<f32, Error>
+pub fn get_measurement<S: ?Sized>(sensor_mut: &sync::Arc<sync::Mutex<Box<S>>>) -> Result<f32, Error>
 where
     S: Sensor,
 {
@@ -23,7 +23,7 @@ where
     }
 }
 
-pub trait Sensor {
+pub trait Sensor: Send {
     // TODO: it's nice to have this return a common sensor error,
     // but this might snowball when more sensors are added.
     // This should be more generic

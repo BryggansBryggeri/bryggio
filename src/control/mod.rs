@@ -14,7 +14,7 @@ pub enum State {
     Manual,
 }
 
-pub fn run_controller<C, A, S>(
+pub fn run_controller<C: ?Sized, A: ?Sized, S: ?Sized>(
     controller_lock: sync::Arc<sync::Mutex<C>>,
     actor_lock: sync::Arc<sync::Mutex<A>>,
     sensor: sync::Arc<sync::Mutex<Box<S>>>,
@@ -83,7 +83,7 @@ pub trait Control {
         &mut self,
         sleep_time: u64,
         actor: sync::Arc<sync::Mutex<A>>,
-        sensor: sync::Arc<sync::Mutex<S>>,
+        sensor: sensor::SensorHandle,
     ) where
         A: actor::Actor,
         S: sensor::Sensor;
