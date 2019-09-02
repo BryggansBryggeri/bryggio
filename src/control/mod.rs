@@ -14,14 +14,13 @@ pub enum State {
     Manual,
 }
 
-pub fn run_controller<C: ?Sized, A: ?Sized, S: ?Sized>(
+pub fn run_controller<C: ?Sized, A: ?Sized>(
     controller_lock: sync::Arc<sync::Mutex<C>>,
     actor_lock: sync::Arc<sync::Mutex<A>>,
-    sensor: sync::Arc<sync::Mutex<Box<S>>>,
+    sensor: sensor::SensorHandle,
 ) where
     C: Control,
     A: actor::Actor,
-    S: sensor::Sensor,
 {
     let start_time = time::SystemTime::now();
     let sleep_time = 1000;
@@ -79,14 +78,13 @@ pub fn run_controller<C: ?Sized, A: ?Sized, S: ?Sized>(
 }
 
 pub trait Control {
-    fn run<A, S>(
+    fn run<A>(
         &mut self,
         sleep_time: u64,
         actor: sync::Arc<sync::Mutex<A>>,
         sensor: sensor::SensorHandle,
     ) where
-        A: actor::Actor,
-        S: sensor::Sensor;
+        A: actor::Actor;
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32;
     fn update_state(&self);
     fn get_state(&self) -> State;

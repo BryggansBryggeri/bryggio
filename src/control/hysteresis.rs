@@ -33,14 +33,13 @@ impl Controller {
 }
 
 impl control::Control for Controller {
-    fn run<A, S>(
+    fn run<A>(
         &mut self,
         sleep_time: u64,
         actor_mut: sync::Arc<sync::Mutex<A>>,
         sensor: sensor::SensorHandle,
     ) where
         A: actor::Actor,
-        S: sensor::Sensor,
     {
         let start_time = time::SystemTime::now();
         let actor = match actor_mut.lock() {
