@@ -1,10 +1,6 @@
-use crate::actor;
 use crate::control;
 use crate::error;
-use crate::sensor;
 use std::f32;
-use std::sync;
-use std::{thread, time};
 
 pub struct Controller {
     pub target: f32,
@@ -33,49 +29,6 @@ impl Controller {
 }
 
 impl control::Control for Controller {
-    //fn run<A>(
-    //    &mut self,
-    //    sleep_time: u64,
-    //    actor_mut: sync::Arc<sync::Mutex<A>>,
-    //    sensor: sensor::SensorHandle,
-    //) where
-    //    A: actor::Actor,
-    //{
-    //    let start_time = time::SystemTime::now();
-    //    let actor = match actor_mut.lock() {
-    //        Ok(actor) => actor,
-    //        Err(err) => panic!("Could not acquire actor lock. Error {}", err),
-    //    };
-    //    loop {
-    //        self.update_state();
-    //        match &self.state {
-    //            control::State::Inactive => {}
-    //            _ => {
-    //                let measurement = match sensor::get_measurement(&sensor) {
-    //                    Ok(measurement) => Some(measurement),
-    //                    Err(err) => panic!(
-    //                        "Error getting measurment from sensor {}: {}",
-    //                        "some_id", //sensor.get_id(),
-    //                        err
-    //                    ),
-    //                };
-    //                let signal = self.calculate_signal(measurement);
-    //                match actor.set_signal(signal) {
-    //                    Ok(()) => {}
-    //                    Err(err) => println!("Error setting signal: {}", err),
-    //                };
-    //                println!(
-    //                    "{}, {}, {}.",
-    //                    start_time.elapsed().unwrap().as_secs(),
-    //                    measurement.unwrap_or(f32::NAN),
-    //                    signal
-    //                );
-    //            }
-    //        }
-    //        thread::sleep(time::Duration::from_millis(sleep_time));
-    //    }
-    //}
-
     fn update_state(&self) {}
 
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {

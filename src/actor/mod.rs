@@ -5,20 +5,7 @@ pub mod xor;
 use std::error as std_error;
 use std::sync;
 
-pub struct ActorHandle {
-    pub actor: sync::Arc<sync::Mutex<Box<dyn Actor>>>,
-}
-
-impl ActorHandle {
-    pub fn new<A>(actor: A) -> ActorHandle
-    where
-        A: Actor + 'static,
-    {
-        ActorHandle {
-            actor: sync::Arc::new(sync::Mutex::new(Box::new(actor))),
-        }
-    }
-}
+pub type ActorHandle = sync::Arc<sync::Mutex<Box<dyn Actor>>>;
 
 pub trait Actor: Send {
     fn validate_signal(&self, signal: f32) -> Result<(), Error>;

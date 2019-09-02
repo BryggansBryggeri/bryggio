@@ -29,7 +29,11 @@ impl Brewery {
         let control_box: Box<dyn Control> =
             Box::new(control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."));
         let controller = sync::Arc::new(sync::Mutex::new(control_box));
-        let actor = actor::ActorHandle::new(actor::dummy::Actor::new("dummy"));
+
+        let actor: actor::ActorHandle = sync::Arc::new(sync::Mutex::new(Box::new(
+            actor::dummy::Actor::new("dummy"),
+        )));
+
         // TODO: Fix ugly hack. Remove to handle if no sensor data is provided.
         let sensor_config = brew_config.sensors.clone().unwrap();
         let sensor: Box<dyn sensor::Sensor> =
@@ -130,7 +134,7 @@ impl Brewery {
         match controller.get_state() {
             control::State::Inactive => {
                 let controller_send = self.controller.clone();
-                let actor = self.actor.actor.clone();
+                let actor = self.actor.clone();
                 let sensor = self.sensor_handle.clone();
                 thread::spawn(move || control::run_controller(controller_send, actor, sensor));
                 controller.set_state(control::State::Automatic);

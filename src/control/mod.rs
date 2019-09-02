@@ -15,8 +15,8 @@ pub enum State {
 }
 
 pub fn run_controller(
-    controller_lock: sync::Arc<sync::Mutex<Box<dyn Control>>>,
-    actor_lock: sync::Arc<sync::Mutex<Box<dyn actor::Actor>>>,
+    controller_lock: ControllerHandle,
+    actor_lock: actor::ActorHandle,
     sensor: sensor::SensorHandle,
 ) {
     let start_time = time::SystemTime::now();
@@ -75,13 +75,6 @@ pub fn run_controller(
 }
 
 pub trait Control: Send {
-    //fn run<A>(
-    //    &mut self,
-    //    sleep_time: u64,
-    //    actor: sync::Arc<sync::Mutex<A>>,
-    //    sensor: sensor::SensorHandle,
-    //) where
-    //    A: actor::Actor;
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32;
     fn update_state(&self);
     fn get_state(&self) -> State;
