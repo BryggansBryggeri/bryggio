@@ -76,22 +76,18 @@ impl Brewery {
                 },
             },
 
-            Command::StopController => {
-                match self
-                    .change_controller_state(request.id.as_ref().unwrap(), control::State::Inactive)
-                {
-                    Ok(_) => api::Response {
-                        result: None,
-                        message: None,
-                        success: true,
-                    },
-                    Err(err) => api::Response {
-                        result: None,
-                        message: Some(err.to_string()),
-                        success: false,
-                    },
-                }
-            }
+            Command::StopController => match self.stop_controller(request.id.as_ref().unwrap()) {
+                Ok(_) => api::Response {
+                    result: None,
+                    message: None,
+                    success: true,
+                },
+                Err(err) => api::Response {
+                    result: None,
+                    message: Some(err.to_string()),
+                    success: false,
+                },
+            },
 
             Command::GetMeasurement => match sensor::get_measurement(&self.sensor_handle) {
                 Ok(measurement) => api::Response {
@@ -157,25 +153,23 @@ impl Brewery {
         Ok(())
     }
 
-    fn get_active_controller(&mut self, id: &str) -> Result<&control::ControllerHandle, Error> {
-        match self.active_controllers.get_mut(id) {
-            Some(controller) => Ok(controller),
-            None => Err(Error::Missing(String::from(id))),
-        }
-    }
-
-    fn change_controller_state(
-        &mut self,
-        id: &str,
-        new_state: control::State,
-    ) -> Result<(), Error> {
+    fn stop_controller(&mut self, id: &str) -> Result<(), Error> {
         let controller_handle = self.get_active_controller(id)?;
         let mut controller = match controller_handle.lock() {
             Ok(controller) => controller,
             Err(err) => panic!("Could not acquire controller lock. Error {}.", err),
         };
-        controller.set_state(new_state);
+        controller.set_state(control::State::Inactive);
+        drop(controller);
+        self.active_controllers.remove(id);
         Ok(())
+    }
+
+    fn get_active_controller(&mut self, id: &str) -> Result<&control::ControllerHandle, Error> {
+        match self.active_controllers.get_mut(id) {
+            Some(controller) => Ok(controller),
+            None => Err(Error::Missing(String::from(id))),
+        }
     }
 
     fn change_controller_target(&mut self, id: &str, new_target: Option<f32>) -> Result<(), Error> {

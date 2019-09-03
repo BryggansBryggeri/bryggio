@@ -47,6 +47,8 @@ pub fn run_controller(
                     }
                 };
                 let signal = controller.calculate_signal(measurement);
+                // Need to drop controller so it is unlocked when the thread sleeps, otherwise it
+                // will be unresponsive.
                 drop(controller);
                 match actor.set_signal(signal) {
                     Ok(()) => {}
