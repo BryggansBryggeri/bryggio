@@ -18,11 +18,14 @@ pub fn start_controller(
     api::generate_web_response(api_response)
 }
 
-#[get("/stop_controller")]
-pub fn stop_controller(api_endpoint: State<api::WebEndpoint>) -> json::Json<api::Response> {
+#[get("/stop_controller?<id>")]
+pub fn stop_controller(
+    id: Option<String>,
+    api_endpoint: State<api::WebEndpoint>,
+) -> json::Json<api::Response> {
     let request = api::Request {
         command: brewery::Command::StopController,
-        id: None,
+        id,
         parameter: None,
     };
     let api_response = api_endpoint.send_and_wait_for_response(request);
