@@ -151,7 +151,7 @@ impl Brewery {
         let controller_send = controller_handle.clone();
         let sensor = self.sensor_handle.clone();
         thread::spawn(move || control::run_controller(controller_send, actor, sensor));
-        controller.set_state(control::State::Automatic);
+        controller.set_state(control::State::Active);
         drop(controller);
         self.active_controllers.insert(id.into(), controller_handle);
         Ok(())

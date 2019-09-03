@@ -10,8 +10,7 @@ pub type ControllerHandle = sync::Arc<sync::Mutex<Box<dyn Control>>>;
 #[derive(Clone, Debug)]
 pub enum State {
     Inactive,
-    Automatic,
-    Manual,
+    Active,
 }
 
 pub fn run_controller(
@@ -35,7 +34,7 @@ pub fn run_controller(
                 println!("Inactivating controller, stopping");
                 return;
             }
-            State::Automatic => {
+            State::Active => {
                 let measurement = match sensor::get_measurement(&sensor) {
                     Ok(measurement) => Some(measurement),
                     Err(err) => {
@@ -59,15 +58,6 @@ pub fn run_controller(
                     measurement.unwrap_or(f32::NAN),
                     signal
                 );
-            }
-            State::Manual => {
-                let signal = controller.get_signal();
-                drop(controller);
-                match actor.set_signal(signal) {
-                    Ok(()) => {}
-                    Err(err) => println!("Error setting signal: {}", err),
-                };
-                println!("{}, {}.", start_time.elapsed().unwrap().as_secs(), signal);
             }
         }
         thread::sleep(time::Duration::from_millis(sleep_time));
