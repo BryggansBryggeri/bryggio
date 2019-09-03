@@ -26,13 +26,6 @@ pub struct Brewery {
 impl Brewery {
     pub fn new(brew_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
         let active_controllers: HashMap<String, control::ControllerHandle> = HashMap::new();
-        // let control_box: Box<dyn Control> =
-        //     Box::new(control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."));
-        // let controller = sync::Arc::new(sync::Mutex::new(control_box));
-
-        // let actor: actor::ActorHandle = sync::Arc::new(sync::Mutex::new(Box::new(
-        //     actor::dummy::Actor::new("dummy"),
-        // )));
 
         // TODO: Fix ugly hack. Remove to handle if no sensor data is provided.
         let sensor_config = brew_config.sensors.clone().unwrap();
@@ -132,7 +125,8 @@ impl Brewery {
         };
 
         let controller_handle: control::ControllerHandle = sync::Arc::new(sync::Mutex::new(
-            Box::new(control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters.")),
+            //Box::new(control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters.")),
+            Box::new(control::manual::Controller::new()),
         ));
 
         let mut controller = match controller_handle.lock() {

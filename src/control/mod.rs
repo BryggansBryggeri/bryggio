@@ -1,4 +1,6 @@
 pub mod hysteresis;
+pub mod manual;
+
 use crate::actor;
 use crate::sensor;
 use std::f32;
@@ -7,7 +9,7 @@ use std::{thread, time};
 
 pub type ControllerHandle = sync::Arc<sync::Mutex<Box<dyn Control>>>;
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum State {
     Inactive,
     Active,
@@ -68,7 +70,6 @@ pub fn run_controller(
 
 pub trait Control: Send {
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32;
-    fn update_state(&self);
     fn get_state(&self) -> State;
     fn set_state(&mut self, new_state: State);
     fn get_signal(&self) -> f32;

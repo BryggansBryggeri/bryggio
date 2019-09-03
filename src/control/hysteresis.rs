@@ -29,8 +29,6 @@ impl Controller {
 }
 
 impl control::Control for Controller {
-    fn update_state(&self) {}
-
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {
         println!("Current target: {}", self.target);
         let measurement = match measurement {
@@ -56,8 +54,7 @@ impl control::Control for Controller {
     }
 
     fn get_state(&self) -> control::State {
-        // Tmp fix for the run_controller / controller.run mix
-        self.state.clone()
+        self.state
     }
 
     fn set_state(&mut self, new_state: control::State) {
