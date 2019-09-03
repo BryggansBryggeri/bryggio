@@ -18,27 +18,30 @@ pub fn start_controller(
     api::generate_web_response(api_response)
 }
 
-#[get("/stop_controller")]
-pub fn stop_controller(api_endpoint: State<api::WebEndpoint>) -> json::Json<api::Response> {
+#[get("/stop_controller?<id>")]
+pub fn stop_controller(
+    id: Option<String>,
+    api_endpoint: State<api::WebEndpoint>,
+) -> json::Json<api::Response> {
     let request = api::Request {
         command: brewery::Command::StopController,
-        id: None,
+        id,
         parameter: None,
     };
     let api_response = api_endpoint.send_and_wait_for_response(request);
     api::generate_web_response(api_response)
 }
 
-#[get("/set_target_temp?<controller_id>&<temp>")]
+#[get("/set_target_signal?<id>&<new_signal>")]
 pub fn set_target_signal(
-    controller_id: Option<String>,
-    temp: Option<f32>,
+    id: Option<String>,
+    new_signal: Option<f32>,
     api_endpoint: State<api::WebEndpoint>,
 ) -> json::Json<api::Response> {
     let request = api::Request {
         command: brewery::Command::SetTarget,
-        id: controller_id,
-        parameter: temp,
+        id,
+        parameter: new_signal,
     };
     let api_response = api_endpoint.send_and_wait_for_response(request);
     api::generate_web_response(api_response)

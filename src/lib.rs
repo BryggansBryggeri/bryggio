@@ -6,7 +6,6 @@ pub mod api;
 pub mod brewery;
 pub mod config;
 mod control;
-mod error;
 mod hardware;
 pub mod routes;
 mod sensor;

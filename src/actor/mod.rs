@@ -3,8 +3,11 @@ pub mod simple_gpio;
 pub mod xor;
 
 use std::error as std_error;
+use std::sync;
 
-pub trait Actor {
+pub type ActorHandle = sync::Arc<sync::Mutex<Box<dyn Actor>>>;
+
+pub trait Actor: Send {
     fn validate_signal(&self, signal: f32) -> Result<(), Error>;
     fn set_signal(&self, signal: f32) -> Result<(), Error>;
 }
