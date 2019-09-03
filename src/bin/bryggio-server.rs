@@ -28,9 +28,6 @@ fn main() {
         .mount(
             "/",
             routes![
-                routes::serve_files::index,
-                routes::serve_files::general_files,
-                routes::serve_files::javascript,
                 routes::backend::start_controller,
                 routes::backend::stop_controller,
                 routes::backend::get_measurement,
