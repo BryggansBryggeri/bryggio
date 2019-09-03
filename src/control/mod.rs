@@ -8,7 +8,12 @@ use std::f32;
 use std::sync;
 use std::{thread, time};
 
-pub type ControllerHandle = sync::Arc<sync::Mutex<Box<dyn Control>>>;
+pub struct ControllerHandle {
+    pub lock: ControllerLock,
+    pub thread: thread::JoinHandle<()>,
+}
+
+pub type ControllerLock = sync::Arc<sync::Mutex<Box<dyn Control>>>;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum State {
@@ -17,7 +22,7 @@ pub enum State {
 }
 
 pub fn run_controller(
-    controller_lock: ControllerHandle,
+    controller_lock: ControllerLock,
     actor_lock: actor::ActorHandle,
     sensor: sensor::SensorHandle,
 ) {
