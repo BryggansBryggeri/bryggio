@@ -1,5 +1,4 @@
 use crate::control;
-use crate::error;
 use std::f32;
 
 pub struct Controller {
@@ -12,18 +11,28 @@ pub struct Controller {
 }
 
 impl Controller {
-    pub fn new(offset_on: f32, offset_off: f32) -> Result<Controller, error::ParamError> {
-        if offset_off >= 0.0 && offset_on > offset_off {
-            Ok(Controller {
-                target: 20.0,
-                current_signal: 0.0,
-                previous_measurement: None,
-                state: control::State::Inactive,
-                offset_on,
-                offset_off,
-            })
+    pub fn new(offset_on: f32, offset_off: f32) -> Result<Controller, control::Error> {
+        if offset_off >= 0.0 {
+            if offset_on > offset_off {
+                Ok(Controller {
+                    target: 20.0,
+                    current_signal: 0.0,
+                    previous_measurement: None,
+                    state: control::State::Active,
+                    offset_on,
+                    offset_off,
+                })
+            } else {
+                Err(control::Error::ParamError(format!(
+                    "offset_off must be non-negative ({} !>= 0.0)",
+                    offset_off
+                )))
+            }
         } else {
-            Err(error::ParamError)
+            Err(control::Error::ParamError(format!(
+                "offset_on must be greater than the offset_off ({} !> {})",
+                offset_on, offset_off,
+            )))
         }
     }
 }
@@ -67,5 +76,35 @@ impl control::Control for Controller {
 
     fn get_signal(&self) -> f32 {
         self.current_signal
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::control::Control;
+
+    #[test]
+    fn test_constructor_valid_args() {
+        let controller = Controller::new(2.0, 1.0);
+        assert!(controller.is_ok())
+    }
+
+    #[test]
+    fn test_constructor_neg_offset_off() {
+        let controller = Controller::new(-1.5, 0.5);
+        assert!(controller.is_err())
+    }
+
+    #[test]
+    fn test_constructor_offset_off_lt_offset_on() {
+        let controller = Controller::new(3.0, 4.0);
+        assert!(controller.is_err())
+    }
+
+    #[test]
+    fn test_constructor_active_on_init() {
+        let controller = Controller::new(2.0, 1.0).unwrap();
+        assert_eq!(controller.get_state(), control::State::Active);
     }
 }

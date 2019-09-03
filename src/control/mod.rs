@@ -3,13 +3,14 @@ pub mod manual;
 
 use crate::actor;
 use crate::sensor;
+use std::error as std_error;
 use std::f32;
 use std::sync;
 use std::{thread, time};
 
 pub type ControllerHandle = sync::Arc<sync::Mutex<Box<dyn Control>>>;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum State {
     Inactive,
     Active,
@@ -74,4 +75,28 @@ pub trait Control: Send {
     fn set_state(&mut self, new_state: State);
     fn get_signal(&self) -> f32;
     fn set_target(&mut self, new_target: f32);
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Error {
+    ParamError(String),
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Error::ParamError(param) => write!(f, "Invalid param: {}", param),
+        }
+    }
+}
+impl std_error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::ParamError(_) => "Invalid param",
+        }
+    }
+
+    fn cause(&self) -> Option<&dyn std_error::Error> {
+        None
+    }
 }
