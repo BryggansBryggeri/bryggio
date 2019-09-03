@@ -124,12 +124,12 @@ impl Brewery {
             return Err(Error::AlreadyActive(id.into()));
         };
 
-        let controller_handle: control::ControllerHandle = sync::Arc::new(sync::Mutex::new(
+        let controller_lock: control::ControllerLock = sync::Arc::new(sync::Mutex::new(
             //Box::new(control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters.")),
             Box::new(control::manual::Controller::new()),
         ));
 
-        let mut controller = match controller_handle.lock() {
+        let mut controller = match controller_lock.lock() {
             Ok(controller) => controller,
             Err(err) => panic!("Could not acquire controller lock. Error: {}", err),
         };
@@ -138,30 +138,38 @@ impl Brewery {
             actor::dummy::Actor::new("dummy"),
         )));
 
-        let controller_send = controller_handle.clone();
+        let controller_send = controller_lock.clone();
         let sensor = self.sensor_handle.clone();
-        thread::spawn(move || control::run_controller(controller_send, actor, sensor));
+        let thread_handle =
+            thread::spawn(move || control::run_controller(controller_send, actor, sensor));
         controller.set_state(control::State::Active);
         drop(controller);
+
+        let controller_handle = control::ControllerHandle {
+            lock: controller_lock,
+            thread: thread_handle,
+        };
         self.active_controllers.insert(id.into(), controller_handle);
         Ok(())
     }
 
     fn stop_controller(&mut self, id: &str) -> Result<(), Error> {
-        let controller_handle = self.get_active_controller(id)?;
-        let mut controller = match controller_handle.lock() {
+        let controller_handle = self.active_controllers.remove(id).unwrap();
+        let mut controller = match controller_handle.lock.lock() {
             Ok(controller) => controller,
             Err(err) => panic!("Could not acquire controller lock. Error {}.", err),
         };
         controller.set_state(control::State::Inactive);
         drop(controller);
-        self.active_controllers.remove(id);
-        Ok(())
+        match controller_handle.thread.join() {
+            Ok(()) => Ok(()),
+            Err(_) => Err(Error::ThreadJoin),
+        }
     }
 
     fn change_controller_target(&mut self, id: &str, new_target: Option<f32>) -> Result<(), Error> {
         let controller_handle = self.get_active_controller(id)?;
-        let mut controller = match controller_handle.lock() {
+        let mut controller = match controller_handle.lock.lock() {
             Ok(controller) => controller,
             Err(err) => panic!("Could not acquire controller lock. Error {}.", err),
         };
@@ -183,6 +191,7 @@ impl Brewery {
 pub enum Error {
     Missing(String),
     AlreadyActive(String),
+    ThreadJoin,
 }
 
 impl std::fmt::Display for Error {
@@ -190,14 +199,16 @@ impl std::fmt::Display for Error {
         match self {
             Error::Missing(id) => write!(f, "ID does not exist: {}", id),
             Error::AlreadyActive(id) => write!(f, "ID is already in use: {}", id),
+            Error::ThreadJoin => write!(f, "Could not join thread"),
         }
     }
 }
 impl std_error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::Missing(_) => "Requested service does not exist",
-            Error::AlreadyActive(_) => "ID is already in use",
+            Error::Missing(_) => "Requested service does not exist.",
+            Error::AlreadyActive(_) => "ID is already in use.",
+            Error::ThreadJoin => "Error joining thread.",
         }
     }
 
