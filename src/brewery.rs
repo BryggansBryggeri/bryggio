@@ -165,13 +165,6 @@ impl Brewery {
         Ok(())
     }
 
-    fn get_active_controller(&mut self, id: &str) -> Result<&control::ControllerHandle, Error> {
-        match self.active_controllers.get_mut(id) {
-            Some(controller) => Ok(controller),
-            None => Err(Error::Missing(String::from(id))),
-        }
-    }
-
     fn change_controller_target(&mut self, id: &str, new_target: Option<f32>) -> Result<(), Error> {
         let controller_handle = self.get_active_controller(id)?;
         let mut controller = match controller_handle.lock() {
@@ -182,6 +175,13 @@ impl Brewery {
             controller.set_target(new_target);
         };
         Ok(())
+    }
+
+    fn get_active_controller(&mut self, id: &str) -> Result<&control::ControllerHandle, Error> {
+        match self.active_controllers.get_mut(id) {
+            Some(controller) => Ok(controller),
+            None => Err(Error::Missing(String::from(id))),
+        }
     }
 }
 

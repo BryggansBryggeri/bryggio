@@ -32,6 +32,7 @@ impl control::Control for Controller {
     fn update_state(&self) {}
 
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {
+        println!("Current target: {}", self.target);
         let measurement = match measurement {
             Some(measurement) => Some(measurement),
             None => match self.previous_measurement {
