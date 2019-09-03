@@ -20,23 +20,26 @@ pub enum Command {
 pub struct Brewery {
     api_endpoint: api::BreweryEndpoint,
     active_controllers: HashMap<String, control::ControllerHandle>,
-    sensor_handle: sensor::SensorHandle,
+    sensors: HashMap<String, sensor::SensorHandle>,
 }
 
 impl Brewery {
     pub fn new(brew_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
         let active_controllers: HashMap<String, control::ControllerHandle> = HashMap::new();
+        let sensors: HashMap<String, sensor::SensorHandle> = HashMap::new();
 
         // TODO: Fix ugly hack. Remove to handle if no sensor data is provided.
-        let sensor_config = brew_config.sensors.clone().unwrap();
-        let sensor: Box<dyn sensor::Sensor> =
-            Box::new(sensor::dummy::Sensor::new(String::from(&sensor_config.id)));
-        let sensor_handle = sync::Arc::new(sync::Mutex::new(sensor));
+        // let sensor_config = brew_config.sensors.as_ref().unwrap();
         Brewery {
             api_endpoint,
             active_controllers,
-            sensor_handle,
+            sensors,
         }
+    }
+
+    pub fn add_sensor(&mut self, id: &str, sensor: Box<dyn sensor::Sensor>) {
+        self.sensors
+            .insert(id.into(), sync::Arc::new(sync::Mutex::new(sensor)));
     }
 
     pub fn run(&mut self) {
@@ -56,18 +59,20 @@ impl Brewery {
 
     fn process_request(&mut self, request: &api::Request) -> api::Response {
         match request.command {
-            Command::StartController => match self.start_controller(request.id.as_ref().unwrap()) {
-                Ok(_) => api::Response {
-                    result: None,
-                    message: None,
-                    success: true,
-                },
-                Err(err) => api::Response {
-                    result: None,
-                    message: Some(err.to_string()),
-                    success: false,
-                },
-            },
+            Command::StartController => {
+                match self.start_controller(request.id.as_ref().unwrap(), "dummy") {
+                    Ok(_) => api::Response {
+                        result: None,
+                        message: None,
+                        success: true,
+                    },
+                    Err(err) => api::Response {
+                        result: None,
+                        message: Some(err.to_string()),
+                        success: false,
+                    },
+                }
+            }
 
             Command::StopController => match self.stop_controller(request.id.as_ref().unwrap()) {
                 Ok(_) => api::Response {
@@ -82,7 +87,7 @@ impl Brewery {
                 },
             },
 
-            Command::GetMeasurement => match sensor::get_measurement(&self.sensor_handle) {
+            Command::GetMeasurement => match self.get_measurement(request.id.as_ref().unwrap()) {
                 Ok(measurement) => api::Response {
                     result: Some(measurement),
                     message: None,
@@ -119,10 +124,8 @@ impl Brewery {
         }
     }
 
-    fn start_controller(&mut self, id: &str) -> Result<(), Error> {
-        if self.active_controllers.contains_key(id) {
-            return Err(Error::AlreadyActive(id.into()));
-        };
+    fn start_controller(&mut self, controller_id: &str, sensor_id: &str) -> Result<(), Error> {
+        self.validate_controller_id(controller_id)?;
 
         let controller_lock: control::ControllerLock = sync::Arc::new(sync::Mutex::new(
             //Box::new(control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters.")),
@@ -139,9 +142,9 @@ impl Brewery {
         )));
 
         let controller_send = controller_lock.clone();
-        let sensor = self.sensor_handle.clone();
+        let sensor_handle = self.get_sensor(sensor_id)?.clone();
         let thread_handle =
-            thread::spawn(move || control::run_controller(controller_send, actor, sensor));
+            thread::spawn(move || control::run_controller(controller_send, actor, sensor_handle));
         controller.set_state(control::State::Active);
         drop(controller);
 
@@ -149,7 +152,8 @@ impl Brewery {
             lock: controller_lock,
             thread: thread_handle,
         };
-        self.active_controllers.insert(id.into(), controller_handle);
+        self.active_controllers
+            .insert(controller_id.into(), controller_handle);
         Ok(())
     }
 
@@ -179,9 +183,32 @@ impl Brewery {
         Ok(())
     }
 
+    fn get_measurement(&mut self, sensor_id: &str) -> Result<f32, Error> {
+        let sensor = self.get_sensor(sensor_id)?;
+        match sensor::get_measurement(sensor) {
+            Ok(measurement) => Ok(measurement),
+            Err(err) => Err(Error::Sensor(err.to_string())),
+        }
+    }
+
+    fn validate_controller_id(&self, id: &str) -> Result<(), Error> {
+        if self.active_controllers.contains_key(id) {
+            Err(Error::AlreadyActive(id.into()))
+        } else {
+            Ok(())
+        }
+    }
+
     fn get_active_controller(&mut self, id: &str) -> Result<&control::ControllerHandle, Error> {
         match self.active_controllers.get_mut(id) {
             Some(controller) => Ok(controller),
+            None => Err(Error::Missing(String::from(id))),
+        }
+    }
+
+    fn get_sensor(&mut self, id: &str) -> Result<&sensor::SensorHandle, Error> {
+        match self.sensors.get_mut(id) {
+            Some(sensor) => Ok(sensor),
             None => Err(Error::Missing(String::from(id))),
         }
     }
@@ -191,6 +218,7 @@ impl Brewery {
 pub enum Error {
     Missing(String),
     AlreadyActive(String),
+    Sensor(String),
     ThreadJoin,
 }
 
@@ -199,6 +227,7 @@ impl std::fmt::Display for Error {
         match self {
             Error::Missing(id) => write!(f, "ID does not exist: {}", id),
             Error::AlreadyActive(id) => write!(f, "ID is already in use: {}", id),
+            Error::Sensor(err) => write!(f, "Measurement error: {}", err),
             Error::ThreadJoin => write!(f, "Could not join thread"),
         }
     }
@@ -208,6 +237,7 @@ impl std_error::Error for Error {
         match *self {
             Error::Missing(_) => "Requested service does not exist.",
             Error::AlreadyActive(_) => "ID is already in use.",
+            Error::Sensor(_) => "Measurement error.",
             Error::ThreadJoin => "Error joining thread.",
         }
     }
