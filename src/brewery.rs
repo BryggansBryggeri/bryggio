@@ -37,13 +37,12 @@ impl Brewery {
 
     pub fn init_from_config(&mut self, _config: &config::Config) {
         let id = "dummy";
-        let dummy_sensor = Box::new(sensor::dummy::Sensor::new("dummy".into()));
-        self.add_sensor(id, dummy_sensor);
+        let dummy_sensor = sensor::dummy::Sensor::new("dummy".into());
+        self.add_sensor(id, sync::Arc::new(sync::Mutex::new(dummy_sensor)));
     }
 
-    pub fn add_sensor(&mut self, id: &str, sensor: Box<dyn sensor::Sensor>) {
-        self.sensors
-            .insert(id.into(), sync::Arc::new(sync::Mutex::new(sensor)));
+    pub fn add_sensor(&mut self, id: &str, sensor: sensor::SensorHandle) {
+        self.sensors.insert(id.into(), sensor);
     }
 
     pub fn run(&mut self) {
