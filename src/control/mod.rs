@@ -13,7 +13,7 @@ pub struct ControllerHandle {
     pub thread: thread::JoinHandle<()>,
 }
 
-pub type ControllerLock = sync::Arc<sync::Mutex<Box<dyn Control>>>;
+pub type ControllerLock = sync::Arc<sync::Mutex<dyn Control>>;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum State {

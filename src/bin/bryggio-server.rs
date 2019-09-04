@@ -22,6 +22,7 @@ fn main() {
     };
     let (web_endpoint, brew_endpoint) = api::create_api_endpoints();
     let mut brewery = brewery::Brewery::new(&config, brew_endpoint);
+    brewery.init_from_config(&config);
     let brewery_thread = thread::spawn(move || brewery.run());
 
     rocket::ignite()

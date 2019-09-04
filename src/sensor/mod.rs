@@ -6,10 +6,7 @@ use std::sync;
 
 pub type SensorHandle = sync::Arc<sync::Mutex<Box<dyn Sensor>>>;
 
-pub fn get_measurement<S: ?Sized>(sensor_mut: &sync::Arc<sync::Mutex<Box<S>>>) -> Result<f32, Error>
-where
-    S: Sensor,
-{
+pub fn get_measurement(sensor_mut: &sync::Arc<sync::Mutex<Box<dyn Sensor>>>) -> Result<f32, Error> {
     let sensor = match sensor_mut.lock() {
         Ok(sensor) => sensor,
         Err(err) => {
