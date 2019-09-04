@@ -131,13 +131,12 @@ impl Brewery {
         self.validate_controller_id(controller_id)?;
 
         let controller_lock: control::ControllerLock = sync::Arc::new(sync::Mutex::new(
-            //Box::new(control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters.")),
+            //control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."),
             control::manual::Controller::new(),
         ));
 
-        let actor: actor::ActorHandle = sync::Arc::new(sync::Mutex::new(Box::new(
-            actor::dummy::Actor::new("dummy"),
-        )));
+        let actor: actor::ActorHandle =
+            sync::Arc::new(sync::Mutex::new(actor::dummy::Actor::new("dummy")));
 
         let controller_send = controller_lock.clone();
         let sensor_handle = self.get_sensor(sensor_id)?.clone();
