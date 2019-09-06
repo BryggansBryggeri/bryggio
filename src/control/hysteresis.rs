@@ -142,6 +142,7 @@ mod tests {
     fn test_control_hysteresis_logic() {
         let mut controller = Controller::new(2.0, 1.0).unwrap();
         controller.set_target(100.0);
+
         // Make sure controller.current_signal is 100.0
         assert!(utils::f32_almost_equal(
             controller.calculate_signal(Some(30.0)),
@@ -154,7 +155,7 @@ mod tests {
         ));
         // Make sure controller.current_signal is switched to 0.0
         assert!(utils::f32_almost_equal(
-            controller.calculate_signal(Some(100.0)),
+            controller.calculate_signal(Some(99.5)),
             0.0
         ));
         // Make sure controller.current_signal remains
