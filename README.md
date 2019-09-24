@@ -3,6 +3,7 @@
 BRYGGANS BRYGGERI's very own brewery software.
 
 Currently under heavy developement.
+The goal is to develop a stand-alone backend to which any client can send http requests to and thereby control the brewery hardware.
 
 ## Get started
 

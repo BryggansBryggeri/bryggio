@@ -24,12 +24,10 @@ pub struct Brewery {
 }
 
 impl Brewery {
-    pub fn new(brew_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
+    pub fn new(_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
         let active_controllers: HashMap<String, control::ControllerHandle> = HashMap::new();
         let sensors: HashMap<String, sensor::SensorHandle> = HashMap::new();
 
-        // TODO: Fix ugly hack. Remove to handle if no sensor data is provided.
-        // let sensor_config = brew_config.sensors.as_ref().unwrap();
         Brewery {
             api_endpoint,
             active_controllers,
@@ -37,9 +35,14 @@ impl Brewery {
         }
     }
 
-    pub fn add_sensor(&mut self, id: &str, sensor: Box<dyn sensor::Sensor>) {
-        self.sensors
-            .insert(id.into(), sync::Arc::new(sync::Mutex::new(sensor)));
+    pub fn init_from_config(&mut self, _config: &config::Config) {
+        let id = "dummy";
+        let dummy_sensor = sensor::dummy::Sensor::new("dummy".into());
+        self.add_sensor(id, sync::Arc::new(sync::Mutex::new(dummy_sensor)));
+    }
+
+    pub fn add_sensor(&mut self, id: &str, sensor: sensor::SensorHandle) {
+        self.sensors.insert(id.into(), sensor);
     }
 
     pub fn run(&mut self) {
@@ -128,25 +131,17 @@ impl Brewery {
         self.validate_controller_id(controller_id)?;
 
         let controller_lock: control::ControllerLock = sync::Arc::new(sync::Mutex::new(
-            //Box::new(control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters.")),
-            Box::new(control::manual::Controller::new()),
+            //control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."),
+            control::manual::Controller::new(),
         ));
 
-        let mut controller = match controller_lock.lock() {
-            Ok(controller) => controller,
-            Err(err) => panic!("Could not acquire controller lock. Error: {}", err),
-        };
-
-        let actor: actor::ActorHandle = sync::Arc::new(sync::Mutex::new(Box::new(
-            actor::dummy::Actor::new("dummy"),
-        )));
+        let actor: actor::ActorHandle =
+            sync::Arc::new(sync::Mutex::new(actor::dummy::Actor::new("dummy")));
 
         let controller_send = controller_lock.clone();
         let sensor_handle = self.get_sensor(sensor_id)?.clone();
         let thread_handle =
             thread::spawn(move || control::run_controller(controller_send, actor, sensor_handle));
-        controller.set_state(control::State::Active);
-        drop(controller);
 
         let controller_handle = control::ControllerHandle {
             lock: controller_lock,

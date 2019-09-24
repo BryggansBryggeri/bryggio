@@ -32,16 +32,16 @@ pub fn stop_controller(
     api::generate_web_response(api_response)
 }
 
-#[get("/set_target_signal?<id>&<new_signal>")]
+#[get("/set_target_signal?<id>&<new_target>")]
 pub fn set_target_signal(
     id: Option<String>,
-    new_signal: Option<f32>,
+    new_target: Option<f32>,
     api_endpoint: State<api::WebEndpoint>,
 ) -> json::Json<api::Response> {
     let request = api::Request {
         command: brewery::Command::SetTarget,
         id,
-        parameter: new_signal,
+        parameter: new_target,
     };
     let api_response = api_endpoint.send_and_wait_for_response(request);
     api::generate_web_response(api_response)

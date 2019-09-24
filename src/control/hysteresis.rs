@@ -39,7 +39,6 @@ impl Controller {
 
 impl control::Control for Controller {
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {
-        println!("Current target: {}", self.target);
         let measurement = match measurement {
             Some(measurement) => Some(measurement),
             None => match self.previous_measurement {
@@ -83,6 +82,7 @@ impl control::Control for Controller {
 mod tests {
     use super::*;
     use crate::control::Control;
+    use crate::utils;
 
     #[test]
     fn test_constructor_valid_args() {
@@ -106,5 +106,62 @@ mod tests {
     fn test_constructor_active_on_init() {
         let controller = Controller::new(2.0, 1.0).unwrap();
         assert_eq!(controller.get_state(), control::State::Active);
+    }
+
+    #[test]
+    fn test_control_under() {
+        let mut controller = Controller::new(2.0, 1.0).unwrap();
+        controller.set_target(100.0);
+        assert!(utils::f32_almost_equal(
+            controller.calculate_signal(Some(90.0)),
+            100.0
+        ));
+    }
+
+    #[test]
+    fn test_control_ower() {
+        let mut controller = Controller::new(2.0, 1.0).unwrap();
+        controller.set_target(100.0);
+        assert!(utils::f32_almost_equal(
+            controller.calculate_signal(Some(110.0)),
+            0.0
+        ));
+    }
+
+    #[test]
+    fn test_control_ower_offset_on() {
+        let mut controller = Controller::new(2.0, 1.0).unwrap();
+        controller.set_target(100.0);
+        assert!(utils::f32_almost_equal(
+            controller.calculate_signal(Some(98.5)),
+            0.0
+        ));
+    }
+
+    #[test]
+    fn test_control_hysteresis_logic() {
+        let mut controller = Controller::new(2.0, 1.0).unwrap();
+        controller.set_target(100.0);
+
+        // Make sure controller.current_signal is 100.0
+        assert!(utils::f32_almost_equal(
+            controller.calculate_signal(Some(30.0)),
+            100.0
+        ));
+        // Make sure controller.current_signal remains
+        assert!(utils::f32_almost_equal(
+            controller.calculate_signal(Some(98.5)),
+            100.0
+        ));
+        // Make sure controller.current_signal is switched to 0.0
+        assert!(utils::f32_almost_equal(
+            controller.calculate_signal(Some(99.5)),
+            0.0
+        ));
+        // Make sure controller.current_signal remains
+        assert!(utils::f32_almost_equal(
+            controller.calculate_signal(Some(98.5)),
+            0.0
+        ));
     }
 }
