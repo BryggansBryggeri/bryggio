@@ -36,9 +36,12 @@ impl Brewery {
     }
 
     pub fn init_from_config(&mut self, _config: &config::Config) {
-        let id = "dummy";
+        let dummy_id = "dummy";
         let dummy_sensor = sensor::dummy::Sensor::new("dummy".into());
-        self.add_sensor(id, sync::Arc::new(sync::Mutex::new(dummy_sensor)));
+        self.add_sensor(dummy_id, sync::Arc::new(sync::Mutex::new(dummy_sensor)));
+        let cpu_id = "cpu";
+        let cpu_sensor = sensor::rbpi_cpu_temp::RbpiCpuTemp::new("cpu".into());
+        self.add_sensor(cpu_id, sync::Arc::new(sync::Mutex::new(cpu_sensor)));
     }
 
     pub fn add_sensor(&mut self, id: &str, sensor: sensor::SensorHandle) {
