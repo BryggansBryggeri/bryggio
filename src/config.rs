@@ -48,6 +48,7 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert_approx_eq::assert_approx_eq;
 
     #[test]
     fn test_parse() {
@@ -63,6 +64,6 @@ mod tests {
             address = "random address"
         "#,
         );
-        assert_eq!(config.control.unwrap().offset_on, 1.0);
+        assert_approx_eq!(config.control.unwrap().offset_on, 1.0);
     }
 }
