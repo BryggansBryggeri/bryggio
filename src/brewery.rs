@@ -54,7 +54,7 @@ impl Brewery {
                 Ok(request) => request,
                 Err(_) => api::Request {
                     command: Command::Error,
-                    id: None,
+                    id: String::from("none"),
                     parameter: None,
                 },
             };
@@ -65,22 +65,7 @@ impl Brewery {
 
     fn process_request(&mut self, request: &api::Request) -> api::Response {
         match request.command {
-            Command::StartController => {
-                match self.start_controller(request.id.as_ref().unwrap(), "dummy") {
-                    Ok(_) => api::Response {
-                        result: None,
-                        message: None,
-                        success: true,
-                    },
-                    Err(err) => api::Response {
-                        result: None,
-                        message: Some(err.to_string()),
-                        success: false,
-                    },
-                }
-            }
-
-            Command::StopController => match self.stop_controller(request.id.as_ref().unwrap()) {
+            Command::StartController => match self.start_controller(&request.id, "dummy") {
                 Ok(_) => api::Response {
                     result: None,
                     message: None,
@@ -93,7 +78,20 @@ impl Brewery {
                 },
             },
 
-            Command::GetMeasurement => match self.get_measurement(request.id.as_ref().unwrap()) {
+            Command::StopController => match self.stop_controller(&request.id) {
+                Ok(_) => api::Response {
+                    result: None,
+                    message: None,
+                    success: true,
+                },
+                Err(err) => api::Response {
+                    result: None,
+                    message: Some(err.to_string()),
+                    success: false,
+                },
+            },
+
+            Command::GetMeasurement => match self.get_measurement(&request.id) {
                 Ok(measurement) => api::Response {
                     result: Some(measurement),
                     message: None,
@@ -107,8 +105,7 @@ impl Brewery {
             },
 
             Command::SetTarget => {
-                match self.change_controller_target(request.id.as_ref().unwrap(), request.parameter)
-                {
+                match self.change_controller_target(&request.id, request.parameter) {
                     Ok(()) => api::Response {
                         result: None,
                         message: None,

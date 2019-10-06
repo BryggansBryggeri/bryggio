@@ -8,7 +8,7 @@ use std::sync::mpsc;
 
 pub struct Request {
     pub command: brewery::Command,
-    pub id: Option<String>,
+    pub id: String,
     pub parameter: Option<f32>,
 }
 

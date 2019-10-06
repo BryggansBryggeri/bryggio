@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 #[get("/start_controller?<id>")]
 pub fn start_controller(
-    id: Option<String>,
+    id: String,
     api_endpoint: State<api::WebEndpoint>,
 ) -> json::Json<api::Response> {
     let request = api::Request {
@@ -20,7 +20,7 @@ pub fn start_controller(
 
 #[get("/stop_controller?<id>")]
 pub fn stop_controller(
-    id: Option<String>,
+    id: String,
     api_endpoint: State<api::WebEndpoint>,
 ) -> json::Json<api::Response> {
     let request = api::Request {
@@ -34,7 +34,7 @@ pub fn stop_controller(
 
 #[get("/set_target_signal?<id>&<new_target>")]
 pub fn set_target_signal(
-    id: Option<String>,
+    id: String,
     new_target: Option<f32>,
     api_endpoint: State<api::WebEndpoint>,
 ) -> json::Json<api::Response> {
@@ -49,7 +49,7 @@ pub fn set_target_signal(
 
 #[get("/get_measurement?<sensor_id>")]
 pub fn get_measurement(
-    sensor_id: Option<String>,
+    sensor_id: String,
     api_endpoint: State<api::WebEndpoint>,
 ) -> json::Json<api::Response> {
     let request = api::Request {
