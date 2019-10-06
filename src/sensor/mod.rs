@@ -20,6 +20,13 @@ pub fn get_measurement(sensor_mut: &SensorHandle) -> Result<f32, Error> {
     }
 }
 
+pub fn get_id(sensor_mut: &SensorHandle) -> Result<String, Error> {
+    match sensor_mut.lock() {
+        Ok(sensor) => Ok(sensor.get_id()),
+        Err(err) => Err(Error::ThreadLockError(err.to_string())),
+    }
+}
+
 pub trait Sensor: Send {
     // TODO: it's nice to have this return a common sensor error,
     // but this might snowball when more sensors are added.
