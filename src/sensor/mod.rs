@@ -1,5 +1,6 @@
 pub mod dsb1820;
 pub mod dummy;
+pub mod rbpi_cpu_temp;
 
 use std::error as std_error;
 use std::sync;
