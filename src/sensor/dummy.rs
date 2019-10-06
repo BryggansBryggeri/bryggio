@@ -8,9 +8,9 @@ pub struct Sensor {
 }
 
 impl Sensor {
-    pub fn new(id: String) -> Sensor {
+    pub fn new(id: &str) -> Sensor {
         Sensor {
-            id,
+            id: id.into(),
             prediction: 0.0,
             noise_level: 0.1,
         }

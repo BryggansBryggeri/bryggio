@@ -31,7 +31,7 @@ pub struct Sensor {
 }
 
 impl Config {
-    pub fn new(config_file: &'static str) -> Result<Config, io::Error> {
+    pub fn new(config_file: &str) -> Result<Config, io::Error> {
         let mut f = fs::File::open(config_file)?;
         let mut toml_config = String::new();
         f.read_to_string(&mut toml_config)?;

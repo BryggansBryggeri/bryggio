@@ -37,10 +37,10 @@ impl Brewery {
 
     pub fn init_from_config(&mut self, _config: &config::Config) {
         let dummy_id = "dummy";
-        let dummy_sensor = sensor::dummy::Sensor::new("dummy".into());
+        let dummy_sensor = sensor::dummy::Sensor::new("dummy");
         self.add_sensor(dummy_id, sync::Arc::new(sync::Mutex::new(dummy_sensor)));
         let cpu_id = "cpu";
-        let cpu_sensor = sensor::rbpi_cpu_temp::RbpiCpuTemp::new("cpu".into());
+        let cpu_sensor = sensor::rbpi_cpu_temp::RbpiCpuTemp::new("cpu");
         self.add_sensor(cpu_id, sync::Arc::new(sync::Mutex::new(cpu_sensor)));
     }
 

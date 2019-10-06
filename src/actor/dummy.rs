@@ -1,12 +1,12 @@
 use crate::actor;
 
 pub struct Actor {
-    pub id: &'static str,
+    pub id: String,
 }
 
 impl Actor {
-    pub fn new(id: &'static str) -> Actor {
-        Actor { id }
+    pub fn new(id: &str) -> Actor {
+        Actor { id: id.into() }
     }
 }
 

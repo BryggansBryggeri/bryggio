@@ -3,12 +3,12 @@ use crate::hardware;
 use gpio_cdev;
 
 pub struct Actor {
-    pub id: &'static str,
+    pub id: String,
     handle: gpio_cdev::LineHandle,
 }
 
 impl Actor {
-    pub fn new(id: &'static str, pin_number: u32) -> Actor {
+    pub fn new(id: &str, pin_number: u32) -> Actor {
         let pin_number = pin_number;
         let handle = match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &id) {
             Ok(handle) => handle,
@@ -16,7 +16,10 @@ impl Actor {
                 panic!("Could not get handle, {}.", err);
             }
         };
-        Actor { id, handle }
+        Actor {
+            id: id.into(),
+            handle,
+        }
     }
 }
 
