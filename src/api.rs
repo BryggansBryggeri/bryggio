@@ -36,13 +36,6 @@ impl WebEndpoint {
             }
         };
 
-        match sender.send(request) {
-            Ok(_) => {}
-            Err(err) => {
-                return Err(Error::APIError(format!("Could not send request: {}", err)));
-            }
-        };
-
         let receiver = match self.receiver.lock() {
             Ok(receiver) => receiver,
             Err(err) => {
@@ -50,6 +43,13 @@ impl WebEndpoint {
                     "Could not aquire web receiver lock: {}",
                     err
                 )));
+            }
+        };
+
+        match sender.send(request) {
+            Ok(_) => {}
+            Err(err) => {
+                return Err(Error::APIError(format!("Could not send request: {}", err)));
             }
         };
 

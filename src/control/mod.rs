@@ -10,7 +10,7 @@ use std::{thread, time};
 
 pub struct ControllerHandle {
     pub lock: ControllerLock,
-    pub thread: thread::JoinHandle<()>,
+    pub thread: thread::JoinHandle<Result<(), Error>>,
 }
 
 pub type ControllerLock = sync::Arc<sync::Mutex<dyn Control>>;
@@ -25,22 +25,32 @@ pub fn run_controller(
     controller_lock: ControllerLock,
     actor_lock: actor::ActorHandle,
     sensor: sensor::SensorHandle,
-) {
+) -> Result<(), Error> {
     let start_time = time::SystemTime::now();
     let sleep_time = 1000;
     let actor = match actor_lock.lock() {
         Ok(actor) => actor,
-        Err(err) => panic!("Could not acquire actor lock: {}", err),
+        Err(err) => {
+            return Err(Error::ConcurrencyError(format!(
+                "Could not acquire actor lock: {}",
+                err
+            )))
+        }
     };
     loop {
         let mut controller = match controller_lock.lock() {
             Ok(controller) => controller,
-            Err(err) => panic!("Could not acquire controller lock {}", err),
+            Err(err) => {
+                return Err(Error::ConcurrencyError(format!(
+                    "Could not acquire controller lock: {}",
+                    err
+                )))
+            }
         };
         match controller.get_state() {
             State::Inactive => {
                 println!("Inactivating controller, stopping");
-                return;
+                return Ok(());
             }
             State::Active => {
                 let measurement = match sensor::get_measurement(&sensor) {
@@ -85,12 +95,14 @@ pub trait Control: Send {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     ParamError(String),
+    ConcurrencyError(String),
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Error::ParamError(param) => write!(f, "Invalid param: {}", param),
+            Error::ConcurrencyError(err) => write!(f, "Concurrency error: {}", err),
         }
     }
 }
@@ -98,6 +110,7 @@ impl std_error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::ParamError(_) => "Invalid param",
+            Error::ConcurrencyError(_) => "Concurrency error",
         }
     }
 

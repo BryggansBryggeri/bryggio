@@ -161,7 +161,7 @@ impl Brewery {
         controller.set_state(control::State::Inactive);
         drop(controller);
         match controller_handle.thread.join() {
-            Ok(()) => Ok(()),
+            Ok(_) => Ok(()),
             Err(_) => Err(Error::ThreadJoin),
         }
     }
