@@ -64,11 +64,15 @@ impl Brewery {
         loop {
             let request = match self.api_endpoint.receiver.recv() {
                 Ok(request) => request,
-                Err(_) => api::Request {
-                    command: Command::Error,
-                    id: String::from("none"),
-                    parameter: None,
-                },
+                Err(_) => {
+                    let mut id = HashMap::new();
+                    id.insert(String::from("none"), String::from("none"));
+                    api::Request {
+                        command: Command::Error,
+                        id,
+                        parameter: None,
+                    }
+                }
             };
             let response = self.process_request(&request);
             self.api_endpoint.sender.send(response).unwrap();
@@ -78,7 +82,11 @@ impl Brewery {
     fn process_request(&mut self, request: &api::Request) -> api::Response {
         match request.command {
             Command::StartController => {
-                match self.start_controller(&request.id, "dummy", "dummy") {
+                match self.start_controller(
+                    &request.id.get("controller").unwrap(),
+                    &request.id.get("sensor").unwrap(),
+                    &request.id.get("actor").unwrap(),
+                ) {
                     Ok(_) => api::Response {
                         result: None,
                         message: None,
@@ -92,34 +100,41 @@ impl Brewery {
                 }
             }
 
-            Command::StopController => match self.stop_controller(&request.id) {
-                Ok(_) => api::Response {
-                    result: None,
-                    message: None,
-                    success: true,
-                },
-                Err(err) => api::Response {
-                    result: None,
-                    message: Some(err.to_string()),
-                    success: false,
-                },
-            },
+            Command::StopController => {
+                match self.stop_controller(&request.id.get("controller").unwrap()) {
+                    Ok(_) => api::Response {
+                        result: None,
+                        message: None,
+                        success: true,
+                    },
+                    Err(err) => api::Response {
+                        result: None,
+                        message: Some(err.to_string()),
+                        success: false,
+                    },
+                }
+            }
 
-            Command::GetMeasurement => match self.get_measurement(&request.id) {
-                Ok(measurement) => api::Response {
-                    result: Some(measurement),
-                    message: None,
-                    success: true,
-                },
-                Err(err) => api::Response {
-                    result: None,
-                    message: Some(err.to_string()),
-                    success: false,
-                },
-            },
+            Command::GetMeasurement => {
+                match self.get_measurement(&request.id.get("sensor").unwrap()) {
+                    Ok(measurement) => api::Response {
+                        result: Some(measurement),
+                        message: None,
+                        success: true,
+                    },
+                    Err(err) => api::Response {
+                        result: None,
+                        message: Some(err.to_string()),
+                        success: false,
+                    },
+                }
+            }
 
             Command::SetTarget => {
-                match self.change_controller_target(&request.id, request.parameter) {
+                match self.change_controller_target(
+                    &request.id.get("controller").unwrap(),
+                    request.parameter,
+                ) {
                     Ok(()) => api::Response {
                         result: None,
                         message: None,

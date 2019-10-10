@@ -1,6 +1,7 @@
 use crate::brewery;
 use rocket_contrib::json;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::error;
 use std::fmt;
 use std::sync;
@@ -8,7 +9,7 @@ use std::sync::mpsc;
 
 pub struct Request {
     pub command: brewery::Command,
-    pub id: String,
+    pub id: HashMap<String, String>,
     pub parameter: Option<f32>,
 }
 
