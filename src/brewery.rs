@@ -21,31 +21,43 @@ pub struct Brewery {
     api_endpoint: api::BreweryEndpoint,
     active_controllers: HashMap<String, control::ControllerHandle>,
     sensors: HashMap<String, sensor::SensorHandle>,
+    actors: HashMap<String, actor::ActorHandle>,
 }
 
 impl Brewery {
     pub fn new(_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
         let active_controllers: HashMap<String, control::ControllerHandle> = HashMap::new();
         let sensors: HashMap<String, sensor::SensorHandle> = HashMap::new();
+        let actors: HashMap<String, actor::ActorHandle> = HashMap::new();
 
         Brewery {
             api_endpoint,
             active_controllers,
             sensors,
+            actors,
         }
     }
 
     pub fn init_from_config(&mut self, _config: &config::Config) {
+        // Not implemented yet, emulate config here.
         let dummy_id = "dummy";
         let dummy_sensor = sensor::dummy::Sensor::new("dummy");
         self.add_sensor(dummy_id, sync::Arc::new(sync::Mutex::new(dummy_sensor)));
         let cpu_id = "cpu";
         let cpu_sensor = sensor::rbpi_cpu_temp::RbpiCpuTemp::new("cpu");
         self.add_sensor(cpu_id, sync::Arc::new(sync::Mutex::new(cpu_sensor)));
+
+        let actor: actor::ActorHandle =
+            sync::Arc::new(sync::Mutex::new(actor::dummy::Actor::new("dummy")));
+        self.add_actor(dummy_id, actor);
     }
 
     pub fn add_sensor(&mut self, id: &str, sensor: sensor::SensorHandle) {
         self.sensors.insert(id.into(), sensor);
+    }
+
+    pub fn add_actor(&mut self, id: &str, actor: actor::ActorHandle) {
+        self.actors.insert(id.into(), actor);
     }
 
     pub fn run(&mut self) {
@@ -65,18 +77,20 @@ impl Brewery {
 
     fn process_request(&mut self, request: &api::Request) -> api::Response {
         match request.command {
-            Command::StartController => match self.start_controller(&request.id, "dummy") {
-                Ok(_) => api::Response {
-                    result: None,
-                    message: None,
-                    success: true,
-                },
-                Err(err) => api::Response {
-                    result: None,
-                    message: Some(err.to_string()),
-                    success: false,
-                },
-            },
+            Command::StartController => {
+                match self.start_controller(&request.id, "dummy", "dummy") {
+                    Ok(_) => api::Response {
+                        result: None,
+                        message: None,
+                        success: true,
+                    },
+                    Err(err) => api::Response {
+                        result: None,
+                        message: Some(err.to_string()),
+                        success: false,
+                    },
+                }
+            }
 
             Command::StopController => match self.stop_controller(&request.id) {
                 Ok(_) => api::Response {
@@ -127,7 +141,12 @@ impl Brewery {
         }
     }
 
-    fn start_controller(&mut self, controller_id: &str, sensor_id: &str) -> Result<(), Error> {
+    fn start_controller(
+        &mut self,
+        controller_id: &str,
+        sensor_id: &str,
+        actor_id: &str,
+    ) -> Result<(), Error> {
         self.validate_controller_id(controller_id)?;
 
         let controller_lock: control::ControllerLock = sync::Arc::new(sync::Mutex::new(
@@ -135,13 +154,12 @@ impl Brewery {
             control::manual::Controller::new(),
         ));
 
-        let actor: actor::ActorHandle =
-            sync::Arc::new(sync::Mutex::new(actor::dummy::Actor::new("dummy")));
-
         let controller_send = controller_lock.clone();
         let sensor_handle = self.get_sensor(sensor_id)?.clone();
-        let thread_handle =
-            thread::spawn(move || control::run_controller(controller_send, actor, sensor_handle));
+        let actor_handle = self.get_actor(actor_id)?.clone();
+        let thread_handle = thread::spawn(move || {
+            control::run_controller(controller_send, sensor_handle, actor_handle)
+        });
 
         let controller_handle = control::ControllerHandle {
             lock: controller_lock,
@@ -204,6 +222,13 @@ impl Brewery {
     fn get_sensor(&mut self, id: &str) -> Result<&sensor::SensorHandle, Error> {
         match self.sensors.get_mut(id) {
             Some(sensor) => Ok(sensor),
+            None => Err(Error::Missing(String::from(id))),
+        }
+    }
+
+    fn get_actor(&mut self, id: &str) -> Result<&actor::ActorHandle, Error> {
+        match self.actors.get_mut(id) {
+            Some(actor) => Ok(actor),
             None => Err(Error::Missing(String::from(id))),
         }
     }

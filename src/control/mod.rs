@@ -23,12 +23,12 @@ pub enum State {
 
 pub fn run_controller(
     controller_lock: ControllerLock,
-    actor_lock: actor::ActorHandle,
-    sensor: sensor::SensorHandle,
+    sensor_handle: sensor::SensorHandle,
+    actor_handle: actor::ActorHandle,
 ) -> Result<(), Error> {
     let start_time = time::SystemTime::now();
     let sleep_time = 1000;
-    let actor = match actor_lock.lock() {
+    let actor = match actor_handle.lock() {
         Ok(actor) => actor,
         Err(err) => {
             return Err(Error::ConcurrencyError(format!(
@@ -53,12 +53,13 @@ pub fn run_controller(
                 return Ok(());
             }
             State::Active => {
-                let measurement = match sensor::get_measurement(&sensor) {
+                let measurement = match sensor::get_measurement(&sensor_handle) {
                     Ok(measurement) => Some(measurement),
                     Err(err) => {
                         println!(
                             "Error getting measurment from sensor: {}. Error: {}",
-                            sensor::get_id(&sensor).unwrap_or_else(|_| String::from("Unknown ID")),
+                            sensor::get_id(&sensor_handle)
+                                .unwrap_or_else(|_| String::from("Unknown ID")),
                             err
                         );
                         None
