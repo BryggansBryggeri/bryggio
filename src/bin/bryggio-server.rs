@@ -37,6 +37,7 @@ fn main() {
                 routes::backend::get_full_state
             ],
         )
+        .register(catchers![routes::backend::not_found])
         .manage(web_endpoint)
         .launch();
 

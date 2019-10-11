@@ -76,7 +76,7 @@ pub fn create_api_endpoints() -> (WebEndpoint, BreweryEndpoint) {
     (api_web, api_brew)
 }
 
-pub fn generate_web_response(api_response: Result<Response, Error>) -> json::Json<Response> {
+pub fn generate_api_response(api_response: Result<Response, Error>) -> json::Json<Response> {
     match api_response {
         Ok(response) => json::Json(response),
         Err(err) => {
