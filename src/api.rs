@@ -1,17 +1,10 @@
 use crate::brewery;
 use rocket_contrib::json;
 use serde::Serialize;
-use std::collections::HashMap;
 use std::error;
 use std::fmt;
 use std::sync;
 use std::sync::mpsc;
-
-pub struct Request {
-    pub command: brewery::Command,
-    pub id: HashMap<String, String>,
-    pub parameter: Option<f32>,
-}
 
 #[derive(Serialize)]
 pub struct Response {
@@ -21,12 +14,12 @@ pub struct Response {
 }
 
 pub struct WebEndpoint {
-    sender: sync::Mutex<mpsc::Sender<Request>>,
+    sender: sync::Mutex<mpsc::Sender<brewery::Command>>,
     receiver: sync::Mutex<mpsc::Receiver<Response>>,
 }
 
 impl WebEndpoint {
-    pub fn send_and_wait_for_response(&self, request: Request) -> Result<Response, Error> {
+    pub fn send_and_wait_for_response(&self, request: brewery::Command) -> Result<Response, Error> {
         let sender = match self.sender.lock() {
             Ok(sender) => sender,
             Err(err) => {
@@ -66,7 +59,7 @@ impl WebEndpoint {
 
 pub struct BreweryEndpoint {
     pub sender: mpsc::Sender<Response>,
-    pub receiver: mpsc::Receiver<Request>,
+    pub receiver: mpsc::Receiver<brewery::Command>,
 }
 
 pub fn create_api_endpoints() -> (WebEndpoint, BreweryEndpoint) {
