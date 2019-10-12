@@ -1,72 +1,90 @@
 use crate::api;
 use crate::brewery;
-use rocket::State;
+use crate::sensor;
+use rocket;
 use rocket_contrib::json;
-use std::collections::HashMap;
 
-#[get("/start_controller?<id>")]
+#[get("/start_controller?<controller_id>&<sensor_id>&<actor_id>")]
 pub fn start_controller(
-    id: String,
-    api_endpoint: State<api::WebEndpoint>,
+    controller_id: String,
+    sensor_id: String,
+    actor_id: String,
+    api_endpoint: rocket::State<api::WebEndpoint>,
 ) -> json::Json<api::Response> {
-    let request = api::Request {
-        command: brewery::Command::StartController,
-        id,
-        parameter: None,
+    let request = brewery::Command::StartController {
+        controller_id,
+        sensor_id,
+        actor_id,
     };
     let api_response = api_endpoint.send_and_wait_for_response(request);
-    api::generate_web_response(api_response)
+    api::generate_api_response(api_response)
 }
 
-#[get("/stop_controller?<id>")]
+#[get("/stop_controller?<controller_id>")]
 pub fn stop_controller(
-    id: String,
-    api_endpoint: State<api::WebEndpoint>,
+    controller_id: String,
+    api_endpoint: rocket::State<api::WebEndpoint>,
 ) -> json::Json<api::Response> {
-    let request = api::Request {
-        command: brewery::Command::StopController,
-        id,
-        parameter: None,
-    };
+    let request = brewery::Command::StopController { controller_id };
     let api_response = api_endpoint.send_and_wait_for_response(request);
-    api::generate_web_response(api_response)
+    api::generate_api_response(api_response)
 }
 
-#[get("/set_target_signal?<id>&<new_target>")]
+#[get("/set_target_signal?<controller_id>&<new_target_signal>")]
 pub fn set_target_signal(
-    id: String,
-    new_target: Option<f32>,
-    api_endpoint: State<api::WebEndpoint>,
+    controller_id: String,
+    new_target_signal: f32,
+    api_endpoint: rocket::State<api::WebEndpoint>,
 ) -> json::Json<api::Response> {
-    let request = api::Request {
-        command: brewery::Command::SetTarget,
-        id,
-        parameter: new_target,
+    let request = brewery::Command::SetTarget {
+        controller_id,
+        new_target_signal,
     };
     let api_response = api_endpoint.send_and_wait_for_response(request);
-    api::generate_web_response(api_response)
+    api::generate_api_response(api_response)
 }
 
 #[get("/get_measurement?<sensor_id>")]
 pub fn get_measurement(
     sensor_id: String,
-    api_endpoint: State<api::WebEndpoint>,
+    api_endpoint: rocket::State<api::WebEndpoint>,
 ) -> json::Json<api::Response> {
-    let request = api::Request {
-        command: brewery::Command::GetMeasurement,
-        id: sensor_id,
-        parameter: None,
+    let request = brewery::Command::GetMeasurement { sensor_id };
+    let api_response = api_endpoint.send_and_wait_for_response(request);
+    api::generate_api_response(api_response)
+}
+
+#[get("/add_sensor?<sensor_id>&<sensor_type>")]
+pub fn add_sensor(
+    sensor_id: String,
+    sensor_type: String,
+    api_endpoint: rocket::State<api::WebEndpoint>,
+) -> json::Json<api::Response> {
+    let sensor_type = sensor::SensorType::from_str(sensor_type);
+    let request = brewery::Command::AddSensor {
+        sensor_id,
+        sensor_type,
     };
     let api_response = api_endpoint.send_and_wait_for_response(request);
-    api::generate_web_response(api_response)
+    api::generate_api_response(api_response)
 }
 
 #[get("/get_full_state")]
-pub fn get_full_state(
-    _api_endpoint: State<api::WebEndpoint>,
-) -> json::Json<HashMap<String, String>> {
-    let mut response = HashMap::new();
-    response.insert("success".to_string(), "false".to_string());
-    response.insert("message".to_string(), "Not implemented yet".to_string());
-    json::Json(response)
+pub fn get_full_state(api_endpoint: rocket::State<api::WebEndpoint>) -> json::Json<api::Response> {
+    let request = brewery::Command::GetFullState;
+    let api_response = api_endpoint.send_and_wait_for_response(request);
+    api::generate_api_response(api_response)
+}
+
+#[catch(404)]
+pub fn not_found(req: &rocket::Request) -> json::Json<api::Response> {
+    let error_response = api::Response {
+        success: false,
+        result: None,
+        message: Some(format!(
+            "Error 404: '{}' is not a valid API call",
+            req.uri()
+        )),
+    };
+    json::Json(error_response)
 }

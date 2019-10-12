@@ -5,6 +5,25 @@ pub mod rbpi_cpu_temp;
 use std::error as std_error;
 use std::sync;
 
+pub enum SensorType {
+    Dummy,
+    DSB,
+    RbpiCPU,
+    UnknownSensor,
+}
+
+impl SensorType {
+    pub fn from_str(sensor_type: String) -> Self {
+        sensor_type.to_ascii_lowercase();
+        match sensor_type.as_ref() {
+            "dummy" => Self::Dummy,
+            "dsb" => Self::DSB,
+            "rbpicpu" => Self::RbpiCPU,
+            _ => Self::UnknownSensor,
+        }
+    }
+}
+
 pub type SensorHandle = sync::Arc<sync::Mutex<dyn Sensor>>;
 
 pub fn get_measurement(sensor_mut: &SensorHandle) -> Result<f32, Error> {
@@ -44,6 +63,7 @@ pub enum Error {
     FileParseError(String),
     ThreadLockError(String),
     InvalidParam(String),
+    UnknownSensor(String),
 }
 
 impl std::fmt::Display for Error {
@@ -63,6 +83,7 @@ impl std::fmt::Display for Error {
             }
             Error::ThreadLockError(err) => write!(f, "Unable to acquire sensor lock: {}", err),
             Error::InvalidParam(err) => write!(f, "Invalid sensor param: {}", err),
+            Error::UnknownSensor(err) => write!(f, "Unknown sensor: {}", err),
         }
     }
 }
@@ -75,6 +96,7 @@ impl std_error::Error for Error {
             Error::FileParseError(_) => "File parse error",
             Error::ThreadLockError(_) => "Thread lock error",
             Error::InvalidParam(_) => "Invalid param error",
+            Error::UnknownSensor(_) => "Unknown sensor",
         }
     }
 

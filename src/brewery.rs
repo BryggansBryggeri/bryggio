@@ -9,12 +9,32 @@ use std::sync;
 use std::thread;
 
 pub enum Command {
-    GetMeasurement,
-    SetTarget,
-    StartController,
-    StopController,
+    GetMeasurement {
+        sensor_id: String,
+    },
+    SetTarget {
+        controller_id: String,
+        new_target_signal: f32,
+    },
+    StartController {
+        controller_id: String,
+        // controller_type: control::ControllerType,
+        sensor_id: String,
+        actor_id: String,
+    },
+    StopController {
+        controller_id: String,
+    },
+    AddSensor {
+        sensor_id: String,
+        sensor_type: sensor::SensorType,
+    },
+    // AddActor {
+    //     actor_id: String,
+    //     actor_type: actor::ActorType,
+    // },
     GetFullState,
-    Error,
+    Error(String),
 }
 
 pub struct Brewery {
@@ -64,21 +84,34 @@ impl Brewery {
         loop {
             let request = match self.api_endpoint.receiver.recv() {
                 Ok(request) => request,
-                Err(_) => api::Request {
-                    command: Command::Error,
-                    id: String::from("none"),
-                    parameter: None,
-                },
+                Err(_) => Command::Error(String::from("Could not recieve request")),
             };
             let response = self.process_request(&request);
             self.api_endpoint.sender.send(response).unwrap();
         }
     }
 
-    fn process_request(&mut self, request: &api::Request) -> api::Response {
-        match request.command {
-            Command::StartController => {
-                match self.start_controller(&request.id, "dummy", "dummy") {
+    fn process_request(&mut self, request: &Command) -> api::Response {
+        match request {
+            Command::StartController {
+                controller_id,
+                sensor_id,
+                actor_id,
+            } => match self.start_controller(&controller_id, &sensor_id, &actor_id) {
+                Ok(_) => api::Response {
+                    result: None,
+                    message: None,
+                    success: true,
+                },
+                Err(err) => api::Response {
+                    result: None,
+                    message: Some(err.to_string()),
+                    success: false,
+                },
+            },
+
+            Command::StopController { controller_id } => {
+                match self.stop_controller(&controller_id) {
                     Ok(_) => api::Response {
                         result: None,
                         message: None,
@@ -92,20 +125,7 @@ impl Brewery {
                 }
             }
 
-            Command::StopController => match self.stop_controller(&request.id) {
-                Ok(_) => api::Response {
-                    result: None,
-                    message: None,
-                    success: true,
-                },
-                Err(err) => api::Response {
-                    result: None,
-                    message: Some(err.to_string()),
-                    success: false,
-                },
-            },
-
-            Command::GetMeasurement => match self.get_measurement(&request.id) {
+            Command::GetMeasurement { sensor_id } => match self.get_measurement(&sensor_id) {
                 Ok(measurement) => api::Response {
                     result: Some(measurement),
                     message: None,
@@ -118,20 +138,21 @@ impl Brewery {
                 },
             },
 
-            Command::SetTarget => {
-                match self.change_controller_target(&request.id, request.parameter) {
-                    Ok(()) => api::Response {
-                        result: None,
-                        message: None,
-                        success: true,
-                    },
-                    Err(err) => api::Response {
-                        result: None,
-                        message: Some(err.to_string()),
-                        success: false,
-                    },
-                }
-            }
+            Command::SetTarget {
+                controller_id,
+                new_target_signal,
+            } => match self.change_controller_target(&controller_id, *new_target_signal) {
+                Ok(()) => api::Response {
+                    result: None,
+                    message: None,
+                    success: true,
+                },
+                Err(err) => api::Response {
+                    result: None,
+                    message: Some(err.to_string()),
+                    success: false,
+                },
+            },
 
             _ => api::Response {
                 result: None,
@@ -184,15 +205,13 @@ impl Brewery {
         }
     }
 
-    fn change_controller_target(&mut self, id: &str, new_target: Option<f32>) -> Result<(), Error> {
+    fn change_controller_target(&mut self, id: &str, new_target: f32) -> Result<(), Error> {
         let controller_handle = self.get_active_controller(id)?;
         let mut controller = match controller_handle.lock.lock() {
             Ok(controller) => controller,
             Err(err) => panic!("Could not acquire controller lock. Error {}.", err),
         };
-        if let Some(new_target) = new_target {
-            controller.set_target(new_target);
-        };
+        controller.set_target(new_target);
         Ok(())
     }
 
