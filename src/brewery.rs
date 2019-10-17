@@ -64,7 +64,7 @@ impl Brewery {
         let dummy_sensor = sensor::dummy::Sensor::new("dummy");
         self.add_sensor(dummy_id, sync::Arc::new(sync::Mutex::new(dummy_sensor)));
         let cpu_id = "cpu";
-        let cpu_sensor = sensor::rbpi_cpu_temp::RbpiCpuTemp::new("cpu");
+        let cpu_sensor = sensor::cpu_temp::CpuTemp::new("cpu");
         self.add_sensor(cpu_id, sync::Arc::new(sync::Mutex::new(cpu_sensor)));
 
         let actor: actor::ActorHandle =

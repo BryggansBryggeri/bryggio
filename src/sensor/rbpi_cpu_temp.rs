@@ -2,14 +2,14 @@ use crate::sensor;
 use crate::utils;
 
 #[derive(Debug)]
-pub struct RbpiCpuTemp {
+pub struct CpuTemp {
     pub id: String,
 }
 
-impl RbpiCpuTemp {
-    pub fn new(id: &str) -> RbpiCpuTemp {
+impl CpuTemp {
+    pub fn new(id: &str) -> CpuTemp {
         let id = String::from(id);
-        RbpiCpuTemp { id }
+        CpuTemp { id }
     }
 
     /// Parse CPU temperature from file
@@ -30,7 +30,7 @@ impl RbpiCpuTemp {
     }
 }
 
-impl sensor::Sensor for RbpiCpuTemp {
+impl sensor::Sensor for CpuTemp {
     fn get_measurement(&self) -> Result<f32, sensor::Error> {
         let device_path = "/sys/class/thermal/thermal_zone0/temp";
         let raw_read = match utils::read_file_to_string(&device_path) {
@@ -54,7 +54,7 @@ mod tests {
     #[test]
     fn test_address_correct() {
         let temp_string = String::from("50000");
-        let mock_sensor = RbpiCpuTemp::new("test");
+        let mock_sensor = CpuTemp::new("test");
         assert_eq!(
             mock_sensor.parse_temp_measurement(&temp_string).unwrap(),
             50.0
