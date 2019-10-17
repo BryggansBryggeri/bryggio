@@ -61,11 +61,16 @@ impl Brewery {
     pub fn init_from_config(&mut self, _config: &config::Config) {
         // Not implemented yet, emulate config here.
         let dummy_id = "dummy";
-        let dummy_sensor = sensor::dummy::Sensor::new("dummy");
+        let dummy_sensor = sensor::dummy::Sensor::new(dummy_id);
         self.add_sensor(dummy_id, sync::Arc::new(sync::Mutex::new(dummy_sensor)));
+
         let cpu_id = "cpu";
-        let cpu_sensor = sensor::cpu_temp::CpuTemp::new("cpu");
+        let cpu_sensor = sensor::cpu_temp::CpuTemp::new(cpu_id);
         self.add_sensor(cpu_id, sync::Arc::new(sync::Mutex::new(cpu_sensor)));
+
+        let dsb_id = "dsb_test";
+        let dsb_sensor = sensor::dsb1820::DSB1820::new(dsb_id, "28-0416802dummy");
+        self.add_sensor(dsb_id, sync::Arc::new(sync::Mutex::new(dsb_sensor)));
 
         let actor: actor::ActorHandle =
             sync::Arc::new(sync::Mutex::new(actor::dummy::Actor::new("dummy")));
