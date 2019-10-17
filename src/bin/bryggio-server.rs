@@ -33,6 +33,8 @@ fn main() {
                 routes::backend::stop_controller,
                 routes::backend::get_measurement,
                 routes::backend::set_target_signal,
+                routes::backend::get_target_signal,
+                routes::backend::get_control_signal,
                 routes::backend::add_sensor,
                 routes::backend::get_full_state
             ],

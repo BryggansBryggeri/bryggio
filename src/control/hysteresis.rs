@@ -73,7 +73,11 @@ impl control::Control for Controller {
         self.target = new_target;
     }
 
-    fn get_signal(&self) -> f32 {
+    fn get_target(&self) -> f32 {
+        self.target
+    }
+
+    fn get_control_signal(&self) -> f32 {
         self.current_signal
     }
 }

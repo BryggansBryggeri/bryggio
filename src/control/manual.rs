@@ -27,6 +27,10 @@ impl control::Control for Controller {
         self.state
     }
 
+    fn get_control_signal(&self) -> f32 {
+        self.current_signal
+    }
+
     fn set_state(&mut self, new_state: control::State) {
         self.state = new_state;
     }
@@ -35,7 +39,7 @@ impl control::Control for Controller {
         self.target = new_target;
     }
 
-    fn get_signal(&self) -> f32 {
-        self.current_signal
+    fn get_target(&self) -> f32 {
+        self.target
     }
 }

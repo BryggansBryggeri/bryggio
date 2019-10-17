@@ -192,7 +192,7 @@ Response:
 | false   | none    | err     |
 
 ### Get control signal
-Not implemented
+Implemented
 
 `GET "/get_control_signal?control_id=<id>"`
 
@@ -204,7 +204,7 @@ Response:
 | false   | none    | err     |
 
 ### Get control target
-Not implemented
+Implemented
 
 `GET "/get_control_target?control_id=<id>"`
 

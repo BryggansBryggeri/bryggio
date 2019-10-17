@@ -12,6 +12,12 @@ pub enum Command {
     GetMeasurement {
         sensor_id: String,
     },
+    GetControlSignal {
+        controller_id: String,
+    },
+    GetTarget {
+        controller_id: String,
+    },
     SetTarget {
         controller_id: String,
         new_target_signal: f32,
@@ -143,6 +149,34 @@ impl Brewery {
                 },
             },
 
+            Command::GetTarget { controller_id } => match self.get_target(&controller_id) {
+                Ok(measurement) => api::Response {
+                    result: Some(measurement),
+                    message: None,
+                    success: true,
+                },
+                Err(err) => api::Response {
+                    result: None,
+                    message: Some(err.to_string()),
+                    success: false,
+                },
+            },
+
+            Command::GetControlSignal { controller_id } => {
+                match self.get_control_signal(&controller_id) {
+                    Ok(measurement) => api::Response {
+                        result: Some(measurement),
+                        message: None,
+                        success: true,
+                    },
+                    Err(err) => api::Response {
+                        result: None,
+                        message: Some(err.to_string()),
+                        success: false,
+                    },
+                }
+            }
+
             Command::SetTarget {
                 controller_id,
                 new_target_signal,
@@ -214,7 +248,12 @@ impl Brewery {
         let controller_handle = self.get_active_controller(id)?;
         let mut controller = match controller_handle.lock.lock() {
             Ok(controller) => controller,
-            Err(err) => panic!("Could not acquire controller lock. Error {}.", err),
+            Err(err) => {
+                return Err(Error::ConcurrencyError(format!(
+                    "Could not acquire controller lock. Error {}.",
+                    err
+                )))
+            }
         };
         controller.set_target(new_target);
         Ok(())
@@ -226,6 +265,34 @@ impl Brewery {
             Ok(measurement) => Ok(measurement),
             Err(err) => Err(Error::Sensor(err.to_string())),
         }
+    }
+
+    fn get_control_signal(&mut self, controller_id: &str) -> Result<f32, Error> {
+        let controller_handle = self.get_active_controller(controller_id)?;
+        let controller = match controller_handle.lock.lock() {
+            Ok(controller) => controller,
+            Err(err) => {
+                return Err(Error::ConcurrencyError(format!(
+                    "Could not acquire controller lock. Error {}.",
+                    err
+                )))
+            }
+        };
+        Ok(controller.get_control_signal())
+    }
+
+    fn get_target(&mut self, controller_id: &str) -> Result<f32, Error> {
+        let controller_handle = self.get_active_controller(controller_id)?;
+        let controller = match controller_handle.lock.lock() {
+            Ok(controller) => controller,
+            Err(err) => {
+                return Err(Error::ConcurrencyError(format!(
+                    "Could not acquire controller lock. Error {}.",
+                    err
+                )))
+            }
+        };
+        Ok(controller.get_control_signal())
     }
 
     fn validate_controller_id(&self, id: &str) -> Result<(), Error> {
@@ -263,6 +330,7 @@ pub enum Error {
     Missing(String),
     AlreadyActive(String),
     Sensor(String),
+    ConcurrencyError(String),
     ThreadJoin,
 }
 
@@ -272,6 +340,7 @@ impl std::fmt::Display for Error {
             Error::Missing(id) => write!(f, "ID does not exist: {}", id),
             Error::AlreadyActive(id) => write!(f, "ID is already in use: {}", id),
             Error::Sensor(err) => write!(f, "Measurement error: {}", err),
+            Error::ConcurrencyError(err) => write!(f, "Concurrency error: {}", err),
             Error::ThreadJoin => write!(f, "Could not join thread"),
         }
     }
@@ -282,6 +351,7 @@ impl std_error::Error for Error {
             Error::Missing(_) => "Requested service does not exist.",
             Error::AlreadyActive(_) => "ID is already in use.",
             Error::Sensor(_) => "Measurement error.",
+            Error::ConcurrencyError(_) => "Concurrency error",
             Error::ThreadJoin => "Error joining thread.",
         }
     }

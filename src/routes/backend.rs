@@ -44,6 +44,25 @@ pub fn set_target_signal(
     api::generate_api_response(api_response)
 }
 
+#[get("/get_target_signal?<controller_id>")]
+pub fn get_target_signal(
+    controller_id: String,
+    api_endpoint: rocket::State<api::WebEndpoint>,
+) -> json::Json<api::Response> {
+    let request = brewery::Command::GetTarget { controller_id };
+    let api_response = api_endpoint.send_and_wait_for_response(request);
+    api::generate_api_response(api_response)
+}
+
+#[get("/get_control_signal?<controller_id>")]
+pub fn get_control_signal(
+    controller_id: String,
+    api_endpoint: rocket::State<api::WebEndpoint>,
+) -> json::Json<api::Response> {
+    let request = brewery::Command::GetControlSignal { controller_id };
+    let api_response = api_endpoint.send_and_wait_for_response(request);
+    api::generate_api_response(api_response)
+}
 #[get("/get_measurement?<sensor_id>")]
 pub fn get_measurement(
     sensor_id: String,

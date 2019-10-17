@@ -89,7 +89,8 @@ pub trait Control: Send {
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32;
     fn get_state(&self) -> State;
     fn set_state(&mut self, new_state: State);
-    fn get_signal(&self) -> f32;
+    fn get_control_signal(&self) -> f32;
+    fn get_target(&self) -> f32;
     fn set_target(&mut self, new_target: f32);
 }
 
