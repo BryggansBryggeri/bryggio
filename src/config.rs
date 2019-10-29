@@ -8,7 +8,7 @@ use toml;
 pub struct Config {
     pub general: Option<General>,
     pub control: Option<Control>,
-    pub sensors: Option<Sensor>,
+    pub hardware: Hardware,
 }
 
 #[derive(Deserialize, Debug)]
@@ -22,12 +22,24 @@ pub struct Control {
     pub offset_off: f32,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct Hardware {
+    pub sensors: Vec<Sensor>,
+    pub actors: Vec<Actor>,
+}
+
 #[derive(Deserialize, Debug, Clone)]
 // TODO: Implement Deserialize for OneWireAddress
 pub struct Sensor {
     pub id: String,
     pub address: String,
     pub offset: Option<f32>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Actor {
+    pub id: String,
+    pub gpio_pin: u32,
 }
 
 impl Config {

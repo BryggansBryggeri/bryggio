@@ -51,7 +51,7 @@ pub struct Brewery {
 }
 
 impl Brewery {
-    pub fn new(_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
+    pub fn new(api_endpoint: api::BreweryEndpoint) -> Brewery {
         let active_controllers: HashMap<String, control::ControllerHandle> = HashMap::new();
         let sensors: HashMap<String, sensor::SensorHandle> = HashMap::new();
         let actors: HashMap<String, actor::ActorHandle> = HashMap::new();
@@ -64,8 +64,7 @@ impl Brewery {
         }
     }
 
-    pub fn init_from_config(&mut self, _config: &config::Config) {
-        // Not implemented yet, emulate config here.
+    pub fn init_from_config(&mut self, config: &config::Config) {
         let dummy_id = "dummy";
         let dummy_sensor = sensor::dummy::Sensor::new(dummy_id);
         self.add_sensor(dummy_id, sync::Arc::new(sync::Mutex::new(dummy_sensor)));
@@ -74,13 +73,17 @@ impl Brewery {
         let cpu_sensor = sensor::cpu_temp::CpuTemp::new(cpu_id);
         self.add_sensor(cpu_id, sync::Arc::new(sync::Mutex::new(cpu_sensor)));
 
-        let dsb_id = "dsb_test";
-        let dsb_sensor = sensor::dsb1820::DSB1820::new(dsb_id, "28-0416802dummy");
-        self.add_sensor(dsb_id, sync::Arc::new(sync::Mutex::new(dsb_sensor)));
+        for sensor in &config.hardware.sensors {
+            let dsb_sensor = sensor::dsb1820::DSB1820::new(&sensor.id, &sensor.address);
+            let sensor_handle: sensor::SensorHandle = sync::Arc::new(sync::Mutex::new(dsb_sensor));
+            self.add_sensor(&sensor.id, sensor_handle);
+        }
 
-        let actor: actor::ActorHandle =
-            sync::Arc::new(sync::Mutex::new(actor::dummy::Actor::new("dummy")));
-        self.add_actor(dummy_id, actor);
+        for actor in &config.hardware.actors {
+            let gpio_actor = actor::simple_gpio::Actor::new(&actor.id, actor.gpio_pin);
+            let actor_handle: actor::ActorHandle = sync::Arc::new(sync::Mutex::new(gpio_actor));
+            self.add_actor(&actor.id, actor_handle);
+        }
     }
 
     pub fn add_sensor(&mut self, id: &str, sensor: sensor::SensorHandle) {
