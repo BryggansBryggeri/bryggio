@@ -227,6 +227,18 @@ Response:
 | true    | none    | none    |
 | false   | none    | err     |
 
+### List available sensors
+Currently lists all DSB1820 sensors registered by the Rbpi
+
+`GET "/list_avaialable_sensors"`
+
+Response:
+
+| success | result  | message |
+| ------- | ------- | ------- |
+| true    | [string]| none    |
+| false   | none    | err     |
+
 ### Add actor
 Not implemented
 
@@ -259,8 +271,56 @@ Response:
 | true    | none    | ?       |
 | false   | none    | err     |
 
-### Get bryggio version
-Not implemented
+### Get config
+
+Returns the full contents of the configuration file:
+`Bryggio.toml` in json format.
+
+Never fails, but it follows the same Response structure as the fallible calls.
+
+`GET "/get_brewery_name"`
+
+Query parameters:
+
+- `none`
+
+Response:
+
+| success | result  | message |
+| ------- | ------- | ------- |
+| true    | config::Config  | none    |
+| (false  | none    | err)    |
 
 ### Get brewery name
-Not implemented
+
+Never fails, but it follows the same Response structure as the fallible calls.
+
+`GET "/get_brewery_name"`
+
+Query parameters:
+
+- `none`
+
+Response:
+
+| success | result  | message |
+| ------- | ------- | ------- |
+| true    | string  | none    |
+| (false  | none    | err)    |
+
+### Get bryggio version
+
+Never fails, but it follows the same Response structure as the fallible calls.
+
+`GET "/get_bryggio_version"`
+
+Query parameters:
+
+- `none`
+
+Response:
+
+| success | result  | message |
+| ------- | ------- | ------- |
+| true    | string  | none    |
+| (false  | none    | err)    |

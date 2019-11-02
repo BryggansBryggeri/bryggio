@@ -1,5 +1,5 @@
 [general]
-brewery = "BRYGGANS BRYGGERI BÄRS BB"
+brewery_name = "BRYGGANS BRYGGERI BÄRS BB"
 
 [control]
 offset_on = 1.0

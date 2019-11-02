@@ -1,6 +1,8 @@
 use crate::api;
 use crate::brewery;
+use crate::config;
 use crate::sensor;
+use crate::utils;
 use rocket;
 use rocket_contrib::json;
 
@@ -110,6 +112,43 @@ pub fn list_available_sensors() -> json::Json<api::Response<Vec<sensor::dsb1820:
             message: Some(err.to_string()),
             success: false,
         },
+    };
+    api::generate_api_response(Ok(response))
+}
+
+#[get("/get_config")]
+pub fn get_config(
+    config: rocket::State<config::Config>,
+) -> json::Json<api::Response<config::Config>> {
+    let config = (*config.inner()).clone();
+    let response = api::Response {
+        result: Some(config),
+        message: None,
+        success: true,
+    };
+    api::generate_api_response(Ok(response))
+}
+
+#[get("/get_brewery_name")]
+pub fn get_brewery_name(
+    config: rocket::State<config::Config>,
+) -> json::Json<api::Response<String>> {
+    let brewery_name = config.general.brewery_name.clone();
+    let response = api::Response {
+        result: Some(brewery_name),
+        message: None,
+        success: true,
+    };
+    api::generate_api_response(Ok(response))
+}
+
+#[get("/get_bryggio_version")]
+pub fn get_bryggio_version() -> json::Json<api::Response<String>> {
+    let version = utils::get_bryggio_version().into();
+    let response = api::Response {
+        result: Some(version),
+        message: None,
+        success: true,
     };
     api::generate_api_response(Ok(response))
 }

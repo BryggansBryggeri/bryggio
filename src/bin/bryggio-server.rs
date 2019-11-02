@@ -38,10 +38,14 @@ fn main() {
                 routes::backend::add_sensor,
                 routes::backend::get_full_state,
                 routes::backend::list_available_sensors,
+                routes::backend::get_config,
+                routes::backend::get_brewery_name,
+                routes::backend::get_bryggio_version,
             ],
         )
         .register(catchers![routes::backend::not_found])
         .manage(web_endpoint)
+        .manage(config)
         .launch();
 
     brewery_thread.join().expect("Brewery thread panicked.");
