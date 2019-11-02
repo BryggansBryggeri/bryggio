@@ -44,14 +44,14 @@ pub enum Command {
 }
 
 pub struct Brewery {
-    api_endpoint: api::BreweryEndpoint,
+    api_endpoint: api::BreweryEndpoint<f32>,
     active_controllers: HashMap<String, control::ControllerHandle>,
     sensors: HashMap<String, sensor::SensorHandle>,
     actors: HashMap<String, actor::ActorHandle>,
 }
 
 impl Brewery {
-    pub fn new(_config: &config::Config, api_endpoint: api::BreweryEndpoint) -> Brewery {
+    pub fn new(_config: &config::Config, api_endpoint: api::BreweryEndpoint<f32>) -> Brewery {
         let active_controllers: HashMap<String, control::ControllerHandle> = HashMap::new();
         let sensors: HashMap<String, sensor::SensorHandle> = HashMap::new();
         let actors: HashMap<String, actor::ActorHandle> = HashMap::new();
@@ -102,7 +102,7 @@ impl Brewery {
         }
     }
 
-    fn process_request(&mut self, request: &Command) -> api::Response {
+    fn process_request(&mut self, request: &Command) -> api::Response<f32> {
         match request {
             Command::StartController {
                 controller_id,

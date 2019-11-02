@@ -7,19 +7,22 @@ use std::sync;
 use std::sync::mpsc;
 
 #[derive(Serialize)]
-pub struct Response {
-    pub result: Option<f32>,
+pub struct Response<T> {
+    pub result: Option<T>,
     pub message: Option<String>,
     pub success: bool,
 }
 
-pub struct WebEndpoint {
+pub struct WebEndpoint<T> {
     sender: sync::Mutex<mpsc::Sender<brewery::Command>>,
-    receiver: sync::Mutex<mpsc::Receiver<Response>>,
+    receiver: sync::Mutex<mpsc::Receiver<Response<T>>>,
 }
 
-impl WebEndpoint {
-    pub fn send_and_wait_for_response(&self, request: brewery::Command) -> Result<Response, Error> {
+impl<T> WebEndpoint<T> {
+    pub fn send_and_wait_for_response(
+        &self,
+        request: brewery::Command,
+    ) -> Result<Response<T>, Error> {
         let sender = match self.sender.lock() {
             Ok(sender) => sender,
             Err(err) => {
@@ -57,12 +60,12 @@ impl WebEndpoint {
     }
 }
 
-pub struct BreweryEndpoint {
-    pub sender: mpsc::Sender<Response>,
+pub struct BreweryEndpoint<T> {
+    pub sender: mpsc::Sender<Response<T>>,
     pub receiver: mpsc::Receiver<brewery::Command>,
 }
 
-pub fn create_api_endpoints() -> (WebEndpoint, BreweryEndpoint) {
+pub fn create_api_endpoints<T>() -> (WebEndpoint<T>, BreweryEndpoint<T>) {
     let (tx_web, rx_brew) = mpsc::channel();
     let (tx_brew, rx_web) = mpsc::channel();
     let api_web = WebEndpoint {
@@ -76,7 +79,9 @@ pub fn create_api_endpoints() -> (WebEndpoint, BreweryEndpoint) {
     (api_web, api_brew)
 }
 
-pub fn generate_api_response(api_response: Result<Response, Error>) -> json::Json<Response> {
+pub fn generate_api_response<T>(
+    api_response: Result<Response<T>, Error>,
+) -> json::Json<Response<T>> {
     match api_response {
         Ok(response) => json::Json(response),
         Err(err) => {
