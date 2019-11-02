@@ -36,7 +36,8 @@ fn main() {
                 routes::backend::get_target_signal,
                 routes::backend::get_control_signal,
                 routes::backend::add_sensor,
-                routes::backend::get_full_state
+                routes::backend::get_full_state,
+                routes::backend::list_available_sensors,
             ],
         )
         .register(catchers![routes::backend::not_found])

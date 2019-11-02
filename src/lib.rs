@@ -9,5 +9,5 @@ pub mod config;
 mod control;
 mod hardware;
 pub mod routes;
-mod sensor;
+pub mod sensor;
 mod utils;

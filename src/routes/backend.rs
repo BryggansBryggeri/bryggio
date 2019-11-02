@@ -95,6 +95,16 @@ pub fn get_full_state(api_endpoint: rocket::State<api::WebEndpoint>) -> json::Js
     api::generate_api_response(api_response)
 }
 
+#[get("/list_available_sensors")]
+pub fn list_available_sensors(
+    _api_endpoint: rocket::State<api::WebEndpoint>,
+) -> json::Json<Vec<sensor::dsb1820::DSB1820Address>> {
+    match sensor::dsb1820::list_available() {
+        Ok(available_sensors) => json::Json(available_sensors),
+        Err(_) => json::Json(Vec::new()),
+    }
+}
+
 #[catch(404)]
 pub fn not_found(req: &rocket::Request) -> json::Json<api::Response> {
     let error_response = api::Response {
