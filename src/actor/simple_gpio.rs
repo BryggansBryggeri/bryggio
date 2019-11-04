@@ -8,17 +8,14 @@ pub struct Actor {
 }
 
 impl Actor {
-    pub fn new(id: &str, pin_number: u32) -> Actor {
+    pub fn new(id: &str, pin_number: u32) -> Result<Actor, actor::Error> {
         let pin_number = pin_number;
-        let handle = match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &id) {
-            Ok(handle) => handle,
-            Err(err) => {
-                panic!("Could not get handle, {}.", err);
-            }
-        };
-        Actor {
-            id: id.into(),
-            handle,
+        match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &id) {
+            Ok(handle) => Ok(Actor {
+                id: id.into(),
+                handle,
+            }),
+            Err(err) => Err(actor::Error::ActorError(err.to_string())),
         }
     }
 }

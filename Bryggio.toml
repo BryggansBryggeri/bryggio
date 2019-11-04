@@ -5,7 +5,12 @@ brewery_name = "BRYGGANS BRYGGERI BÄRS BB"
 offset_on = 1.0
 offset_off = 0.0
 
-[sensors]
-id = "Mash tun"
-address = "28-0416802230ff"
-bias = 0.0
+[hardware]
+  sensors = [
+    {id = "Mash tun", address = "28-0416802230ff"},
+    {id = "Kettle", address = "28-041680223000"}
+  ]
+  actors = [
+    {id = "Mash tun", gpio_pin = 13},
+    {id = "Kettle", gpio_pin = 16}
+  ]

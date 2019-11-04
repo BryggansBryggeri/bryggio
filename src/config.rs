@@ -8,7 +8,7 @@ use toml;
 pub struct Config {
     pub general: General,
     pub control: Option<Control>,
-    pub sensors: Option<Sensor>,
+    pub hardware: Hardware,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -23,11 +23,24 @@ pub struct Control {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Hardware {
+    pub sensors: Vec<Sensor>,
+    pub actors: Vec<Actor>,
+}
+
 // TODO: Implement Deserialize for OneWireAddress
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Sensor {
     pub id: String,
     pub address: String,
     pub offset: Option<f32>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+
+pub struct Actor {
+    pub id: String,
+    pub gpio_pin: u32,
 }
 
 impl Config {
@@ -62,6 +75,9 @@ mod tests {
             [sensors]
             id = "Mash tun"
             address = "random address"
+            [hardware]
+            sensors = []
+            actors = []
         "#,
         );
         assert_approx_eq!(config.control.unwrap().offset_on, 1.0);
