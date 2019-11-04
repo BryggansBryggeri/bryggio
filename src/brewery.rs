@@ -79,10 +79,18 @@ impl Brewery {
             self.add_sensor(&sensor.id, sensor_handle);
         }
 
+        let dummy_actor = sync::Arc::new(sync::Mutex::new(actor::dummy::Actor::new(dummy_id)));
+        self.add_actor(dummy_id, dummy_actor);
+
         for actor in &config.hardware.actors {
-            let gpio_actor = actor::simple_gpio::Actor::new(&actor.id, actor.gpio_pin);
-            let actor_handle: actor::ActorHandle = sync::Arc::new(sync::Mutex::new(gpio_actor));
-            self.add_actor(&actor.id, actor_handle);
+            match actor::simple_gpio::Actor::new(&actor.id, actor.gpio_pin) {
+                Ok(gpio_actor) => {
+                    let actor_handle: actor::ActorHandle =
+                        sync::Arc::new(sync::Mutex::new(gpio_actor));
+                    self.add_actor(&actor.id, actor_handle);
+                }
+                Err(err) => println!("Error adding actor: {}", err),
+            };
         }
     }
 
