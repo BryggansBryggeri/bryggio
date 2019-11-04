@@ -179,6 +179,13 @@ Implemented
 
 `GET "/set_target_signal?controller_id=<id>&new_target_signal=<id>"`
 
+Response:
+
+| success | result  | message |
+| ------- | ------- | ------- |
+| true    | none    | none    |
+| false   | none    | err     |
+
 ### Get measurement
 Implemented
 

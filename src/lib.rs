@@ -8,6 +8,5 @@ pub mod brewery;
 pub mod config;
 mod control;
 mod hardware;
-pub mod routes;
 pub mod sensor;
 mod utils;

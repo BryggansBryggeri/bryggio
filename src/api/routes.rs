@@ -1,3 +1,4 @@
+//! # Web server routes
 use crate::api;
 use crate::brewery;
 use crate::config;
@@ -6,6 +7,25 @@ use crate::utils;
 use rocket;
 use rocket_contrib::json;
 
+/// ### Start controller
+///
+/// `GET "/start_controller?controller_id=<id>&sensor_id=<id>&actor_id<id>"`
+///
+/// Choose a pair of already registered sensor and actor and start controlling them.
+/// There can only be one controller per actor at the same time,
+/// Multiple controller can however use the same sensor.
+///
+/// The controller is created and sent to a new thread before the response is returned to the webserver.
+///
+/// Currently, the type of controller is hard-coded but this is subject to change.
+///
+/// Response:
+///
+/// | success | result  | message |
+/// | ------- | ------- | ------- |
+/// | true    | none    | none    |
+/// | false   | none    | err     |
+///
 #[get("/start_controller?<controller_id>&<sensor_id>&<actor_id>")]
 pub fn start_controller(
     controller_id: String,
@@ -22,6 +42,27 @@ pub fn start_controller(
     api::generate_api_response(api_response)
 }
 
+/// ### Stop controller
+/// Implemented
+///
+/// `GET "/stop_controller?controller_id=<id>"`
+///
+/// Stop an existing control process.
+/// Waits until the controller sleeps and is unlocked.
+/// Changes the state to inactive, which will cause the controller to exit its main loop,
+/// return and join the thread into the main hardware thread.
+///
+/// Query parameters:
+///
+/// - `controller_id: String`
+///
+/// Response:
+///
+/// | success | result  | message |
+/// | ------- | ------- | ------- |
+/// | true    | none    | none    |
+/// | false   | none    | err     |
+///
 #[get("/stop_controller?<controller_id>")]
 pub fn stop_controller(
     controller_id: String,
@@ -32,6 +73,17 @@ pub fn stop_controller(
     api::generate_api_response(api_response)
 }
 
+/// ### Set target signal
+///
+/// `GET "/set_target_signal?controller_id=<id>&new_target_signal=<id>"`
+///
+/// Response:
+///
+/// | success | result  | message |
+/// | ------- | ------- | ------- |
+/// | true    | none    | none    |
+/// | false   | none    | err     |
+///
 #[get("/set_target_signal?<controller_id>&<new_target_signal>")]
 pub fn set_target_signal(
     controller_id: String,

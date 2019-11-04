@@ -4,7 +4,6 @@ extern crate rocket;
 use bryggio::api;
 use bryggio::brewery;
 use bryggio::config;
-use bryggio::routes;
 use std::thread;
 
 fn main() {
@@ -29,21 +28,21 @@ fn main() {
         .mount(
             "/",
             routes![
-                routes::backend::start_controller,
-                routes::backend::stop_controller,
-                routes::backend::get_measurement,
-                routes::backend::set_target_signal,
-                routes::backend::get_target_signal,
-                routes::backend::get_control_signal,
-                routes::backend::add_sensor,
-                routes::backend::get_full_state,
-                routes::backend::list_available_sensors,
-                routes::backend::get_config,
-                routes::backend::get_brewery_name,
-                routes::backend::get_bryggio_version,
+                api::routes::start_controller,
+                api::routes::stop_controller,
+                api::routes::get_measurement,
+                api::routes::set_target_signal,
+                api::routes::get_target_signal,
+                api::routes::get_control_signal,
+                api::routes::add_sensor,
+                api::routes::get_full_state,
+                api::routes::list_available_sensors,
+                api::routes::get_config,
+                api::routes::get_brewery_name,
+                api::routes::get_bryggio_version,
             ],
         )
-        .register(catchers![routes::backend::not_found])
+        .register(catchers![api::routes::not_found])
         .manage(web_endpoint)
         .manage(config)
         .launch();
