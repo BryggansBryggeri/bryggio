@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 #![feature(proc_macro_hygiene, decl_macro)]
 #[macro_use]
 extern crate rocket;
@@ -8,5 +9,5 @@ pub mod config;
 mod control;
 mod hardware;
 pub mod routes;
-mod sensor;
+pub mod sensor;
 mod utils;

@@ -1,42 +1,43 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::io::Read;
 use toml;
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
-    pub general: Option<General>,
+    pub general: General,
     pub control: Option<Control>,
     pub hardware: Hardware,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct General {
-    pub brewery: String,
+    pub brewery_name: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Control {
     pub offset_on: f32,
     pub offset_off: f32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Hardware {
     pub sensors: Vec<Sensor>,
     pub actors: Vec<Actor>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
 // TODO: Implement Deserialize for OneWireAddress
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Sensor {
     pub id: String,
     pub address: String,
     pub offset: Option<f32>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+
 pub struct Actor {
     pub id: String,
     pub gpio_pin: u32,
@@ -67,13 +68,16 @@ mod tests {
         let config: Config = Config::parse_toml(
             r#"
             [general]
-            brewery = "BRYGGANS BRYGGERI BÄRS BB"
+            brewery_name = "BRYGGANS BRYGGERI BÄRS BB"
             [control]
             offset_on = 1.0
             offset_off = 0.0
             [sensors]
             id = "Mash tun"
             address = "random address"
+            [hardware]
+            sensors = []
+            actors = []
         "#,
         );
         assert_approx_eq!(config.control.unwrap().offset_on, 1.0);

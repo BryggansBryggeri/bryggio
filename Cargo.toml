@@ -7,7 +7,7 @@ default-run = "bryggio-server"
 
 [dependencies]
 rocket = ">=0.4.2"
-rocket_contrib = { version = ">=0.4.2", features = ["tera_templates"]}
+rocket_contrib = ">=0.4.2"
 gpio-cdev = ">=0.2.0"
 onewire = ">=0.3.10"
 rand = ">=0.7"
@@ -18,6 +18,7 @@ serde_json = ">=1.0.40"
 log = ">=0.4.8"
 regex = "1"
 lazy_static = "1"
+reqwest = "0.9.22"
 
 [dev-dependencies]
 assert_approx_eq = "1.1.0"

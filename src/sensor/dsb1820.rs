@@ -2,6 +2,13 @@ use crate::sensor;
 use crate::utils;
 use lazy_static::lazy_static;
 use regex;
+use serde::Serialize;
+use std::fmt;
+use std::fs;
+use std::path;
+
+//const DSB_DIR: &str = "/sys/bus/w1/devices/";
+const DSB_DIR: &str = "./dummy";
 
 #[derive(Debug)]
 pub struct DSB1820 {
@@ -27,39 +34,6 @@ impl DSB1820 {
         let id = String::from(id);
         DSB1820 { id, address }
     }
-
-    fn parse_temp_measurement(&self, raw_read: &str) -> Result<f32, sensor::Error> {
-        let mat = match TEMP_PATTERN.captures(raw_read) {
-            Some(mat) => mat,
-            None => {
-                return Err(sensor::Error::FileParseError(format!(
-                    "No match in string '{}'",
-                    String::from(raw_read)
-                )));
-            }
-        };
-        let value_raw = match mat.get(1) {
-            Some(mat) => mat.as_str(),
-            None => {
-                // Can this even happen? If match on whole regex above, then this must exist no?
-                return Err(sensor::Error::FileParseError(format!(
-                    "No valid temp match in string '{}'",
-                    String::from(raw_read)
-                )));
-            }
-        };
-        let value: f32 = match value_raw.parse() {
-            Ok(value) => value,
-            Err(err) => {
-                return Err(sensor::Error::FileParseError(format!(
-                    "Could not parse string '{}' to f32. Err: {}",
-                    String::from(raw_read),
-                    err.to_string()
-                )));
-            }
-        };
-        Ok(value / 1000.0)
-    }
 }
 
 impl sensor::Sensor for DSB1820 {
@@ -71,24 +45,23 @@ impl sensor::Sensor for DSB1820 {
                 return Err(sensor::Error::FileReadError(err.to_string()));
             }
         };
-        self.parse_temp_measurement(&raw_read)
+        parse_temp_measurement(&raw_read)
     }
 
     fn get_id(&self) -> String {
         self.id.clone()
     }
 }
-
-#[derive(Debug)]
-struct DSB1820Address(String);
+#[derive(Serialize, Debug)]
+pub struct DSB1820Address(String);
 
 impl DSB1820Address {
     pub fn new(address: &str) -> Result<DSB1820Address, sensor::Error> {
-        DSB1820Address::verify_address(address)?;
+        DSB1820Address::verify(address)?;
         Ok(DSB1820Address(String::from(address)))
     }
 
-    pub fn verify_address(address: &str) -> Result<(), sensor::Error> {
+    pub fn verify(address: &str) -> Result<(), sensor::Error> {
         match &address[0..2] {
             "28" => {}
             _ => return Err(sensor::Error::InvalidAddressStart(String::from(address))),
@@ -101,6 +74,77 @@ impl DSB1820Address {
     }
 }
 
+impl fmt::Display for DSB1820Address {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+fn parse_temp_measurement(raw_read: &str) -> Result<f32, sensor::Error> {
+    let mat = match TEMP_PATTERN.captures(raw_read) {
+        Some(mat) => mat,
+        None => {
+            return Err(sensor::Error::FileParseError(format!(
+                "No match in string '{}'",
+                String::from(raw_read)
+            )));
+        }
+    };
+    let value_raw = match mat.get(1) {
+        Some(mat) => mat.as_str(),
+        None => {
+            // Can this even happen? If match on whole regex above, then this must exist no?
+            return Err(sensor::Error::FileParseError(format!(
+                "No valid temp match in string '{}'",
+                String::from(raw_read)
+            )));
+        }
+    };
+    let value: f32 = match value_raw.parse() {
+        Ok(value) => value,
+        Err(err) => {
+            return Err(sensor::Error::FileParseError(format!(
+                "Could not parse string '{}' to f32. Err: {}",
+                String::from(raw_read),
+                err.to_string()
+            )));
+        }
+    };
+    Ok(value / 1000.0)
+}
+
+pub fn list_available() -> Result<Vec<DSB1820Address>, sensor::Error> {
+    println!("Finding sensors");
+    let device_path = path::Path::new(DSB_DIR);
+    if !device_path.exists() {
+        // TODO: Better error
+        return Err(sensor::Error::FileReadError(format!(
+            "DSB path does not exist: '{}'",
+            DSB_DIR
+        )));
+    } else {
+    }
+    let files = match fs::read_dir(device_path) {
+        Ok(files) => files,
+        Err(_error) => {
+            return Err(sensor::Error::FileReadError(format!(
+                "Unable to list DSB files {}.",
+                DSB_DIR
+            )))
+        }
+    };
+    let mut sensors = Vec::new();
+    for file in files {
+        let file = file.unwrap();
+        let file_name = String::from(file.path().file_name().unwrap().to_str().unwrap());
+        match DSB1820Address::new(&file_name) {
+            Ok(address) => sensors.push(address),
+            Err(_) => continue,
+        };
+    }
+    Ok(sensors)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -108,7 +152,7 @@ mod tests {
     #[test]
     fn test_address_correct() {
         let string = String::from("28-0416802230ff");
-        let address = DSB1820Address::verify_address(&string);
+        let address = DSB1820Address::verify(&string);
         address.unwrap();
     }
 
@@ -116,7 +160,7 @@ mod tests {
     #[should_panic]
     fn test_address_wrong_start() {
         let string = String::from("29-0416802230ff");
-        let address = DSB1820Address::verify_address(&string);
+        let address = DSB1820Address::verify(&string);
         address.unwrap();
     }
 
@@ -124,7 +168,7 @@ mod tests {
     #[should_panic]
     fn test_address_too_short() {
         let string = String::from("284E1F69140");
-        let address = DSB1820Address::verify_address(&string);
+        let address = DSB1820Address::verify(&string);
         address.unwrap();
     }
 
@@ -133,19 +177,12 @@ mod tests {
         let temp_string = String::from(
             "ca 01 4b 46 7f ff 06 10 65 : crc=65 YES\nca 01 4b 46 7f ff 06 10 65 t=28625",
         );
-        let address = String::from("28-0416802230ff");
-        let mock_sensor = DSB1820::new("test", &address);
-        assert_eq!(
-            mock_sensor.parse_temp_measurement(&temp_string).unwrap(),
-            28.625
-        );
+        assert_eq!(parse_temp_measurement(&temp_string).unwrap(), 28.625);
     }
 
     #[test]
     fn test_parse_temp_measurement_no_match() {
         let temp_string = String::from("nonsense");
-        let address = String::from("28-0416802230ff");
-        let mock_sensor = DSB1820::new("test", &address);
-        assert!(mock_sensor.parse_temp_measurement(&temp_string).is_err(),);
+        assert!(parse_temp_measurement(&temp_string).is_err(),);
     }
 }
