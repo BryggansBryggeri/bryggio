@@ -24,6 +24,7 @@ pub enum Command {
     },
     StartController {
         controller_id: String,
+        controller_type: control::ControllerType,
         // controller_type: control::ControllerType,
         sensor_id: String,
         actor_id: String,
@@ -117,20 +118,24 @@ impl Brewery {
         match request {
             Command::StartController {
                 controller_id,
+                controller_type,
                 sensor_id,
                 actor_id,
-            } => match self.start_controller(&controller_id, &sensor_id, &actor_id) {
-                Ok(_) => api::Response {
-                    result: None,
-                    message: None,
-                    success: true,
-                },
-                Err(err) => api::Response {
-                    result: None,
-                    message: Some(err.to_string()),
-                    success: false,
-                },
-            },
+            } => {
+                match self.start_controller(&controller_id, controller_type, &sensor_id, &actor_id)
+                {
+                    Ok(_) => api::Response {
+                        result: None,
+                        message: None,
+                        success: true,
+                    },
+                    Err(err) => api::Response {
+                        result: None,
+                        message: Some(err.to_string()),
+                        success: false,
+                    },
+                }
+            }
 
             Command::StopController { controller_id } => {
                 match self.stop_controller(&controller_id) {
@@ -215,15 +220,19 @@ impl Brewery {
     fn start_controller(
         &mut self,
         controller_id: &str,
+        controller_type: &control::ControllerType,
         sensor_id: &str,
         actor_id: &str,
     ) -> Result<(), Error> {
         self.validate_controller_id(controller_id)?;
 
-        let controller_lock: control::ControllerLock = sync::Arc::new(sync::Mutex::new(
-            //control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."),
-            control::manual::Controller::new(),
-        ));
+        let controller: Box<dyn control::Control> = match controller_type {
+            control::ControllerType::Manual => Box::new(control::manual::Controller::new()),
+            control::ControllerType::Hysteresis => Box::new(
+                control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."),
+            ),
+        };
+        let controller_lock: control::ControllerLock = sync::Arc::new(sync::Mutex::new(controller));
 
         let controller_send = controller_lock.clone();
         let sensor_handle = self.get_sensor(sensor_id)?.clone();

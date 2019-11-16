@@ -2,10 +2,12 @@
 use crate::api;
 use crate::brewery;
 use crate::config;
+use crate::control;
 use crate::sensor;
 use crate::utils;
 use rocket;
 use rocket_contrib::json;
+use std::convert::TryFrom;
 
 /// ### Start controller
 ///
@@ -26,19 +28,31 @@ use rocket_contrib::json;
 /// | true    | none    | none    |
 /// | false   | none    | err     |
 ///
-#[get("/start_controller?<controller_id>&<sensor_id>&<actor_id>")]
+#[get("/start_controller?<controller_id>&<controller_type>&<sensor_id>&<actor_id>")]
 pub fn start_controller(
     controller_id: String,
+    controller_type: String,
     sensor_id: String,
     actor_id: String,
     api_endpoint: rocket::State<api::WebEndpoint<f32>>,
 ) -> json::Json<api::Response<f32>> {
-    let request = brewery::Command::StartController {
-        controller_id,
-        sensor_id,
-        actor_id,
+    let controller_type = control::ControllerType::try_from(controller_type);
+    let api_response = match controller_type {
+        Ok(controller_type) => {
+            let request = brewery::Command::StartController {
+                controller_id,
+                controller_type,
+                sensor_id,
+                actor_id,
+            };
+            api_endpoint.send_and_wait_for_response(request)
+        }
+        Err(error) => Ok(api::Response {
+            result: None,
+            message: Some(error.to_string()),
+            success: false,
+        }),
     };
-    let api_response = api_endpoint.send_and_wait_for_response(request);
     api::generate_api_response(api_response)
 }
 

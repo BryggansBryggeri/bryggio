@@ -3,17 +3,34 @@ pub mod manual;
 
 use crate::actor;
 use crate::sensor;
+use std::convert::TryFrom;
 use std::error as std_error;
 use std::f32;
 use std::sync;
 use std::{thread, time};
+
+pub enum ControllerType {
+    Hysteresis,
+    Manual,
+}
+
+impl TryFrom<String> for ControllerType {
+    type Error = Error;
+    fn try_from(string: String) -> Result<Self, Error> {
+        match string.to_ascii_lowercase().as_ref() {
+            "hysteresis" => Ok(ControllerType::Hysteresis),
+            "manual" => Ok(ControllerType::Manual),
+            _ => Err(Error::ConversionError(string.into())),
+        }
+    }
+}
 
 pub struct ControllerHandle {
     pub lock: ControllerLock,
     pub thread: thread::JoinHandle<Result<(), Error>>,
 }
 
-pub type ControllerLock = sync::Arc<sync::Mutex<dyn Control>>;
+pub type ControllerLock = sync::Arc<sync::Mutex<Box<dyn Control>>>;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum State {
@@ -98,6 +115,7 @@ pub trait Control: Send {
 pub enum Error {
     ParamError(String),
     ConcurrencyError(String),
+    ConversionError(String),
 }
 
 impl std::fmt::Display for Error {
@@ -105,6 +123,9 @@ impl std::fmt::Display for Error {
         match self {
             Error::ParamError(param) => write!(f, "Invalid param: {}", param),
             Error::ConcurrencyError(err) => write!(f, "Concurrency error: {}", err),
+            Error::ConversionError(type_string) => {
+                write!(f, "Unable to parse '{}' to ControllerType", type_string)
+            }
         }
     }
 }
@@ -113,6 +134,7 @@ impl std_error::Error for Error {
         match *self {
             Error::ParamError(_) => "Invalid param",
             Error::ConcurrencyError(_) => "Concurrency error",
+            Error::ConversionError(_) => "Conversion error",
         }
     }
 
