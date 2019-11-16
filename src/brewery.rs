@@ -251,10 +251,15 @@ impl Brewery {
     }
 
     fn stop_controller(&mut self, id: &str) -> Result<(), Error> {
-        let controller_handle = self.active_controllers.remove(id).unwrap();
+        let controller_handle = self.remove_active_controller(id)?;
         let mut controller = match controller_handle.lock.lock() {
             Ok(controller) => controller,
-            Err(err) => panic!("Could not acquire controller lock. Error {}.", err),
+            Err(err) => {
+                return Err(Error::ConcurrencyError(format!(
+                    "Could not acquire controller lock. Error {}.",
+                    err,
+                )))
+            }
         };
         controller.set_state(control::State::Inactive);
         drop(controller);
@@ -326,28 +331,35 @@ impl Brewery {
     fn get_active_controller(&mut self, id: &str) -> Result<&control::ControllerHandle, Error> {
         match self.active_controllers.get_mut(id) {
             Some(controller) => Ok(controller),
-            None => Err(Error::Missing(String::from(id))),
+            None => Err(Error::Missing("controller".into(), id.into())),
+        }
+    }
+
+    fn remove_active_controller(&mut self, id: &str) -> Result<control::ControllerHandle, Error> {
+        match self.active_controllers.remove(id) {
+            Some(controller) => Ok(controller),
+            None => Err(Error::Missing("controller".into(), id.into())),
         }
     }
 
     fn get_sensor(&mut self, id: &str) -> Result<&sensor::SensorHandle, Error> {
         match self.sensors.get_mut(id) {
             Some(sensor) => Ok(sensor),
-            None => Err(Error::Missing(String::from(id))),
+            None => Err(Error::Missing("sensor".into(), id.into())),
         }
     }
 
     fn get_actor(&mut self, id: &str) -> Result<&actor::ActorHandle, Error> {
         match self.actors.get_mut(id) {
             Some(actor) => Ok(actor),
-            None => Err(Error::Missing(String::from(id))),
+            None => Err(Error::Missing("actor".into(), id.into())),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {
-    Missing(String),
+    Missing(String, String),
     AlreadyActive(String),
     Sensor(String),
     ConcurrencyError(String),
@@ -357,7 +369,7 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Error::Missing(id) => write!(f, "ID does not exist: {}", id),
+            Error::Missing(type_, id) => write!(f, "ID '{}' does not for {}", id, type_),
             Error::AlreadyActive(id) => write!(f, "ID is already in use: {}", id),
             Error::Sensor(err) => write!(f, "Measurement error: {}", err),
             Error::ConcurrencyError(err) => write!(f, "Concurrency error: {}", err),
@@ -368,7 +380,7 @@ impl std::fmt::Display for Error {
 impl std_error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::Missing(_) => "Requested service does not exist.",
+            Error::Missing(_, _) => "Requested service does not exist.",
             Error::AlreadyActive(_) => "ID is already in use.",
             Error::Sensor(_) => "Measurement error.",
             Error::ConcurrencyError(_) => "Concurrency error",
