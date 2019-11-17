@@ -43,7 +43,7 @@ pub fn run_controller(
     sensor_handle: sensor::SensorHandle,
     actor_handle: actor::ActorHandle,
 ) -> Result<(), Error> {
-    let start_time = time::SystemTime::now();
+    let _start_time = time::SystemTime::now();
     let sleep_time = 1000;
     let actor = match actor_handle.lock() {
         Ok(actor) => actor,
@@ -90,12 +90,6 @@ pub fn run_controller(
                     Ok(()) => {}
                     Err(err) => println!("Error setting signal: {}", err),
                 };
-                println!(
-                    "{}, {}, {}.",
-                    start_time.elapsed().unwrap().as_secs(),
-                    measurement.unwrap_or(f32::NAN),
-                    signal
-                );
             }
         }
         thread::sleep(time::Duration::from_millis(sleep_time));

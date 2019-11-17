@@ -9,19 +9,22 @@ pub struct XOr {
 }
 
 impl XOr {
-    pub fn new(own_id: &str, paired_id: &str, pin_number: u32) -> XOr {
+    pub fn try_new(own_id: &str, paired_id: &str, pin_number: u32) -> Result<XOr, actor::Error> {
         let pin_number = pin_number;
         let handle = match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &own_id) {
             Ok(handle) => handle,
             Err(err) => {
-                panic!("Could not get handle, {}.", err);
+                return Err(actor::Error::ActorError(format!(
+                    "Could not get handle, {}.",
+                    err
+                )));
             }
         };
-        XOr {
+        Ok(XOr {
             own_id: own_id.into(),
             paired_id: paired_id.into(),
             handle,
-        }
+        })
     }
 }
 

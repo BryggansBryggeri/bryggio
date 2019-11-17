@@ -7,7 +7,7 @@ offset_off = 0.0
 
 [hardware]
   sensors = [
-    {id = "Mash tun", address = "28-0416802230ff"},
+    {id = ""Mash tun", address = "28-0416802230ff"},
     {id = "Kettle", address = "28-041680223000"}
   ]
   actors = [

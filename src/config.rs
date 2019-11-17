@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
+use std::error as std_error;
 use std::fs;
-use std::io;
 use std::io::Read;
 use toml;
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub general: General,
@@ -44,17 +43,29 @@ pub struct Actor {
 }
 
 impl Config {
-    pub fn new(config_file: &str) -> Result<Config, io::Error> {
-        let mut f = fs::File::open(config_file)?;
+    pub fn new(config_file: &str) -> Result<Config, Error> {
+        let mut f = match fs::File::open(config_file) {
+            Ok(f) => f,
+            Err(err) => return Err(Error::IO(format!("Error opening file, {}", err))),
+        };
         let mut toml_config = String::new();
-        f.read_to_string(&mut toml_config)?;
-        let config: Config = Config::parse_toml(&toml_config);
-        Ok(config)
+        match f.read_to_string(&mut toml_config) {
+            Ok(_) => {}
+            Err(err) => return Err(Error::IO(format!("Error reading file to string, {}", err))),
+        };
+        Config::parse_toml(&toml_config)
     }
 
-    fn parse_toml(toml_string: &str) -> Config {
-        let config: Config = toml::de::from_str(toml_string).unwrap();
-        config
+    fn parse_toml(toml_string: &str) -> Result<Config, Error> {
+        match toml::de::from_str::<Config>(toml_string) {
+            Ok(config) => Ok(config),
+            Err(err) => {
+                return Err(Error::Parse(format!(
+                    "could not parse config file, {}",
+                    err
+                )))
+            }
+        }
     }
 }
 
@@ -79,7 +90,35 @@ mod tests {
             sensors = []
             actors = []
         "#,
-        );
+        )
+        .unwrap();
         assert_approx_eq!(config.control.unwrap().offset_on, 1.0);
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Error {
+    IO(String),
+    Parse(String),
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Error::IO(err) => write!(f, "IO error: {}", err),
+            Error::Parse(err) => write!(f, "Parse error: {}", err),
+        }
+    }
+}
+impl std_error::Error for Error {
+    fn description(&self) -> &str {
+        match *self {
+            Error::IO(_) => "Config error",
+            Error::Parse(_) => "Parse error",
+        }
+    }
+
+    fn cause(&self) -> Option<&dyn std_error::Error> {
+        None
     }
 }
