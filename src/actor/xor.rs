@@ -9,8 +9,8 @@ pub struct XOr {
 }
 
 impl XOr {
-    pub fn new(own_id: &str, paired_id: &str, pin_number: Option<u32>) -> XOr {
-        let pin_number = pin_number.unwrap();
+    pub fn new(own_id: &str, paired_id: &str, pin_number: u32) -> XOr {
+        let pin_number = pin_number;
         let handle = match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &own_id) {
             Ok(handle) => handle,
             Err(err) => {

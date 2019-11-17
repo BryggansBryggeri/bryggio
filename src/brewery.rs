@@ -75,7 +75,13 @@ impl Brewery {
         self.add_sensor(cpu_id, sync::Arc::new(sync::Mutex::new(cpu_sensor)));
 
         for sensor in &config.hardware.sensors {
-            let dsb_sensor = sensor::dsb1820::DSB1820::new(&sensor.id, &sensor.address);
+            let dsb_sensor = match sensor::dsb1820::DSB1820::try_new(&sensor.id, &sensor.address) {
+                Ok(sensor) => sensor,
+                Err(err) => {
+                    println!("Error registering sensor, {}", err.to_string());
+                    continue;
+                }
+            };
             let sensor_handle: sensor::SensorHandle = sync::Arc::new(sync::Mutex::new(dsb_sensor));
             self.add_sensor(&sensor.id, sensor_handle);
         }
@@ -110,7 +116,10 @@ impl Brewery {
                 Err(_) => Command::Error(String::from("Could not recieve request")),
             };
             let response = self.process_request(&request);
-            self.api_endpoint.sender.send(response).unwrap();
+            match self.api_endpoint.sender.send(response) {
+                Ok(()) => {}
+                Err(err) => println!("Error sending response: {}", err),
+            }
         }
     }
 
