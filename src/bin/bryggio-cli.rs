@@ -22,7 +22,7 @@ impl Api {
 
 fn main() {
     let ip = net::IpAddr::V4(net::Ipv4Addr::LOCALHOST);
-    let port = 8000;
+    let port = 8001;
     let api = Api::new(ip, port);
     api.send("list_available_sensors");
 }
