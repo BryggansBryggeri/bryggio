@@ -7,8 +7,8 @@ use std::fmt;
 use std::fs;
 use std::path;
 
-//const DSB_DIR: &str = "/sys/bus/w1/devices/";
-const DSB_DIR: &str = "./dummy";
+const DSB_DIR: &str = "/sys/bus/w1/devices/";
+//const DSB_DIR: &str = "dummy/";
 
 #[derive(Debug)]
 pub struct DSB1820 {
@@ -25,14 +25,14 @@ lazy_static! {
         //r"(?s:.*)(?:[a-z0-9]{2} ){9}: crc=[0-9]{2} YES(?s:.*)(?:[a-z0-9]{2} ){9}t=([0-9]{5})(?s:.*)"
         r"t=([0-9]{5})"
     )
-    .unwrap();
+    .unwrap(); // This unwrap is fine since it is a constant valid regex.
 }
 
 impl DSB1820 {
-    pub fn new(id: &str, address: &str) -> DSB1820 {
-        let address = DSB1820Address::new(address).unwrap();
+    pub fn try_new(id: &str, address: &str) -> Result<DSB1820, sensor::Error> {
+        let address = DSB1820Address::try_new(address)?;
         let id = String::from(id);
-        DSB1820 { id, address }
+        Ok(DSB1820 { id, address })
     }
 }
 
@@ -56,7 +56,7 @@ impl sensor::Sensor for DSB1820 {
 pub struct DSB1820Address(String);
 
 impl DSB1820Address {
-    pub fn new(address: &str) -> Result<DSB1820Address, sensor::Error> {
+    pub fn try_new(address: &str) -> Result<DSB1820Address, sensor::Error> {
         DSB1820Address::verify(address)?;
         Ok(DSB1820Address(String::from(address)))
     }
@@ -135,14 +135,26 @@ pub fn list_available() -> Result<Vec<DSB1820Address>, sensor::Error> {
     };
     let mut sensors = Vec::new();
     for file in files {
-        let file = file.unwrap();
-        let file_name = String::from(file.path().file_name().unwrap().to_str().unwrap());
-        match DSB1820Address::new(&file_name) {
-            Ok(address) => sensors.push(address),
-            Err(_) => continue,
-        };
+        match dsb1820_address_from_file(file) {
+            Some(address) => sensors.push(address),
+            None => {}
+        }
     }
     Ok(sensors)
+}
+
+fn dsb1820_address_from_file(file: Result<fs::DirEntry, std::io::Error>) -> Option<DSB1820Address> {
+    let file = match file {
+        Ok(file) => file,
+        Err(_) => return None,
+    };
+
+    let tmp = file.path();
+    let file_name = tmp.file_name()?.to_str()?;
+    match DSB1820Address::try_new(&file_name) {
+        Ok(address) => Some(address),
+        Err(_) => None,
+    }
 }
 
 #[cfg(test)]

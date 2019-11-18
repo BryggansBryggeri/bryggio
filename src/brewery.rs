@@ -24,6 +24,7 @@ pub enum Command {
     },
     StartController {
         controller_id: String,
+        controller_type: control::ControllerType,
         // controller_type: control::ControllerType,
         sensor_id: String,
         actor_id: String,
@@ -74,7 +75,13 @@ impl Brewery {
         self.add_sensor(cpu_id, sync::Arc::new(sync::Mutex::new(cpu_sensor)));
 
         for sensor in &config.hardware.sensors {
-            let dsb_sensor = sensor::dsb1820::DSB1820::new(&sensor.id, &sensor.address);
+            let dsb_sensor = match sensor::dsb1820::DSB1820::try_new(&sensor.id, &sensor.address) {
+                Ok(sensor) => sensor,
+                Err(err) => {
+                    println!("Error registering sensor, {}", err.to_string());
+                    continue;
+                }
+            };
             let sensor_handle: sensor::SensorHandle = sync::Arc::new(sync::Mutex::new(dsb_sensor));
             self.add_sensor(&sensor.id, sensor_handle);
         }
@@ -109,7 +116,10 @@ impl Brewery {
                 Err(_) => Command::Error(String::from("Could not recieve request")),
             };
             let response = self.process_request(&request);
-            self.api_endpoint.sender.send(response).unwrap();
+            match self.api_endpoint.sender.send(response) {
+                Ok(()) => {}
+                Err(err) => println!("Error sending response: {}", err),
+            }
         }
     }
 
@@ -117,20 +127,24 @@ impl Brewery {
         match request {
             Command::StartController {
                 controller_id,
+                controller_type,
                 sensor_id,
                 actor_id,
-            } => match self.start_controller(&controller_id, &sensor_id, &actor_id) {
-                Ok(_) => api::Response {
-                    result: None,
-                    message: None,
-                    success: true,
-                },
-                Err(err) => api::Response {
-                    result: None,
-                    message: Some(err.to_string()),
-                    success: false,
-                },
-            },
+            } => {
+                match self.start_controller(&controller_id, controller_type, &sensor_id, &actor_id)
+                {
+                    Ok(_) => api::Response {
+                        result: None,
+                        message: None,
+                        success: true,
+                    },
+                    Err(err) => api::Response {
+                        result: None,
+                        message: Some(err.to_string()),
+                        success: false,
+                    },
+                }
+            }
 
             Command::StopController { controller_id } => {
                 match self.stop_controller(&controller_id) {
@@ -215,15 +229,19 @@ impl Brewery {
     fn start_controller(
         &mut self,
         controller_id: &str,
+        controller_type: &control::ControllerType,
         sensor_id: &str,
         actor_id: &str,
     ) -> Result<(), Error> {
         self.validate_controller_id(controller_id)?;
 
-        let controller_lock: control::ControllerLock = sync::Arc::new(sync::Mutex::new(
-            //control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."),
-            control::manual::Controller::new(),
-        ));
+        let controller: Box<dyn control::Control> = match controller_type {
+            control::ControllerType::Manual => Box::new(control::manual::Controller::new()),
+            control::ControllerType::Hysteresis => Box::new(
+                control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."),
+            ),
+        };
+        let controller_lock: control::ControllerLock = sync::Arc::new(sync::Mutex::new(controller));
 
         let controller_send = controller_lock.clone();
         let sensor_handle = self.get_sensor(sensor_id)?.clone();
@@ -242,10 +260,15 @@ impl Brewery {
     }
 
     fn stop_controller(&mut self, id: &str) -> Result<(), Error> {
-        let controller_handle = self.active_controllers.remove(id).unwrap();
+        let controller_handle = self.remove_active_controller(id)?;
         let mut controller = match controller_handle.lock.lock() {
             Ok(controller) => controller,
-            Err(err) => panic!("Could not acquire controller lock. Error {}.", err),
+            Err(err) => {
+                return Err(Error::ConcurrencyError(format!(
+                    "Could not acquire controller lock. Error {}.",
+                    err,
+                )))
+            }
         };
         controller.set_state(control::State::Inactive);
         drop(controller);
@@ -317,28 +340,35 @@ impl Brewery {
     fn get_active_controller(&mut self, id: &str) -> Result<&control::ControllerHandle, Error> {
         match self.active_controllers.get_mut(id) {
             Some(controller) => Ok(controller),
-            None => Err(Error::Missing(String::from(id))),
+            None => Err(Error::Missing("controller".into(), id.into())),
+        }
+    }
+
+    fn remove_active_controller(&mut self, id: &str) -> Result<control::ControllerHandle, Error> {
+        match self.active_controllers.remove(id) {
+            Some(controller) => Ok(controller),
+            None => Err(Error::Missing("controller".into(), id.into())),
         }
     }
 
     fn get_sensor(&mut self, id: &str) -> Result<&sensor::SensorHandle, Error> {
         match self.sensors.get_mut(id) {
             Some(sensor) => Ok(sensor),
-            None => Err(Error::Missing(String::from(id))),
+            None => Err(Error::Missing("sensor".into(), id.into())),
         }
     }
 
     fn get_actor(&mut self, id: &str) -> Result<&actor::ActorHandle, Error> {
         match self.actors.get_mut(id) {
             Some(actor) => Ok(actor),
-            None => Err(Error::Missing(String::from(id))),
+            None => Err(Error::Missing("actor".into(), id.into())),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {
-    Missing(String),
+    Missing(String, String),
     AlreadyActive(String),
     Sensor(String),
     ConcurrencyError(String),
@@ -348,7 +378,7 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Error::Missing(id) => write!(f, "ID does not exist: {}", id),
+            Error::Missing(type_, id) => write!(f, "ID '{}' does not for {}", id, type_),
             Error::AlreadyActive(id) => write!(f, "ID is already in use: {}", id),
             Error::Sensor(err) => write!(f, "Measurement error: {}", err),
             Error::ConcurrencyError(err) => write!(f, "Concurrency error: {}", err),
@@ -359,7 +389,7 @@ impl std::fmt::Display for Error {
 impl std_error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::Missing(_) => "Requested service does not exist.",
+            Error::Missing(_, _) => "Requested service does not exist.",
             Error::AlreadyActive(_) => "ID is already in use.",
             Error::Sensor(_) => "Measurement error.",
             Error::ConcurrencyError(_) => "Concurrency error",
