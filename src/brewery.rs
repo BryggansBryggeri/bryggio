@@ -378,7 +378,7 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Error::Missing(type_, id) => write!(f, "ID '{}' does not for {}", id, type_),
+            Error::Missing(type_, id) => write!(f, "ID '{}' does not exist for {}", id, type_),
             Error::AlreadyActive(id) => write!(f, "ID is already in use: {}", id),
             Error::Sensor(err) => write!(f, "Measurement error: {}", err),
             Error::ConcurrencyError(err) => write!(f, "Concurrency error: {}", err),

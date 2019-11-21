@@ -104,7 +104,7 @@
 //!
 use crate::brewery;
 use rocket_contrib::json;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::error;
 use std::fmt;
 use std::sync;
@@ -112,7 +112,7 @@ use std::sync::mpsc;
 
 pub mod routes;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Response<T>
 where
     T: Serialize,

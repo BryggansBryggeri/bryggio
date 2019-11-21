@@ -85,7 +85,7 @@ This means that in the worst case scenario, the response time will be as long as
 
 ## Current hardcoded status
 
-Since the dynamics are only partially implemented, the registration of sensors and actors
+Since the dynamics are only partially implemented, some registration of sensors and actors
 are hardcoded into the binary with the following members:
 
 ### Sensors
@@ -94,13 +94,15 @@ are hardcoded into the binary with the following members:
 | ----------- | ----------- |
 | "dummy"     | `bryggio::sensor::dummy::Sensor`     |
 | "cpu"       | `bryggio::sensor::cpu_temp::CpuTemp` |
-| "dsb_test"  | `bryggio::sensor::dsb1820::DSB1820`  |
 
 ### Actors
 
 | actor_id | Actor type |
 | ----------- | ----------- |
 | "dummy"     | `bryggio::actor::dummy::Actor`       |
+
+You can also add DSB1820 temp sensors and GPIO actors via the config file `Bryggio.toml`.
+However, while it is fine to simply add them, they do not work unless you are on a properly configured rbpi.
 
 ## Commands
 
@@ -130,7 +132,7 @@ The response only has a non-empty `message` if `success==false`.
 ### Start controller
 Implemented
 
-`GET "/start_controller?controller_id=<id>&sensor_id=<id>&actor_id<id>"`
+`GET "/start_controller?controller_id=<id>controller_type=<type>&sensor_id=<id>&actor_id<id>"`
 
 Choose a pair of already registred sensor and actor and start controlling them.
 There can only be one controller per actor at the same time,
@@ -138,11 +140,12 @@ Multiple controller can however use the same sensor.
 
 The controller is created and sent to a new thread before the response is returned to the webserver.
 
-Currently, the type of controller is hard-coded but this is subject to change.
+Currently, the available types are listed in `control::ControllerType`.
 
 Query parameters:
 
 - `controller_id: String`
+- `controller_type: String`
 - `sensor_id: String`
 - `actor_id: String`
 

@@ -2,7 +2,7 @@ use crate::sensor;
 use crate::utils;
 use lazy_static::lazy_static;
 use regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs;
 use std::path;
@@ -52,7 +52,7 @@ impl sensor::Sensor for DSB1820 {
         self.id.clone()
     }
 }
-#[derive(Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct DSB1820Address(String);
 
 impl DSB1820Address {
