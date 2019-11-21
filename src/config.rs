@@ -3,10 +3,10 @@ use std::error as std_error;
 use std::fs;
 use std::io::Read;
 use toml;
-#[derive(Serialize, Deserialize, Debug, Clone)]
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Config {
     pub general: General,
-    pub control: Option<Control>,
     pub hardware: Hardware,
 }
 
@@ -15,13 +15,15 @@ pub struct General {
     pub brewery_name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Control {
-    pub offset_on: f32,
-    pub offset_off: f32,
+impl Default for General {
+    fn default() -> Self {
+        General {
+            brewery_name: "No name".into(),
+        }
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Hardware {
     pub sensors: Vec<Sensor>,
     pub actors: Vec<Actor>,
@@ -36,7 +38,6 @@ pub struct Sensor {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-
 pub struct Actor {
     pub id: String,
     pub gpio_pin: u32,
@@ -72,17 +73,13 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert_approx_eq::assert_approx_eq;
 
     #[test]
     fn test_parse() {
-        let config: Config = Config::parse_toml(
+        let _config: Config = Config::parse_toml(
             r#"
             [general]
             brewery_name = "BRYGGANS BRYGGERI BÄRS BB"
-            [control]
-            offset_on = 1.0
-            offset_off = 0.0
             [sensors]
             id = "Mash tun"
             address = "random address"
@@ -92,7 +89,6 @@ mod tests {
         "#,
         )
         .unwrap();
-        assert_approx_eq!(config.control.unwrap().offset_on, 1.0);
     }
 }
 

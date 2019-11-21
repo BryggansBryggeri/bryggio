@@ -12,11 +12,11 @@ fn main() {
         Ok(config) => config,
         Err(err) => {
             println!(
-                "Invalid config file '{}'. Error: {}",
+                "Invalid config file '{}'. Error: {}. Using default.",
                 config_file,
                 err.to_string()
             );
-            return;
+            config::Config::default()
         }
     };
     let (web_endpoint, brew_endpoint) = api::create_api_endpoints();
