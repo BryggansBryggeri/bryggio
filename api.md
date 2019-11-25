@@ -12,7 +12,7 @@ The hardware control and webserver run in separate threads.
 The hardware control thread runs a never returning main loop
 which waits and listens for commands from the webserver
 and processes them as they come in.
-Some commands spawns additional threads,
+Some commands spawn additional threads,
 e.g. for starting an indefinite control of a sensor, actor pair.
 
 The commands are sent as http requests in the form of:
@@ -23,7 +23,7 @@ The commands are sent as http requests in the form of:
 
 The http requests are routed in a very picky way.
 Anything that cannot be properly matched to a *route*
-(see `bryggio::routes::backend`)
+(see `routes::backend`)
 will default to a 404 not found error.
 
 That includes parsing of the query parameters into strict rust types, meaning that:
@@ -38,7 +38,7 @@ will be routed to 404, since `aba` cannot be parsed to a float value.
 
 ### Processing
 
-In each route, a variant of the enum `bryggio::brewery::Command` is created,
+In each route, a variant of the enum `brewery::Command` is created,
 where each variant holds the necessary data for the command.
 For commands that require some query parameters, they are parsed from the http request.
 
@@ -46,7 +46,7 @@ The command is then sent to the hardware thread and processed accordingly.
 
 ### Response
 
-A response struct `bryggio::api::response` is created on the form:
+A response struct `api::response` is created on the form:
 
 ```rust
 pub struct Response {
@@ -92,14 +92,14 @@ are hardcoded into the binary with the following members:
 
 | sensor_id | Sensor type |
 | ----------- | ----------- |
-| "dummy"     | `bryggio::sensor::dummy::Sensor`     |
-| "cpu"       | `bryggio::sensor::cpu_temp::CpuTemp` |
+| "dummy"     | `sensor::dummy::Sensor`     |
+| "cpu"       | `sensor::cpu_temp::CpuTemp` |
 
 ### Actors
 
 | actor_id | Actor type |
 | ----------- | ----------- |
-| "dummy"     | `bryggio::actor::dummy::Actor`       |
+| "dummy"     | `actor::dummy::Actor`       |
 
 You can also add DSB1820 temp sensors and GPIO actors via the config file `Bryggio.toml`.
 However, while it is fine to simply add them, they do not work unless you are on a properly configured rbpi.
