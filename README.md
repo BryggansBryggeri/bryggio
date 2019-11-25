@@ -11,7 +11,7 @@ The goal is to develop a stand-alone backend to which any client can send http r
 
  - Rocket needs nightly build so run
    ```bash
-   rustup default nightly
+   rustup override set nightly
    ```
 
  - Clone the repo and run it
