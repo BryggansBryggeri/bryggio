@@ -15,7 +15,7 @@ impl Controller {
         if offset_off >= 0.0 {
             if offset_on > offset_off {
                 Ok(Controller {
-                    target: 20.0,
+                    target: 0.0,
                     current_signal: 0.0,
                     previous_measurement: None,
                     state: control::State::Active,

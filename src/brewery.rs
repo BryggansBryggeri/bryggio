@@ -217,7 +217,6 @@ impl Brewery {
                     success: false,
                 },
             },
-
             _ => api::Response {
                 result: None,
                 message: Some(String::from("Not implemented yet")),
@@ -286,7 +285,7 @@ impl Brewery {
                 return Err(Error::ConcurrencyError(format!(
                     "Could not acquire controller lock. Error {}.",
                     err
-                )))
+                )));
             }
         };
         controller.set_target(new_target);
@@ -326,7 +325,7 @@ impl Brewery {
                 )))
             }
         };
-        Ok(controller.get_control_signal())
+        Ok(controller.get_target())
     }
 
     fn validate_controller_id(&self, id: &str) -> Result<(), Error> {
