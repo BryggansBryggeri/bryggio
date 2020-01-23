@@ -8,6 +8,7 @@ default-run = "bryggio-server"
 [dependencies]
 rocket = ">=0.4.2"
 rocket_contrib = ">=0.4.2"
+rocket_cors = "0.5.0"
 gpio-cdev = ">=0.2.0"
 onewire = ">=0.3.10"
 rand = ">=0.7"

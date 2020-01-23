@@ -4,7 +4,40 @@ extern crate rocket;
 use bryggio::api;
 use bryggio::brewery;
 use bryggio::config;
+use rocket::http::Method; // 1.
+use rocket_cors::{
+    AllowedHeaders,
+    AllowedOrigins,
+    Cors,
+    CorsOptions, // 3.
+    Error,       // 2.
+};
 use std::thread;
+
+fn make_cors() -> Cors {
+    let allowed_origins = AllowedOrigins::some_exact(&[
+        // 4.
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "http://localhost:8000",
+        "http://0.0.0.0:8000",
+    ]);
+
+    CorsOptions {
+        // 5.
+        allowed_origins,
+        allowed_methods: vec![Method::Get].into_iter().map(From::from).collect(), // 1.
+        allowed_headers: AllowedHeaders::some(&[
+            "Authorization",
+            "Accept",
+            "Access-Control-Allow-Origin", // 6.
+        ]),
+        allow_credentials: true,
+        ..Default::default()
+    }
+    .to_cors()
+    .expect("error while building CORS")
+}
 
 fn main() {
     let config_file = "./Bryggio.toml";
@@ -43,6 +76,7 @@ fn main() {
             ],
         )
         .register(catchers![api::routes::not_found])
+        .attach(make_cors())
         .manage(web_endpoint)
         .manage(config)
         .launch();
