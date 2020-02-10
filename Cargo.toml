@@ -22,7 +22,7 @@ lazy_static = "1"
 # Reqwest is needed for Bryggio CLI,
 # It uses OpenSSL, subseq. an ARM version needs to be installed
 # for cross-compilation.
-reqwest = "0.9.22"
+#reqwest = "0.9.22"
 
 [dev-dependencies]
 assert_approx_eq = "1.1.0"
