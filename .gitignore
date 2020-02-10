@@ -7,3 +7,4 @@ tags.lock
 tags.temp
 
 # WEB
+*.html
