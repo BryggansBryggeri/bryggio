@@ -133,22 +133,13 @@ pub fn list_available() -> Result<Vec<DSB1820Address>, sensor::Error> {
             )))
         }
     };
-    let mut sensors = Vec::new();
-    for file in files {
-        match dsb1820_address_from_file(file) {
-            Some(address) => sensors.push(address),
-            None => {}
-        }
-    }
-    Ok(sensors)
+    Ok(files
+        .filter_map(Result::ok)
+        .flat_map(dsb1820_address_from_file)
+        .collect())
 }
 
-fn dsb1820_address_from_file(file: Result<fs::DirEntry, std::io::Error>) -> Option<DSB1820Address> {
-    let file = match file {
-        Ok(file) => file,
-        Err(_) => return None,
-    };
-
+fn dsb1820_address_from_file(file: fs::DirEntry) -> Option<DSB1820Address> {
     let tmp = file.path();
     let file_name = tmp.file_name()?.to_str()?;
     match DSB1820Address::try_new(&file_name) {
