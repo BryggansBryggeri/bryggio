@@ -101,11 +101,11 @@ impl Brewery {
         }
     }
 
-    pub fn add_sensor(&mut self, id: &str, sensor: sensor::SensorHandle) {
+    fn add_sensor(&mut self, id: &str, sensor: sensor::SensorHandle) {
         self.sensors.insert(id.into(), sensor);
     }
 
-    pub fn add_actor(&mut self, id: &str, actor: actor::ActorHandle) {
+    fn add_actor(&mut self, id: &str, actor: actor::ActorHandle) {
         self.actors.insert(id.into(), actor);
     }
 
