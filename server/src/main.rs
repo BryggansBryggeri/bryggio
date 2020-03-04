@@ -1,9 +1,9 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 #[macro_use]
 extern crate rocket;
-use bryggio::api;
-use bryggio::brewery;
-use bryggio::config;
+use bryggio_lib::api;
+use bryggio_lib::brewery;
+use bryggio_lib::config;
 use rocket::http::Method; // 1.
 use rocket_cors::{
     AllowedHeaders,
