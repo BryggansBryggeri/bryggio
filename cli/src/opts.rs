@@ -13,4 +13,6 @@ pub struct Opt {
     pub port: u16,
     #[structopt(long)]
     pub command: String,
+    #[structopt(long)]
+    pub verbose: bool,
 }

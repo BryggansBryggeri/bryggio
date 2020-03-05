@@ -12,3 +12,9 @@ edition = "2018"
 # for cross-compilation.
 reqwest = "0.9.22"
 structopt = "0.3.11"
+# Quote is needed for failure-derive bug fix
+# https://users.rust-lang.org/t/failure-derive-compilation-error/39062
+quote = "=1.0.2"
+bryggio-lib = { path = "../lib" }
+serde = {version = ">=1.0.98", features = ["derive"]}
+serde_json = ">=1.0.40"

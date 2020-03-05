@@ -1,6 +1,8 @@
-pub mod opts;
+use bryggio_lib::api;
 use reqwest;
+use serde_json;
 use std::net;
+pub mod opts;
 
 #[derive(Debug)]
 pub struct Api {
@@ -13,10 +15,11 @@ impl Api {
             socket: net::SocketAddr::new(ip, port),
         }
     }
-    pub fn send(&self, command: &str) {
-        println!("Sending command {}.", command);
+    /// TODO: Generic response
+    pub fn send(&self, command: &str) -> Result<api::Response<f32>, serde_json::error::Error> {
+        println!("Sending command: '{}'.", command);
         let url = &format!("http://{}/{}", self.socket, command);
-        let response = reqwest::get(url).unwrap().text().unwrap();
-        println!("{}", response);
+        let response_raw = reqwest::get(url).unwrap().text().unwrap();
+        serde_json::from_str(&response_raw)
     }
 }
