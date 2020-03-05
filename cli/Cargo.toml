@@ -11,3 +11,4 @@ edition = "2018"
 # It uses OpenSSL, subseq. an ARM version needs to be installed
 # for cross-compilation.
 reqwest = "0.9.22"
+structopt = "0.3.11"
