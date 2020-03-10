@@ -75,9 +75,9 @@ pub fn run_controller(
                     Ok(measurement) => Some(measurement),
                     Err(err) => {
                         println!(
-                            "Error getting measurment from sensor: {}. Error: {}",
+                            "Error getting measurment from sensor: '{}'. Error: {}",
                             sensor::get_id(&sensor_handle)
-                                .unwrap_or_else(|_| String::from("Unknown ID")),
+                                .unwrap_or_else(|_| String::from("Unknown id")),
                             err
                         );
                         None

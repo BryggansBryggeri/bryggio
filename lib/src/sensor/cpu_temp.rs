@@ -36,7 +36,11 @@ impl sensor::Sensor for CpuTemp {
         let raw_read = match utils::read_file_to_string(&device_path) {
             Ok(raw_read) => raw_read,
             Err(err) => {
-                return Err(sensor::Error::FileReadError(err.to_string()));
+                return Err(sensor::Error::FileReadError(format!(
+                    "'{}'. {}",
+                    device_path,
+                    err.to_string()
+                )));
             }
         };
         self.parse_temp_measurement(&raw_read)
