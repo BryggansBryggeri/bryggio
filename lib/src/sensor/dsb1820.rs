@@ -23,7 +23,7 @@ lazy_static! {
     static ref TEMP_PATTERN: regex::Regex = regex::Regex::new(
         // More safe with the full regex, but can't get it to match with file read.
         //r"(?s:.*)(?:[a-z0-9]{2} ){9}: crc=[0-9]{2} YES(?s:.*)(?:[a-z0-9]{2} ){9}t=([0-9]{5})(?s:.*)"
-        r"t=([0-9]{5})"
+        r"t=([0-9]{4,6})"
     )
     .unwrap(); // This unwrap is fine since it is a constant valid regex.
 }
@@ -176,11 +176,27 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_temp_measurement_correct() {
+    fn test_parse_temp_measurement_three_digit() {
+        let temp_string = String::from(
+            "ca 01 4b 46 7f ff 06 10 65 : crc=65 YES\nca 01 4b 46 7f ff 06 10 65 t=101625",
+        );
+        assert_eq!(parse_temp_measurement(&temp_string).unwrap(), 101.625);
+    }
+
+    #[test]
+    fn test_parse_temp_measurement_two_digit() {
         let temp_string = String::from(
             "ca 01 4b 46 7f ff 06 10 65 : crc=65 YES\nca 01 4b 46 7f ff 06 10 65 t=28625",
         );
         assert_eq!(parse_temp_measurement(&temp_string).unwrap(), 28.625);
+    }
+
+    #[test]
+    fn test_parse_temp_measurement_single_digit() {
+        let temp_string = String::from(
+            "ca 01 4b 46 7f ff 06 10 65 : crc=65 YES\nca 01 4b 46 7f ff 06 10 65 t=8720",
+        );
+        assert_eq!(parse_temp_measurement(&temp_string).unwrap(), 8.720);
     }
 
     #[test]
