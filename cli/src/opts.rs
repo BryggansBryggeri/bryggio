@@ -8,7 +8,16 @@ pub enum Opt {
     #[structopt(name = "brewery")]
     Brewery(BreweryOpt),
     #[structopt(name = "install")]
-    Install,
+    Install(InstallOpt),
+}
+
+impl Opt {
+    pub fn verbose(&self) -> bool {
+        match self {
+            Self::Brewery(opt) => opt.verbose,
+            Self::Install(opt) => opt.verbose,
+        }
+    }
 }
 
 #[derive(Debug, StructOpt)]
@@ -32,4 +41,10 @@ impl BreweryOpt {
             self.ip, self.port, self.command
         ))
     }
+}
+
+#[derive(Debug, StructOpt)]
+pub struct InstallOpt {
+    #[structopt(long)]
+    verbose: bool,
 }
