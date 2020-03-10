@@ -5,9 +5,11 @@ use url::{ParseError, Url};
 #[derive(Debug, StructOpt)]
 #[structopt(name = "bryggio-cli", about = "cli usage")]
 pub enum Opt {
+    ///Control a `bryggio-server`
     #[structopt(name = "brewery")]
     Brewery(BreweryOpt),
     #[structopt(name = "install")]
+    ///Install bryggio software
     Install(InstallOpt),
 }
 
