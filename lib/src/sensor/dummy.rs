@@ -11,8 +11,8 @@ impl Sensor {
     pub fn new(id: &str) -> Sensor {
         Sensor {
             id: id.into(),
-            prediction: 0.0,
-            noise_level: 0.1,
+            prediction: 50.0,
+            noise_level: 10.0,
         }
     }
 }
