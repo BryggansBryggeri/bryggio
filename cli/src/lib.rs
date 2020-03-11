@@ -7,6 +7,7 @@ use std::io::Write;
 use ureq;
 use url::Url;
 
+pub mod brewery;
 pub mod install;
 pub mod opts;
 

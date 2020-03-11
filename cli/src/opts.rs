@@ -11,6 +11,7 @@ pub enum Opt {
     ///Install bryggio software
     #[structopt(name = "install")]
     Install(InstallTarget),
+    // TODO: Update
 }
 
 impl Opt {
