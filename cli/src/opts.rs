@@ -16,7 +16,7 @@ pub enum Opt {
 impl Opt {
     pub fn verbose(&self) -> bool {
         match self {
-            Self::Brewery(opt) => opt.verbose,
+            Self::Brewery(opt) => opt.common.verbose,
             Self::Install(_target) => false,
         }
     }
@@ -32,8 +32,8 @@ pub struct BreweryOpt {
     pub port: u16,
     #[structopt(long)]
     pub command: String,
-    #[structopt(long)]
-    verbose: bool,
+    #[structopt(flatten)]
+    common: Common,
 }
 
 impl BreweryOpt {
@@ -51,4 +51,10 @@ pub enum InstallTarget {
     Server,
     #[structopt(name = "bryggio-cli")]
     Cli,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct Common {
+    #[structopt(long)]
+    verbose: bool,
 }
