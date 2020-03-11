@@ -23,8 +23,8 @@ fn run_subcommand(opt: Opt) {
             };
         }
         Opt::Install(target) => match target {
-            InstallTarget::Server => info!("Installing `bryggio-server`"),
-            InstallTarget::Cli => info!("Installing `bryggio-cli`"),
+            InstallTarget::Server(_opt) => info!("Installing `bryggio-server`"),
+            InstallTarget::Cli(_opt) => info!("Installing `bryggio-cli`"),
         },
     }
 }
