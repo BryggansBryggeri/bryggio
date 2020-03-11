@@ -8,8 +8,8 @@ pub enum Opt {
     ///Control a `bryggio-server`
     #[structopt(name = "brewery")]
     Brewery(BreweryOpt),
-    #[structopt(name = "install")]
     ///Install bryggio software
+    #[structopt(name = "install")]
     Install(InstallTarget),
 }
 
@@ -47,8 +47,10 @@ impl BreweryOpt {
 
 #[derive(Debug, StructOpt)]
 pub enum InstallTarget {
+    /// Install `bryggio-server`
     #[structopt(name = "bryggio-server")]
     Server(ServerOpt),
+    /// Install `bryggio-cli`
     #[structopt(name = "bryggio-cli")]
     Cli(CliOpt),
 }
@@ -76,6 +78,10 @@ pub struct ServerOpt {
 
 #[derive(Debug, StructOpt)]
 pub struct Common {
+    /// Verbose output
     #[structopt(long)]
     verbose: bool,
+    /// Disable `sudo` use. Warning: setup will not function properly
+    #[structopt(long)]
+    no_sudo: bool,
 }
