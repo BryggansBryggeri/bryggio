@@ -1,6 +1,5 @@
 use bryggio_cli;
-use bryggio_cli::opts::Opt;
-use env_logger;
+use bryggio_cli::opts::{InstallTarget, Opt};
 use log::{debug, error, info};
 use structopt::StructOpt;
 
@@ -23,9 +22,10 @@ fn run_subcommand(opt: Opt) {
                 }
             };
         }
-        Opt::Install(opt) => {
-            info!("Installing");
-        }
+        Opt::Install(target) => match target {
+            InstallTarget::Server => info!("Installing `bryggio-server`"),
+            InstallTarget::Cli => info!("Installing `bryggio-cli`"),
+        },
     }
 }
 

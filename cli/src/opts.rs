@@ -10,14 +10,14 @@ pub enum Opt {
     Brewery(BreweryOpt),
     #[structopt(name = "install")]
     ///Install bryggio software
-    Install(InstallOpt),
+    Install(InstallTarget),
 }
 
 impl Opt {
     pub fn verbose(&self) -> bool {
         match self {
             Self::Brewery(opt) => opt.verbose,
-            Self::Install(opt) => opt.verbose,
+            Self::Install(_target) => false,
         }
     }
 }
@@ -46,7 +46,9 @@ impl BreweryOpt {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct InstallOpt {
-    #[structopt(long)]
-    verbose: bool,
+pub enum InstallTarget {
+    #[structopt(name = "bryggio-server")]
+    Server,
+    #[structopt(name = "bryggio-cli")]
+    Cli,
 }
