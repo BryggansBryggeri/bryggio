@@ -1,6 +1,6 @@
 pub mod hysteresis;
 pub mod manual;
-pub mod pid;
+// pub mod pid;
 
 use crate::actor;
 use crate::sensor;
