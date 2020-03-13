@@ -25,7 +25,7 @@ impl sensor::Sensor for Sensor {
             // TODO: Hardcoded error string. Normal::Error cannot be converted to string
             Err(_) => return Err(sensor::Error::InvalidParam(String::from(""))),
         };
-        let measurement = true_measurement + normal.sample(&mut rand::thread_rng()) as f32;
+        let measurement = true_measurement + normal.sample(&mut rand::thread_rng());
         Ok(measurement)
     }
     fn get_id(&self) -> String {
