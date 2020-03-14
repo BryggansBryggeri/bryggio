@@ -1,3 +1,4 @@
+#![forbid(unsafe_code)]
 use bryggio_cli::opts::{InstallTarget, Opt};
 use bryggio_cli::{brewery, install};
 use log::info;

@@ -1,22 +1,16 @@
+#![forbid(unsafe_code)]
 #![feature(proc_macro_hygiene, decl_macro)]
 #[macro_use]
 extern crate rocket;
 use bryggio_lib::api;
 use bryggio_lib::brewery;
 use bryggio_lib::config;
-use rocket::http::Method; // 1.
-use rocket_cors::{
-    AllowedHeaders,
-    AllowedOrigins,
-    Cors,
-    CorsOptions, // 3.
-    Error,       // 2.
-};
+use rocket::http::Method;
+use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions};
 use std::thread;
 
 fn make_cors() -> Cors {
     let allowed_origins = AllowedOrigins::some_exact(&[
-        // 4.
         "http://localhost:8080",
         "http://127.0.0.1:8080",
         "http://localhost:8000",
@@ -24,13 +18,12 @@ fn make_cors() -> Cors {
     ]);
 
     CorsOptions {
-        // 5.
         allowed_origins,
-        allowed_methods: vec![Method::Get].into_iter().map(From::from).collect(), // 1.
+        allowed_methods: vec![Method::Get].into_iter().map(From::from).collect(),
         allowed_headers: AllowedHeaders::some(&[
             "Authorization",
             "Accept",
-            "Access-Control-Allow-Origin", // 6.
+            "Access-Control-Allow-Origin",
         ]),
         allow_credentials: true,
         ..Default::default()
