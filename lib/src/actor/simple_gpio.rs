@@ -25,7 +25,7 @@ impl actor::Actor for Actor {
         Ok(())
     }
 
-    fn set_signal(&self, signal: f32) -> Result<(), actor::Error> {
+    fn set_signal(&mut self, signal: f32) -> Result<(), actor::Error> {
         self.validate_signal(signal)?;
         let gpio_state = match signal {
             signal if signal > 0.0 => 1,

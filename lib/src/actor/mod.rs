@@ -9,7 +9,7 @@ pub type ActorHandle = sync::Arc<sync::Mutex<dyn Actor>>;
 
 pub trait Actor: Send {
     fn validate_signal(&self, signal: f32) -> Result<(), Error>;
-    fn set_signal(&self, signal: f32) -> Result<(), Error>;
+    fn set_signal(&mut self, signal: f32) -> Result<(), Error>;
 }
 
 #[derive(Debug, Clone)]

@@ -46,7 +46,7 @@ pub fn run_controller(
 ) -> Result<(), Error> {
     let _start_time = time::SystemTime::now();
     let sleep_time = 1000;
-    let actor = match actor_handle.lock() {
+    let mut actor = match actor_handle.lock() {
         Ok(actor) => actor,
         Err(err) => {
             return Err(Error::ConcurrencyError(format!(
