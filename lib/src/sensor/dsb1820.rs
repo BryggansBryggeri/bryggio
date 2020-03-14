@@ -8,7 +8,6 @@ use std::fs;
 use std::path;
 
 const DSB_DIR: &str = "/sys/bus/w1/devices/";
-//const DSB_DIR: &str = "dummy/";
 
 #[derive(Debug)]
 pub struct DSB1820 {
