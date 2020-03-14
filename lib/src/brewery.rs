@@ -25,9 +25,9 @@ pub enum Command {
     StartController {
         controller_id: String,
         controller_type: control::ControllerType,
-        // controller_type: control::ControllerType,
         sensor_id: String,
         actor_id: String,
+        update_freq: u64,
     },
     StopController {
         controller_id: String,
@@ -130,9 +130,15 @@ impl Brewery {
                 controller_type,
                 sensor_id,
                 actor_id,
+                update_freq,
             } => {
-                match self.start_controller(&controller_id, controller_type, &sensor_id, &actor_id)
-                {
+                match self.start_controller(
+                    &controller_id,
+                    controller_type,
+                    &sensor_id,
+                    &actor_id,
+                    *update_freq,
+                ) {
                     Ok(_) => api::Response {
                         result: None,
                         message: None,
@@ -231,6 +237,7 @@ impl Brewery {
         controller_type: &control::ControllerType,
         sensor_id: &str,
         actor_id: &str,
+        update_freq: u64,
     ) -> Result<(), Error> {
         self.validate_controller_id(controller_id)?;
 
@@ -246,7 +253,7 @@ impl Brewery {
         let sensor_handle = self.get_sensor(sensor_id)?.clone();
         let actor_handle = self.get_actor(actor_id)?.clone();
         let thread_handle = thread::spawn(move || {
-            control::run_controller(controller_send, sensor_handle, actor_handle)
+            control::run_controller(controller_send, sensor_handle, actor_handle, update_freq)
         });
 
         let controller_handle = control::ControllerHandle {

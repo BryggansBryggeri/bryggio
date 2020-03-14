@@ -28,12 +28,13 @@ use std::convert::TryFrom;
 /// | true    | none    | none    |
 /// | false   | none    | err     |
 ///
-#[get("/start_controller?<controller_id>&<controller_type>&<sensor_id>&<actor_id>")]
+#[get("/start_controller?<controller_id>&<controller_type>&<sensor_id>&<actor_id>&<update_freq>")]
 pub fn start_controller(
     controller_id: String,
     controller_type: String,
     sensor_id: String,
     actor_id: String,
+    update_freq: u64,
     api_endpoint: rocket::State<api::WebEndpoint<f32>>,
 ) -> json::Json<api::Response<f32>> {
     let controller_type = control::ControllerType::try_from(controller_type);
@@ -44,6 +45,7 @@ pub fn start_controller(
                 controller_type,
                 sensor_id,
                 actor_id,
+                update_freq,
             };
             api_endpoint.send_and_wait_for_response(request)
         }

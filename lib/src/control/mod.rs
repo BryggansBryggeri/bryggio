@@ -43,9 +43,9 @@ pub fn run_controller(
     controller_lock: ControllerLock,
     sensor_handle: sensor::SensorHandle,
     actor_handle: actor::ActorHandle,
+    update_freq: u64,
 ) -> Result<(), Error> {
     let _start_time = time::SystemTime::now();
-    let sleep_time = 1000;
     let mut actor = match actor_handle.lock() {
         Ok(actor) => actor,
         Err(err) => {
@@ -93,7 +93,7 @@ pub fn run_controller(
                 };
             }
         }
-        thread::sleep(time::Duration::from_millis(sleep_time));
+        thread::sleep(time::Duration::from_millis(update_freq));
     }
 }
 
