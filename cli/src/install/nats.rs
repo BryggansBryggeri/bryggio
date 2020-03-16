@@ -9,7 +9,12 @@ use std::process::Command;
 use std::str;
 
 const GITHUB_META_DATA: &str = " https://api.github.com/repos/nats-io/nats-server/releases/latest";
-const AMD64_NATS: &str = "https://github.com/nats-io/nats-server/releases/download/v2.1.4/nats-server-v2.1.4-linux-amd64.zip";
+
+#[cfg(target_arch = "x86_64")]
+const NATS: &str = "https://github.com/nats-io/nats-server/releases/download/v2.1.4/nats-server-v2.1.4-linux-amd64.zip";
+
+#[cfg(target_arch = "arm")]
+const NATS: &str = "https://github.com/nats-io/nats-server/releases/download/v2.1.4/nats-server-v2.1.4-linux-arm7.zip";
 
 lazy_static! {
     static ref NATS_SERVER_VERSION_PATTERN: regex::Regex = regex::Regex::new(
@@ -33,7 +38,8 @@ pub(crate) fn download_server(nats_path: &Path, update: bool) {
             fs::remove_file(nats_path).expect("Could not remove file.");
         }
         let mut file = fs::File::create(nats_path).expect("Could not create file");
-        io::copy(&mut ureq::get(AMD64_NATS).call().into_reader(), &mut file)
+        info!("Downloading NATS server");
+        io::copy(&mut ureq::get(NATS).call().into_reader(), &mut file)
             .expect("Could not write to file");
     }
 }
