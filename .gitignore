@@ -1,4 +1,3 @@
-
 target
 **/*.rs.bk
 
@@ -9,3 +8,6 @@ tags.temp
 
 # WEB
 *.html
+
+# ARCHIVES
+*.zip

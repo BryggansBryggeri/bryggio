@@ -116,18 +116,20 @@ struct NatsServerRelease {
 
 impl NatsServerRelease {
     fn url(&self) -> Url {
-        #[cfg(target_arch = "x86_64")]
         #[cfg(target_os = "linux")]
-        let os_arch = "linux-amd64";
+        let os = "linux-amd64";
         #[cfg(target_os = "macos")]
-        let os_arch = "darwin-amd64";
+        let os = "darwin-amd64";
         #[cfg(target_os = "windows")]
-        let os_arch = "windows-amd64";
+        let os = "windows-amd64";
+        #[cfg(target_arch = "x86_64")]
+        let arch = "amd64";
         #[cfg(target_arch = "arm")]
-        let os_arch = "arm7";
+        let arch = "arm7";
         self.assets
             .iter()
-            .filter(|x| x.name.contains(os_arch))
+            .filter(|x| x.name.contains(os))
+            .filter(|x| x.name.contains(arch))
             .filter(|x| x.name.contains(".zip"))
             .map(|x| Url::parse(&x.url))
             .last()
