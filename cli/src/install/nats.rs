@@ -1,9 +1,8 @@
+use crate::install;
 use lazy_static::lazy_static;
 use log::{debug, info};
 use semver::Version;
 use serde::Deserialize;
-use std::fs;
-use std::io;
 use std::path::Path;
 use std::process::Command;
 use std::str;
@@ -18,18 +17,8 @@ pub(crate) fn download_server(nats_path: &Path, update: bool) {
         return;
     }
     let (latest_nats_version, nats_url) = github_meta_data();
-    if should_download(local_exists, update, local_version, latest_nats_version) {
-        if local_exists {
-            fs::remove_file(nats_path).expect("Could not remove file.");
-        }
-        let mut file = fs::File::create(nats_path).expect("Could not create file");
-        info!("Downloading NATS server from '{}'", nats_url);
-        io::copy(
-            &mut ureq::get(nats_url.as_str()).call().into_reader(),
-            &mut file,
-        )
-        .expect("Could not write to file");
-    }
+    if should_download(local_exists, update, local_version, latest_nats_version) {}
+    install::download_file(&nats_path, &nats_url);
 }
 
 fn should_download(
