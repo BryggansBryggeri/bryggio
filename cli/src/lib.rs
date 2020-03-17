@@ -11,7 +11,6 @@ pub mod brewery;
 pub mod install;
 pub mod opts;
 
-/// TODO: Generic response
 pub fn send<T>(request: &Url) -> Result<api::Response<T>, serde_json::error::Error>
 where
     T: Serialize + DeserializeOwned,
@@ -25,6 +24,8 @@ pub fn init_logging(opt: &Opt) {
     let mut builder = env_logger::Builder::from_default_env();
     if opt.verbose() {
         builder.filter(None, log::LevelFilter::Debug);
+    } else {
+        builder.filter(None, log::LevelFilter::Info);
     }
     builder
         .format(|buf, record| writeln!(buf, "{}", record.args()))
