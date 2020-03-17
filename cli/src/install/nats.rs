@@ -7,14 +7,9 @@ use std::io;
 use std::path::Path;
 use std::process::Command;
 use std::str;
+use url::{ParseError, Url};
 
 const GITHUB_META_DATA: &str = " https://api.github.com/repos/nats-io/nats-server/releases/latest";
-
-#[cfg(target_arch = "x86_64")]
-const NATS: &str = "https://github.com/nats-io/nats-server/releases/download/v2.1.4/nats-server-v2.1.4-linux-amd64.zip";
-
-#[cfg(target_arch = "arm")]
-const NATS: &str = "https://github.com/nats-io/nats-server/releases/download/v2.1.4/nats-server-v2.1.4-linux-arm7.zip";
 
 lazy_static! {
     static ref NATS_SERVER_VERSION_PATTERN: regex::Regex = regex::Regex::new(
@@ -30,6 +25,36 @@ lazy_static! {
 #[derive(Deserialize)]
 struct NatsServerRelease {
     tag_name: String,
+    assets: Vec<ReleaseArchitecture>,
+}
+
+impl NatsServerRelease {
+    fn url(&self) -> Url {
+        #[cfg(target_arch = "x86_64")]
+        #[cfg(target_os = "linux")]
+        let os_arch = "linux-amd64";
+        #[cfg(target_os = "macos")]
+        let os_arch = "darwin-amd64";
+        #[cfg(target_os = "windows")]
+        let os_arch = "windows-amd64";
+        #[cfg(target_arch = "arm")]
+        let os_arch = "arm7";
+        self.assets
+            .iter()
+            .filter(|x| x.name.contains(os_arch))
+            .filter(|x| x.name.contains(".zip"))
+            .map(|x| Url::parse(&x.url))
+            .last()
+            .unwrap()
+            .unwrap()
+    }
+}
+
+#[derive(Deserialize)]
+struct ReleaseArchitecture {
+    #[serde(rename = "browser_download_url")]
+    url: String,
+    name: String,
 }
 
 pub(crate) fn download_server(nats_path: &Path, update: bool) {
@@ -38,9 +63,13 @@ pub(crate) fn download_server(nats_path: &Path, update: bool) {
             fs::remove_file(nats_path).expect("Could not remove file.");
         }
         let mut file = fs::File::create(nats_path).expect("Could not create file");
-        info!("Downloading NATS server");
-        io::copy(&mut ureq::get(NATS).call().into_reader(), &mut file)
-            .expect("Could not write to file");
+        let nats_url = latest_nats_url();
+        info!("Downloading NATS server from '{}'", nats_url);
+        io::copy(
+            &mut ureq::get(nats_url.as_str()).call().into_reader(),
+            &mut file,
+        )
+        .expect("Could not write to file");
     }
 }
 
@@ -77,6 +106,12 @@ fn local_nats_version(nats_path: &Path) -> Version {
         .unwrap()
         .as_str();
     Version::parse(raw_string).unwrap()
+}
+
+fn latest_nats_url() -> Url {
+    let response_raw = ureq::get(GITHUB_META_DATA).call().into_string().unwrap();
+    let meta_data: NatsServerRelease = serde_json::from_str(&response_raw).unwrap();
+    meta_data.url()
 }
 
 fn latest_nats_release() -> Version {
