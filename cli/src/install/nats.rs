@@ -9,6 +9,8 @@ use std::process::Command;
 use std::str;
 use url::Url;
 
+pub(crate) fn generate_config() {}
+
 pub(crate) fn download_server(nats_path: &Path, update: bool) {
     let (local_exists, local_version) = local_meta_data(nats_path);
     if !update && local_exists {
