@@ -75,6 +75,8 @@ pub struct CliOpt {
 pub struct ServerOpt {
     #[structopt(flatten)]
     common: Common,
+    #[structopt(long)]
+    pub update: bool,
 }
 
 #[derive(Debug, StructOpt)]
