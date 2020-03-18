@@ -119,7 +119,6 @@ dependencies = [
  "assert_approx_eq",
  "gpio-cdev",
  "lazy_static",
- "log 0.4.8",
  "onewire",
  "pid",
  "rand",
