@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-pub fn get_bryggio_version() -> &'static str {
+pub const fn get_bryggio_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
