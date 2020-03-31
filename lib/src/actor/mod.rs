@@ -1,5 +1,4 @@
 pub mod simple_gpio;
-// pub mod xor;
 
 use std::error as std_error;
 use std::sync;
