@@ -1,4 +1,3 @@
-pub mod dummy;
 pub mod simple_gpio;
 // pub mod xor;
 

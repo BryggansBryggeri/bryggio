@@ -91,9 +91,6 @@ impl Brewery {
             self.add_sensor(&sensor.id, sensor_handle);
         }
 
-        let dummy_actor = sync::Arc::new(sync::Mutex::new(actor::dummy::Actor::new(dummy_id)));
-        self.add_actor(dummy_id, dummy_actor);
-
         for actor in &config.hardware.actors {
             let gpio_pin = hardware_impl::get_gpio_pin(actor.gpio_pin, &actor.id).unwrap();
             match actor::simple_gpio::Actor::new(&actor.id, gpio_pin) {
