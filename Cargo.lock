@@ -118,10 +118,10 @@ version = "0.1.0"
 dependencies = [
  "assert_approx_eq",
  "embedded-hal",
+ "embedded-hal-mock",
  "gpio-cdev",
  "lazy_static",
  "linux-embedded-hal",
- "log 0.4.8",
  "onewire",
  "pid",
  "rand",
@@ -254,6 +254,16 @@ checksum = "ee4908a155094da7723c2d60d617b820061e3b4efcc3d9e293d206a5a76c170b"
 dependencies = [
  "nb",
  "void",
+]
+
+[[package]]
+name = "embedded-hal-mock"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d22e3e0ab5455a3eb25072d53fe6c00e359282bd660ab58ec7d5541a68fa8b4e"
+dependencies = [
+ "embedded-hal",
+ "nb",
 ]
 
 [[package]]
