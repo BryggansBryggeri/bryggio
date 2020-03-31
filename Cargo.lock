@@ -531,11 +531,11 @@ checksum = "eb147597cdf94ed43ab7a9038716637d2d1bf2bc571da995d0028dec06bd3018"
 [[package]]
 name = "linux-embedded-hal"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e04b2d8e29bb2d949bc9f0ed8acee5033833166731c7e479d0c74d7ef2ab042d"
+source = "git+https://github.com/rust-embedded/linux-embedded-hal#bc3d0cb383b8d0b74593623a21eab73a60e81ce4"
 dependencies = [
  "cast",
  "embedded-hal",
+ "gpio-cdev",
  "i2cdev",
  "nb",
  "serial-core",

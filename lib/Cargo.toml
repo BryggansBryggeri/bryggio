@@ -5,7 +5,8 @@ authors = ["Jakob Lindqvist <jakob.lindqvist.92@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-linux-embedded-hal = { version = "^0.3" }
+# linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", features=["gpio_cdev"]}
+linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", features=["gpio_cdev"]}
 embedded-hal = { version = "0.2.3", features = ["unproven"] }
 rocket = { version = "0.4.2", default-features = false }
 rocket_contrib = ">=0.4.2"
