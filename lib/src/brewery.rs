@@ -3,6 +3,8 @@ use crate::api;
 use crate::config;
 use crate::control;
 use crate::sensor;
+use hardware::linux;
+use linux_embedded_hal::cdev_pin::CdevPin;
 use std::collections::HashMap;
 use std::error as std_error;
 use std::sync;
@@ -90,7 +92,9 @@ impl Brewery {
         self.add_actor(dummy_id, dummy_actor);
 
         for actor in &config.hardware.actors {
-            match actor::simple_gpio::Actor::new(&actor.id, actor.gpio_pin) {
+            let handle = linux::get_gpio_handle(actor.gpio_pin);
+            let temp_actor = CdevPin::new(handle);
+            match actor::simple_gpio::Actor::new(&actor.id, temp_actor) {
                 Ok(gpio_actor) => {
                     let actor_handle: actor::ActorHandle =
                         sync::Arc::new(sync::Mutex::new(gpio_actor));

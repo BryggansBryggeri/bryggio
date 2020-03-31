@@ -5,6 +5,8 @@ authors = ["Jakob Lindqvist <jakob.lindqvist.92@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+linux-embedded-hal = { version = "^0.3" }
+embedded-hal = { version = "0.2.3", features = ["unproven"] }
 rocket = { version = "0.4.2", default-features = false }
 rocket_contrib = ">=0.4.2"
 rocket_cors = "0.5.0"

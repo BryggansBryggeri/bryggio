@@ -1,5 +1,5 @@
 use crate::actor;
-use crate::hardware;
+use crate::hardware::linux;
 
 pub struct XOr {
     pub own_id: String,
@@ -10,7 +10,7 @@ pub struct XOr {
 impl XOr {
     pub fn try_new(own_id: &str, paired_id: &str, pin_number: u32) -> Result<XOr, actor::Error> {
         let pin_number = pin_number;
-        let handle = match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &own_id) {
+        let handle = match linux::get_gpio_handle("/dev/gpiochip0", pin_number, &own_id) {
             Ok(handle) => handle,
             Err(err) => {
                 return Err(actor::Error::ActorError(format!(
