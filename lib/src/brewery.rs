@@ -2,13 +2,16 @@ use crate::actor;
 use crate::api;
 use crate::config;
 use crate::control;
-use crate::hardware::linux;
 use crate::sensor;
-use linux_embedded_hal::CdevPin;
 use std::collections::HashMap;
 use std::error as std_error;
 use std::sync;
 use std::thread;
+
+#[cfg(target_arch = "x86_64")]
+use crate::hardware::dummy as hardware_impl;
+#[cfg(target_arch = "arm")]
+use crate::hardware::rbpi as hardware_impl;
 
 pub enum Command {
     GetMeasurement {
@@ -92,10 +95,8 @@ impl Brewery {
         self.add_actor(dummy_id, dummy_actor);
 
         for actor in &config.hardware.actors {
-            let handle =
-                linux::get_gpio_handle("/dev/gpiochip0", actor.gpio_pin, &actor.id).unwrap();
-            let temp_actor = CdevPin::new(handle).unwrap();
-            match actor::simple_gpio::Actor::new(&actor.id, temp_actor) {
+            let gpio_pin = hardware_impl::get_gpio_pin(actor.gpio_pin, &actor.id).unwrap();
+            match actor::simple_gpio::Actor::new(&actor.id, gpio_pin) {
                 Ok(gpio_actor) => {
                     let actor_handle: actor::ActorHandle =
                         sync::Arc::new(sync::Mutex::new(gpio_actor));

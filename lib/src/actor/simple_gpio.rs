@@ -12,14 +12,6 @@ impl<T: OutputPin + Send> Actor<T> {
             id: id.into(),
             handle,
         })
-        //let pin_number = pin_number;
-        //match hardware::get_gpio_handle("/dev/gpiochip0", pin_number, &id) {
-        //    Ok(handle) => Ok(Actor {
-        //        id: id.into(),
-        //        handle,
-        //    }),
-        //    Err(err) => Err(actor::Error::ActorError(err.to_string())),
-        //}
     }
 }
 
@@ -37,8 +29,7 @@ impl<T: OutputPin + Send> actor::Actor for Actor<T> {
         };
         match outcome {
             Ok(()) => Ok(()),
-            // TODO: Err(err) => Err(actor::Error::ActorError(err.to_string())),
-            Err(err) => Err(actor::Error::ActorError("GPIO error".into())),
+            Err(_err) => Err(actor::Error::ActorError("TODO: GPIO error".into())),
         }
     }
 }

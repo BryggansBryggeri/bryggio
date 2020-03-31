@@ -5,9 +5,8 @@ authors = ["Jakob Lindqvist <jakob.lindqvist.92@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-# linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", features=["gpio_cdev"]}
-linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", features=["gpio_cdev"]}
 embedded-hal = { version = "0.2.3", features = ["unproven"] }
+embedded-hal-mock = "0.7.1"
 rocket = { version = "0.4.2", default-features = false }
 rocket_contrib = ">=0.4.2"
 rocket_cors = "0.5.0"
@@ -21,6 +20,9 @@ serde_json = ">=1.0.40"
 regex = "1"
 lazy_static = "1"
 pid = ">=2.1"
+
+[target.'cfg(target_arch = "arm")'.dependencies]
+linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", features=["gpio_cdev"]}
 
 [dev-dependencies]
 assert_approx_eq = "1.1.0"
