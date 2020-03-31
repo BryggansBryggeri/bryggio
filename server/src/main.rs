@@ -1,11 +1,10 @@
 #![forbid(unsafe_code)]
 #![feature(proc_macro_hygiene, decl_macro)]
-#[macro_use]
-extern crate rocket;
 use bryggio_lib::api;
 use bryggio_lib::brewery;
 use bryggio_lib::config;
 use rocket::http::Method;
+use rocket::{catchers, routes};
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions};
 use std::thread;
 

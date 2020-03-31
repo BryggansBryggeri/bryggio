@@ -31,8 +31,6 @@
 #![cfg_attr(feature = "clippy", warn(unseparated_literal_suffix))]
 #![cfg_attr(feature = "clippy", warn(wrong_pub_self_convention))]
 
-#[macro_use]
-extern crate rocket;
 mod actor;
 pub mod api;
 pub mod brewery;

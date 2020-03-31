@@ -1,6 +1,5 @@
 use crate::actor;
 use crate::hardware;
-use gpio_cdev;
 
 pub struct Actor {
     pub id: String,

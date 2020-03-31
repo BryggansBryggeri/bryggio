@@ -1,6 +1,5 @@
 use crate::actor;
 use crate::hardware;
-use gpio_cdev;
 
 pub struct XOr {
     pub own_id: String,

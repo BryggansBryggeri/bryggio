@@ -5,7 +5,7 @@ use crate::config;
 use crate::control;
 use crate::sensor;
 use crate::utils;
-use rocket;
+use rocket::{catch, get};
 use rocket_contrib::json;
 use std::convert::TryFrom;
 

@@ -4,7 +4,6 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json;
 use std::io::Write;
-use ureq;
 use url::Url;
 
 pub mod brewery;

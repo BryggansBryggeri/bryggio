@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::error as std_error;
 use std::fs;
 use std::io::Read;
-use toml;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Config {

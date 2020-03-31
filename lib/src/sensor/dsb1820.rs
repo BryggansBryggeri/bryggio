@@ -1,7 +1,6 @@
 use crate::sensor;
 use crate::utils;
 use lazy_static::lazy_static;
-use regex;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs;
