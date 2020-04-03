@@ -1,3 +1,4 @@
+pub mod cool_ds18b20;
 pub mod cpu_temp;
 pub mod ds18b20;
 pub mod dummy;
