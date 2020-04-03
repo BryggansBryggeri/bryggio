@@ -67,9 +67,9 @@ impl From<GpioState> for bool {
 pub struct Delay {}
 
 impl DelayMs<u16> for Delay {
-    fn delay_ms(&mut self, ms: u16) {}
+    fn delay_ms(&mut self, _ms: u16) {}
 }
 
 impl DelayUs<u16> for Delay {
-    fn delay_us(&mut self, ms: u16) {}
+    fn delay_us(&mut self, _ms: u16) {}
 }
