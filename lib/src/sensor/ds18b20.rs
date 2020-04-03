@@ -6,12 +6,12 @@ use std::fmt;
 use std::fs;
 use std::path;
 
-const DSB_DIR: &str = "/sys/bus/w1/devices/";
+const DS18_DIR: &str = "/sys/bus/w1/devices/";
 
 #[derive(Debug)]
-pub struct DSB1820 {
+pub struct Ds18b20 {
     pub id: String,
-    address: DSB1820Address,
+    address: Ds18b20Address,
 }
 
 // TODO: Can this be done with a const fn?
@@ -24,15 +24,15 @@ lazy_static! {
     .unwrap(); // This unwrap is fine since it is a constant valid regex.
 }
 
-impl DSB1820 {
-    pub fn try_new(id: &str, address: &str) -> Result<DSB1820, sensor::Error> {
-        let address = DSB1820Address::try_new(address)?;
+impl Ds18b20 {
+    pub fn try_new(id: &str, address: &str) -> Result<Ds18b20, sensor::Error> {
+        let address = Ds18b20Address::try_new(address)?;
         let id = String::from(id);
-        Ok(DSB1820 { id, address })
+        Ok(Ds18b20 { id, address })
     }
 }
 
-impl sensor::Sensor for DSB1820 {
+impl sensor::Sensor for Ds18b20 {
     fn get_measurement(&self) -> Result<f32, sensor::Error> {
         let device_path = format!("/sys/bus/w1/devices/{}/w1_slave", self.address.0);
         let raw_read = match utils::read_file_to_string(&device_path) {
@@ -49,12 +49,12 @@ impl sensor::Sensor for DSB1820 {
     }
 }
 #[derive(Deserialize, Serialize, Debug)]
-pub struct DSB1820Address(String);
+pub struct Ds18b20Address(String);
 
-impl DSB1820Address {
-    pub fn try_new(address: &str) -> Result<DSB1820Address, sensor::Error> {
-        DSB1820Address::verify(address)?;
-        Ok(DSB1820Address(String::from(address)))
+impl Ds18b20Address {
+    pub fn try_new(address: &str) -> Result<Ds18b20Address, sensor::Error> {
+        Ds18b20Address::verify(address)?;
+        Ok(Ds18b20Address(String::from(address)))
     }
 
     pub fn verify(address: &str) -> Result<(), sensor::Error> {
@@ -70,7 +70,7 @@ impl DSB1820Address {
     }
 }
 
-impl fmt::Display for DSB1820Address {
+impl fmt::Display for Ds18b20Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
@@ -109,14 +109,14 @@ fn parse_temp_measurement(raw_read: &str) -> Result<f32, sensor::Error> {
     Ok(value / 1000.0)
 }
 
-pub fn list_available() -> Result<Vec<DSB1820Address>, sensor::Error> {
+pub fn list_available() -> Result<Vec<Ds18b20Address>, sensor::Error> {
     println!("Finding sensors");
-    let device_path = path::Path::new(DSB_DIR);
+    let device_path = path::Path::new(DS18_DIR);
     if !device_path.exists() {
         // TODO: Better error
         return Err(sensor::Error::FileReadError(format!(
             "DSB path does not exist: '{}'",
-            DSB_DIR
+            DS18_DIR
         )));
     } else {
     }
@@ -125,20 +125,20 @@ pub fn list_available() -> Result<Vec<DSB1820Address>, sensor::Error> {
         Err(_error) => {
             return Err(sensor::Error::FileReadError(format!(
                 "Unable to list DSB files {}.",
-                DSB_DIR
+                DS18_DIR
             )))
         }
     };
     Ok(files
         .filter_map(Result::ok)
-        .flat_map(dsb1820_address_from_file)
+        .flat_map(ds18b20_address_from_file)
         .collect())
 }
 
-fn dsb1820_address_from_file(file: fs::DirEntry) -> Option<DSB1820Address> {
+fn ds18b20_address_from_file(file: fs::DirEntry) -> Option<Ds18b20Address> {
     let tmp = file.path();
     let file_name = tmp.file_name()?.to_str()?;
-    match DSB1820Address::try_new(&file_name) {
+    match Ds18b20Address::try_new(&file_name) {
         Ok(address) => Some(address),
         Err(_) => None,
     }
@@ -151,7 +151,7 @@ mod tests {
     #[test]
     fn test_address_correct() {
         let string = String::from("28-0416802230ff");
-        let address = DSB1820Address::verify(&string);
+        let address = Ds18b20Address::verify(&string);
         address.unwrap();
     }
 
@@ -159,7 +159,7 @@ mod tests {
     #[should_panic]
     fn test_address_wrong_start() {
         let string = String::from("29-0416802230ff");
-        let address = DSB1820Address::verify(&string);
+        let address = Ds18b20Address::verify(&string);
         address.unwrap();
     }
 
@@ -167,7 +167,7 @@ mod tests {
     #[should_panic]
     fn test_address_too_short() {
         let string = String::from("284E1F69140");
-        let address = DSB1820Address::verify(&string);
+        let address = Ds18b20Address::verify(&string);
         address.unwrap();
     }
 

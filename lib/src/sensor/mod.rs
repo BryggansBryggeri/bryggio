@@ -1,5 +1,5 @@
 pub mod cpu_temp;
-pub mod dsb1820;
+pub mod ds18b20;
 pub mod dummy;
 
 use std::error as std_error;

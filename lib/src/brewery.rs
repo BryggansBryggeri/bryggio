@@ -80,14 +80,14 @@ impl Brewery {
         self.add_sensor(cpu_id, sync::Arc::new(sync::Mutex::new(cpu_sensor)));
 
         for sensor in &config.hardware.sensors {
-            let dsb_sensor = match sensor::dsb1820::DSB1820::try_new(&sensor.id, &sensor.address) {
+            let ds18_sensor = match sensor::ds18b20::Ds18b20::try_new(&sensor.id, &sensor.address) {
                 Ok(sensor) => sensor,
                 Err(err) => {
                     println!("Error registering sensor, {}", err.to_string());
                     continue;
                 }
             };
-            let sensor_handle: sensor::SensorHandle = sync::Arc::new(sync::Mutex::new(dsb_sensor));
+            let sensor_handle: sensor::SensorHandle = sync::Arc::new(sync::Mutex::new(ds18_sensor));
             self.add_sensor(&sensor.id, sensor_handle);
         }
 
