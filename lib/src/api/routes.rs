@@ -168,8 +168,8 @@ pub fn get_full_state(
 }
 
 #[get("/list_available_sensors")]
-pub fn list_available_sensors() -> json::Json<api::Response<Vec<sensor::dsb1820::DSB1820Address>>> {
-    let response = match sensor::dsb1820::list_available() {
+pub fn list_available_sensors() -> json::Json<api::Response<Vec<sensor::ds18b20::Ds18b20Address>>> {
+    let response = match sensor::ds18b20::list_available() {
         Ok(available_sensors) => api::Response {
             result: Some(available_sensors),
             message: None,
