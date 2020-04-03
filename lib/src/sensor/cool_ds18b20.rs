@@ -23,3 +23,13 @@ impl Ds18b20 {
         }
     }
 }
+
+impl sensor::Sensor for Ds18b20 {
+    fn get_id(&self) -> String {
+        self.id.clone()
+    }
+
+    fn get_measurement(&mut self) -> Result<f32, sensor::Error> {
+        todo!();
+    }
+}

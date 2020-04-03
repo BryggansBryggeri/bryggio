@@ -18,7 +18,7 @@ impl Sensor {
 }
 
 impl sensor::Sensor for Sensor {
-    fn get_measurement(&self) -> Result<f32, sensor::Error> {
+    fn get_measurement(&mut self) -> Result<f32, sensor::Error> {
         let true_measurement = self.prediction;
         let normal = match Normal::new(0.0, self.noise_level) {
             Ok(normal) => normal,

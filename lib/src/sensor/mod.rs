@@ -28,7 +28,7 @@ impl SensorType {
 pub type SensorHandle = sync::Arc<sync::Mutex<dyn Sensor>>;
 
 pub fn get_measurement(sensor_mut: &SensorHandle) -> Result<f32, Error> {
-    let sensor = match sensor_mut.lock() {
+    let mut sensor = match sensor_mut.lock() {
         Ok(sensor) => sensor,
         Err(err) => {
             return Err(Error::ThreadLockError(err.to_string()));
@@ -52,7 +52,7 @@ pub trait Sensor: Send {
     // TODO: it's nice to have this return a common sensor error,
     // but this might snowball when more sensors are added.
     // This should be more generic
-    fn get_measurement(&self) -> Result<f32, Error>;
+    fn get_measurement(&mut self) -> Result<f32, Error>;
     fn get_id(&self) -> String;
 }
 

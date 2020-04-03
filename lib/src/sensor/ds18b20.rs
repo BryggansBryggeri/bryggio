@@ -33,7 +33,7 @@ impl Ds18b20 {
 }
 
 impl sensor::Sensor for Ds18b20 {
-    fn get_measurement(&self) -> Result<f32, sensor::Error> {
+    fn get_measurement(&mut self) -> Result<f32, sensor::Error> {
         let device_path = format!("/sys/bus/w1/devices/{}/w1_slave", self.address.0);
         let raw_read = match utils::read_file_to_string(&device_path) {
             Ok(raw_read) => raw_read,
