@@ -10,6 +10,6 @@ pub fn get_gpio_pin(pin_number: u32, label: &str) -> Result<CdevPin, errors::Err
         Ok(line) => line,
         Err(e) => return Err(e),
     };
-    let handle = line.request(LineRequestFlags::OUTPUT, 0, label);
-    Ok(CdevPin::new(handle).unwrap());
+    let handle = line.request(LineRequestFlags::OUTPUT, 0, label)?;
+    CdevPin::new(handle)
 }
