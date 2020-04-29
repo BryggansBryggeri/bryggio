@@ -32,9 +32,12 @@ impl Controller {
 }
 
 impl control::Control for Controller {
-    fn calculate_signal(&mut self, _measurement: Option<f32>) -> f32 {
-        self.current_signal = self.target;
-        self.current_signal
+    fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {
+        if let Some(measurement) = measurement {
+            self.pid.next_control_output(measurement).output
+        } else {
+            self.current_signal
+        }
     }
 
     fn get_state(&self) -> control::State {
