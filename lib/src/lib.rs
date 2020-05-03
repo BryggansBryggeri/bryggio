@@ -37,5 +37,6 @@ pub mod brewery;
 pub mod config;
 mod control;
 mod hardware;
+mod logger;
 pub mod sensor;
 mod utils;
