@@ -36,6 +36,7 @@ impl InputPin for GpioPin {
 }
 
 impl OutputPin for GpioPin {
+    //TODO: better error
     type Error = gpio_cdev::errors::Error;
 
     fn set_low(&mut self) -> Result<(), Self::Error> {
