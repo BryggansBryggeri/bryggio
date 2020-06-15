@@ -2,6 +2,7 @@ pub mod cool_ds18b20;
 pub mod cpu_temp;
 pub mod ds18b20;
 pub mod dummy;
+pub mod pub_sub::NatsClient;
 
 use std::error as std_error;
 use std::sync;
@@ -54,6 +55,10 @@ pub trait Sensor: Send {
     // This should be more generic
     fn get_measurement(&mut self) -> Result<f32, Error>;
     fn get_id(&self) -> String;
+}
+
+pub struct PubSubSensor {
+    client: 
 }
 
 #[derive(Debug, Clone, PartialEq)]
