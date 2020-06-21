@@ -2,7 +2,7 @@ pub mod cool_ds18b20;
 pub mod cpu_temp;
 pub mod ds18b20;
 pub mod dummy;
-pub mod pub_sub::NatsClient;
+use crate::pub_sub;
 
 use std::error as std_error;
 use std::sync;
@@ -57,8 +57,22 @@ pub trait Sensor: Send {
     fn get_id(&self) -> String;
 }
 
-pub struct PubSubSensor {
-    client: 
+pub struct PubSubSensor<S>
+where
+    S: Sensor,
+{
+    sensor: S,
+    /// TODO: Make generic over PubSubClient
+    client: pub_sub::nats::NatsClient,
+}
+
+impl<S> PubSubSensor<S>
+where
+    S: Sensor,
+{
+    pub fn new(sensor: S, client: pub_sub::nats::NatsClient) -> Self {
+        PubSubSensor { sensor, client }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
