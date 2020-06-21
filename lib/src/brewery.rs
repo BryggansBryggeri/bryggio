@@ -2,6 +2,7 @@ use crate::actor;
 use crate::api;
 use crate::config;
 use crate::control;
+use crate::pub_sub::{nats::NatsClient, ClientId};
 use crate::sensor;
 use std::collections::HashMap;
 use std::error as std_error;
@@ -14,59 +15,23 @@ use crate::hardware::dummy as hardware_impl;
 use crate::hardware::rbpi as hardware_impl;
 
 pub enum Command {
-    GetMeasurement {
-        sensor_id: String,
-    },
-    GetControlSignal {
-        controller_id: String,
-    },
-    GetTarget {
-        controller_id: String,
-    },
-    SetTarget {
-        controller_id: String,
-        new_target_signal: f32,
-    },
-    StartController {
-        controller_id: String,
-        controller_type: control::ControllerType,
-        sensor_id: String,
-        actor_id: String,
-        update_freq: u64,
-    },
-    StopController {
-        controller_id: String,
-    },
-    AddSensor {
-        sensor_id: String,
-        sensor_type: sensor::SensorType,
-    },
-    // AddActor {
-    //     actor_id: String,
-    //     actor_type: actor::ActorType,
-    // },
-    GetFullState,
-    Error(String),
+    KillClient { client_id: ClientId },
+    StartClient { client_id: ClientId },
 }
 
 pub struct Brewery {
-    api_endpoint: api::BreweryEndpoint<f32>,
-    active_controllers: HashMap<String, control::ControllerHandle>,
-    sensors: HashMap<String, sensor::SensorHandle>,
-    actors: HashMap<String, actor::ActorHandle>,
+    client: NatsClient,
+    active_clients: HashMap<ClientId, ()>,
 }
 
 impl Brewery {
-    pub fn new(api_endpoint: api::BreweryEndpoint<f32>) -> Brewery {
-        let active_controllers: HashMap<String, control::ControllerHandle> = HashMap::new();
-        let sensors: HashMap<String, sensor::SensorHandle> = HashMap::new();
-        let actors: HashMap<String, actor::ActorHandle> = HashMap::new();
+    pub fn new(server: &str, user: &str, pass: &str) -> Brewery {
+        let client = NatsClient::try_new(server, user, pass).unwrap();
+        let active_clients: HashMap<ClientId, ()> = HashMap::new();
 
         Brewery {
-            api_endpoint,
-            active_controllers,
-            sensors,
-            actors,
+            client,
+            active_clients,
         }
     }
 
@@ -112,265 +77,12 @@ impl Brewery {
         self.actors.insert(id.into(), actor);
     }
 
-    pub fn run(&mut self) {
-        loop {
-            let request = match self.api_endpoint.receiver.recv() {
-                Ok(request) => request,
-                Err(_) => Command::Error(String::from("Could not recieve request")),
-            };
-            let response = self.process_request(&request);
-            match self.api_endpoint.sender.send(response) {
-                Ok(()) => {}
-                Err(err) => println!("Error sending response: {}", err),
-            }
-        }
-    }
+    pub fn run(&mut self) {}
 
-    fn process_request(&mut self, request: &Command) -> api::Response<f32> {
+    fn process_request(&mut self, request: &Command) -> () {
         match request {
-            Command::StartController {
-                controller_id,
-                controller_type,
-                sensor_id,
-                actor_id,
-                update_freq,
-            } => {
-                match self.start_controller(
-                    &controller_id,
-                    controller_type,
-                    &sensor_id,
-                    &actor_id,
-                    *update_freq,
-                ) {
-                    Ok(_) => api::Response {
-                        result: None,
-                        message: None,
-                        success: true,
-                    },
-                    Err(err) => api::Response {
-                        result: None,
-                        message: Some(err.to_string()),
-                        success: false,
-                    },
-                }
-            }
-
-            Command::StopController { controller_id } => {
-                match self.stop_controller(&controller_id) {
-                    Ok(_) => api::Response {
-                        result: None,
-                        message: None,
-                        success: true,
-                    },
-                    Err(err) => api::Response {
-                        result: None,
-                        message: Some(err.to_string()),
-                        success: false,
-                    },
-                }
-            }
-
-            Command::GetMeasurement { sensor_id } => match self.get_measurement(&sensor_id) {
-                Ok(measurement) => api::Response {
-                    result: Some(measurement),
-                    message: None,
-                    success: true,
-                },
-                Err(err) => api::Response {
-                    result: None,
-                    message: Some(err.to_string()),
-                    success: false,
-                },
-            },
-
-            Command::GetTarget { controller_id } => match self.get_target(&controller_id) {
-                Ok(measurement) => api::Response {
-                    result: Some(measurement),
-                    message: None,
-                    success: true,
-                },
-                Err(err) => api::Response {
-                    result: None,
-                    message: Some(err.to_string()),
-                    success: false,
-                },
-            },
-
-            Command::GetControlSignal { controller_id } => {
-                match self.get_control_signal(&controller_id) {
-                    Ok(measurement) => api::Response {
-                        result: Some(measurement),
-                        message: None,
-                        success: true,
-                    },
-                    Err(err) => api::Response {
-                        result: None,
-                        message: Some(err.to_string()),
-                        success: false,
-                    },
-                }
-            }
-
-            Command::SetTarget {
-                controller_id,
-                new_target_signal,
-            } => match self.change_controller_target(&controller_id, *new_target_signal) {
-                Ok(()) => api::Response {
-                    result: None,
-                    message: None,
-                    success: true,
-                },
-                Err(err) => api::Response {
-                    result: None,
-                    message: Some(err.to_string()),
-                    success: false,
-                },
-            },
-            _ => api::Response {
-                result: None,
-                message: Some(String::from("Not implemented yet")),
-                success: false,
-            },
-        }
-    }
-
-    fn start_controller(
-        &mut self,
-        controller_id: &str,
-        controller_type: &control::ControllerType,
-        sensor_id: &str,
-        actor_id: &str,
-        update_freq: u64,
-    ) -> Result<(), Error> {
-        self.validate_controller_id(controller_id)?;
-
-        let controller: Box<dyn control::Control> = match controller_type {
-            control::ControllerType::Manual => Box::new(control::manual::Controller::new()),
-            control::ControllerType::Hysteresis => Box::new(
-                control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."),
-            ),
-        };
-        let controller_lock: control::ControllerLock = sync::Arc::new(sync::Mutex::new(controller));
-
-        let controller_send = controller_lock.clone();
-        let sensor_handle = self.get_sensor(sensor_id)?.clone();
-        let actor_handle = self.get_actor(actor_id)?.clone();
-        let thread_handle = thread::spawn(move || {
-            control::run_controller(controller_send, sensor_handle, actor_handle, update_freq)
-        });
-
-        let controller_handle = control::ControllerHandle {
-            lock: controller_lock,
-            thread: thread_handle,
-        };
-        self.active_controllers
-            .insert(controller_id.into(), controller_handle);
-        Ok(())
-    }
-
-    fn stop_controller(&mut self, id: &str) -> Result<(), Error> {
-        let controller_handle = self.remove_active_controller(id)?;
-        let mut controller = match controller_handle.lock.lock() {
-            Ok(controller) => controller,
-            Err(err) => {
-                return Err(Error::ConcurrencyError(format!(
-                    "Could not acquire controller lock. Error {}.",
-                    err,
-                )))
-            }
-        };
-        controller.set_state(control::State::Inactive);
-        drop(controller);
-        match controller_handle.thread.join() {
-            Ok(_) => Ok(()),
-            Err(_) => Err(Error::ThreadJoin),
-        }
-    }
-
-    fn change_controller_target(&mut self, id: &str, new_target: f32) -> Result<(), Error> {
-        let controller_handle = self.get_active_controller(id)?;
-        let mut controller = match controller_handle.lock.lock() {
-            Ok(controller) => controller,
-            Err(err) => {
-                return Err(Error::ConcurrencyError(format!(
-                    "Could not acquire controller lock. Error {}.",
-                    err
-                )));
-            }
-        };
-        controller.set_target(new_target);
-        Ok(())
-    }
-
-    fn get_measurement(&mut self, sensor_id: &str) -> Result<f32, Error> {
-        let sensor = self.get_sensor(sensor_id)?;
-        match sensor::get_measurement(sensor) {
-            Ok(measurement) => Ok(measurement),
-            Err(err) => Err(Error::Sensor(err.to_string())),
-        }
-    }
-
-    fn get_control_signal(&mut self, controller_id: &str) -> Result<f32, Error> {
-        let controller_handle = self.get_active_controller(controller_id)?;
-        let controller = match controller_handle.lock.lock() {
-            Ok(controller) => controller,
-            Err(err) => {
-                return Err(Error::ConcurrencyError(format!(
-                    "Could not acquire controller lock. Error {}.",
-                    err
-                )))
-            }
-        };
-        Ok(controller.get_control_signal())
-    }
-
-    fn get_target(&mut self, controller_id: &str) -> Result<f32, Error> {
-        let controller_handle = self.get_active_controller(controller_id)?;
-        let controller = match controller_handle.lock.lock() {
-            Ok(controller) => controller,
-            Err(err) => {
-                return Err(Error::ConcurrencyError(format!(
-                    "Could not acquire controller lock. Error {}.",
-                    err
-                )))
-            }
-        };
-        Ok(controller.get_target())
-    }
-
-    fn validate_controller_id(&self, id: &str) -> Result<(), Error> {
-        if self.active_controllers.contains_key(id) {
-            Err(Error::AlreadyActive(id.into()))
-        } else {
-            Ok(())
-        }
-    }
-
-    fn get_active_controller(&mut self, id: &str) -> Result<&control::ControllerHandle, Error> {
-        match self.active_controllers.get_mut(id) {
-            Some(controller) => Ok(controller),
-            None => Err(Error::Missing("controller".into(), id.into())),
-        }
-    }
-
-    fn remove_active_controller(&mut self, id: &str) -> Result<control::ControllerHandle, Error> {
-        match self.active_controllers.remove(id) {
-            Some(controller) => Ok(controller),
-            None => Err(Error::Missing("controller".into(), id.into())),
-        }
-    }
-
-    fn get_sensor(&mut self, id: &str) -> Result<&sensor::SensorHandle, Error> {
-        match self.sensors.get_mut(id) {
-            Some(sensor) => Ok(sensor),
-            None => Err(Error::Missing("sensor".into(), id.into())),
-        }
-    }
-
-    fn get_actor(&mut self, id: &str) -> Result<&actor::ActorHandle, Error> {
-        match self.actors.get_mut(id) {
-            Some(actor) => Ok(actor),
-            None => Err(Error::Missing("actor".into(), id.into())),
+            Command::StartClient { client_id } => {}
+            Command::KillClient { client_id } => {}
         }
     }
 }

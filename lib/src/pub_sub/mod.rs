@@ -6,8 +6,9 @@ pub(crate) trait PubSubClient {
     fn publish(subject: &Subject, msg: &Message);
 }
 
-pub(crate) struct Subject(str);
-pub(crate) struct Message(str);
+pub(crate) struct ClientId(String);
+pub(crate) struct Subject(String);
+pub(crate) struct Message(String);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PubSubError {
