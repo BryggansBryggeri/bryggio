@@ -6,7 +6,7 @@ pub(crate) trait PubSubClient {
     fn publish(subject: &Subject, msg: &Message);
 }
 
-pub(crate) struct ClientId(String);
+pub struct ClientId(pub String);
 pub(crate) struct Subject(String);
 pub(crate) struct Message(String);
 

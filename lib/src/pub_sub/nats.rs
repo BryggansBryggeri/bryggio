@@ -1,14 +1,22 @@
 use crate::pub_sub::PubSubError;
 use nats;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct NatsConfig {
+    server: String,
+    user: String,
+    pass: String,
+}
 
 pub struct NatsClient {
     client: nats::Connection,
 }
 
 impl NatsClient {
-    pub fn try_new(server: &str, user: &str, pass: &str) -> Result<NatsClient, PubSubError> {
-        let opts = nats::ConnectionOptions::with_user_pass(user, pass);
-        match opts.connect(server) {
+    pub fn try_new(config: &NatsConfig) -> Result<NatsClient, PubSubError> {
+        let opts = nats::ConnectionOptions::with_user_pass(&config.user, &config.pass);
+        match opts.connect(&config.server) {
             Ok(nc) => Ok(NatsClient { client: nc }),
             Err(err) => Err(PubSubError::Generic(err.to_string())),
         }

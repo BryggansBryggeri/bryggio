@@ -1,3 +1,4 @@
+use crate::pub_sub::nats::NatsConfig;
 use serde::{Deserialize, Serialize};
 use std::error as std_error;
 use std::fs;
@@ -7,6 +8,7 @@ use std::io::Read;
 pub struct Config {
     pub general: General,
     pub hardware: Hardware,
+    pub nats: NatsConfig,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

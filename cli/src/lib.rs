@@ -1,5 +1,4 @@
 use crate::opts::Opt;
-use bryggio_lib::api;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json;
@@ -10,7 +9,7 @@ pub mod brewery;
 pub mod install;
 pub mod opts;
 
-pub fn send<T>(request: &Url) -> Result<api::Response<T>, serde_json::error::Error>
+pub fn send<T>(request: &Url) -> Result<T, serde_json::error::Error>
 where
     T: Serialize + DeserializeOwned,
 {

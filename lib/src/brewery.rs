@@ -1,5 +1,4 @@
 use crate::actor;
-use crate::api;
 use crate::config;
 use crate::control;
 use crate::pub_sub::{nats::NatsClient, ClientId};
@@ -7,7 +6,6 @@ use crate::sensor;
 use std::collections::HashMap;
 use std::error as std_error;
 use std::sync;
-use std::thread;
 
 #[cfg(target_arch = "x86_64")]
 use crate::hardware::dummy as hardware_impl;
@@ -25,24 +23,20 @@ pub struct Brewery {
 }
 
 impl Brewery {
-    pub fn new(server: &str, user: &str, pass: &str) -> Brewery {
-        let client = NatsClient::try_new(server, user, pass).unwrap();
-        let active_clients: HashMap<ClientId, ()> = HashMap::new();
-
-        Brewery {
+    pub fn init_from_config(config: &config::Config) -> Brewery {
+        let client = NatsClient::try_new(&config.nats).unwrap();
+        let mut brewery = Brewery {
             client,
-            active_clients,
-        }
-    }
-
-    pub fn init_from_config(&mut self, config: &config::Config) {
+            active_clients: HashMap::new(),
+        };
         let dummy_id = "dummy";
-        let dummy_sensor = sensor::dummy::Sensor::new(dummy_id);
-        self.add_sensor(dummy_id, sync::Arc::new(sync::Mutex::new(dummy_sensor)));
+        let dummy_sensor =
+            sensor::PubSubSensor::new(dummy_id, sensor::dummy::Sensor::new(dummy_id), &config.nats);
+        brewery.start_client(ClientId(dummy_id.into()));
 
         let cpu_id = "cpu";
         let cpu_sensor = sensor::cpu_temp::CpuTemp::new(cpu_id);
-        self.add_sensor(cpu_id, sync::Arc::new(sync::Mutex::new(cpu_sensor)));
+        brewery.start_client(ClientId(cpu_id.into()));
 
         for sensor in &config.hardware.sensors {
             let ds18_sensor = match sensor::ds18b20::Ds18b20::try_new(&sensor.id, &sensor.address) {
@@ -52,8 +46,7 @@ impl Brewery {
                     continue;
                 }
             };
-            let sensor_handle: sensor::SensorHandle = sync::Arc::new(sync::Mutex::new(ds18_sensor));
-            self.add_sensor(&sensor.id, sensor_handle);
+            brewery.start_client(ClientId(sensor.id.clone()));
         }
 
         for actor in &config.hardware.actors {
@@ -62,21 +55,15 @@ impl Brewery {
                 Ok(gpio_actor) => {
                     let actor_handle: actor::ActorHandle =
                         sync::Arc::new(sync::Mutex::new(gpio_actor));
-                    self.add_actor(&actor.id, actor_handle);
+                    brewery.start_client(ClientId(actor.id.clone()));
                 }
                 Err(err) => println!("Error adding actor: {}", err),
             };
         }
+        brewery
     }
 
-    fn add_sensor(&mut self, id: &str, sensor: sensor::SensorHandle) {
-        self.sensors.insert(id.into(), sensor);
-    }
-
-    fn add_actor(&mut self, id: &str, actor: actor::ActorHandle) {
-        self.actors.insert(id.into(), actor);
-    }
-
+    fn start_client(&mut self, id: ClientId) {}
     pub fn run(&mut self) {}
 
     fn process_request(&mut self, request: &Command) -> () {

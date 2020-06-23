@@ -32,7 +32,6 @@
 #![cfg_attr(feature = "clippy", warn(wrong_pub_self_convention))]
 
 mod actor;
-pub mod api;
 pub mod brewery;
 pub mod config;
 mod control;

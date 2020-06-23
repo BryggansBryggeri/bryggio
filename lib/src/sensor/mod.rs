@@ -61,6 +61,7 @@ pub struct PubSubSensor<S>
 where
     S: Sensor,
 {
+    id: String,
     sensor: S,
     /// TODO: Make generic over PubSubClient
     client: pub_sub::nats::NatsClient,
@@ -70,8 +71,13 @@ impl<S> PubSubSensor<S>
 where
     S: Sensor,
 {
-    pub fn new(sensor: S, client: pub_sub::nats::NatsClient) -> Self {
-        PubSubSensor { sensor, client }
+    pub fn new(id: &str, sensor: S, config: &pub_sub::nats::NatsConfig) -> Self {
+        let client = pub_sub::nats::NatsClient::try_new(config).unwrap();
+        PubSubSensor {
+            id: id.into(),
+            sensor,
+            client,
+        }
     }
 }
 
