@@ -87,6 +87,10 @@ mod tests {
             [hardware]
             sensors = []
             actors = []
+            [nats]
+            server="localhost"
+            user="jackonelli"
+            pass="very_secret"
         "#,
         )
         .unwrap();
