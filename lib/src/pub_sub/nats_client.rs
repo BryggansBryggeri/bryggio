@@ -1,9 +1,13 @@
 use crate::pub_sub::{Message, PubSubError, Subject};
 use nats::{Connection, ConnectionOptions, Subscription};
 use serde::{Deserialize, Serialize};
+use std::process::{Child, Command};
+use std::thread::sleep;
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct NatsConfig {
+    bin_path: String,
     server: String,
     user: String,
     pass: String,
@@ -31,6 +35,16 @@ impl NatsClient {
             .publish(&subject.0, &msg.0)
             .expect("Subscribe failed");
     }
+}
+
+pub fn run_nats_server(config: &NatsConfig) -> Child {
+    let child = Command::new(&config.bin_path)
+        .arg("-c")
+        .arg("config.yaml")
+        .spawn()
+        .expect("failed to execute child");
+    sleep(Duration::from_millis(10));
+    child
 }
 
 // fn main() -> CliResult {

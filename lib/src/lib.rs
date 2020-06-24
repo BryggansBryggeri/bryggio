@@ -36,6 +36,6 @@ pub mod config;
 mod control;
 mod hardware;
 mod logger;
-mod pub_sub;
+pub mod pub_sub;
 pub mod sensor;
 pub(crate) mod utils;

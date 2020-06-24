@@ -1,7 +1,9 @@
 #![forbid(unsafe_code)]
 use bryggio_lib::brewery::Brewery;
 use bryggio_lib::config;
-use std::process::Command;
+use bryggio_lib::pub_sub::nats_client::run_nats_server;
+use std::thread::sleep;
+use std::time::Duration;
 
 fn main() {
     let config_file = "./Bryggio.toml";
@@ -16,6 +18,10 @@ fn main() {
             config::Config::default()
         }
     };
+    let mut nats_server_child = run_nats_server(&config.nats);
+    sleep(Duration::from_millis(10));
     let mut brewery = Brewery::init_from_config(&config);
     brewery.run();
+    let res = nats_server_child.kill();
+    println!("{:?}", res);
 }

@@ -16,6 +16,7 @@ offset_off = 0.0
   ]
 
 [nats]
+  bin_path = "./nats-server"
   server = "localhost"
   user = "jackonelli"
   pass = "penna1glas"

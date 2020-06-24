@@ -1,5 +1,5 @@
 use std::error as std_error;
-pub(crate) mod nats_client;
+pub mod nats_client;
 use nats::Subscription;
 
 pub(crate) trait PubSubClient {
