@@ -88,6 +88,7 @@ mod tests {
             sensors = []
             actors = []
             [nats]
+            bin_path="/some/path/to/bin"
             server="localhost"
             user="jackonelli"
             pass="very_secret"
