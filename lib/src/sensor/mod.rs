@@ -1,4 +1,4 @@
-pub mod cool_ds18b20;
+// pub mod cool_ds18b20;
 pub mod cpu_temp;
 pub mod ds18b20;
 pub mod dummy;
@@ -58,7 +58,7 @@ pub trait Sensor: Send {
     // TODO: it's nice to have this return a common sensor error,
     // but this might snowball when more sensors are added.
     // This should be more generic
-    fn get_measurement(&mut self) -> Result<f32, Error>;
+    fn get_measurement(&self) -> Result<f32, Error>;
     fn get_id(&self) -> String;
 }
 
