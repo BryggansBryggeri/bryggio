@@ -1,9 +1,8 @@
 use crate::config;
-use crate::pub_sub::{
-    nats_client::NatsClient, ClientId, Message, PubSubClient, PubSubError, Subject,
-};
+use crate::pub_sub::Message as PubSubMessage;
+use crate::pub_sub::{nats_client::NatsClient, ClientId, PubSubClient, PubSubError, Subject};
 use crate::sensor;
-use nats::Subscription;
+use nats::{Message, Subscription};
 use std::collections::HashMap;
 use std::error as std_error;
 use std::thread;
@@ -16,8 +15,15 @@ use crate::hardware::dummy as hardware_impl;
 use crate::hardware::rbpi as hardware_impl;
 
 pub enum Command {
-    KillClient { client_id: ClientId },
     StartClient { client_id: ClientId },
+    KillClient { client_id: ClientId },
+    Stop,
+}
+
+impl Command {
+    pub fn try_from_msg(msg: &Message) -> Result<Self, PubSubError> {
+        todo!();
+    }
 }
 
 pub struct Brewery {
@@ -43,16 +49,11 @@ impl Brewery {
         brewery
     }
 
-    fn start_client<C>(&mut self, id: ClientId, client: C)
-    where
-        C: PubSubClient,
-    {
-    }
-
-    fn process_request(&mut self, request: &Command) -> () {
-        match request {
+    fn process_command(&self, cmd: &Command) -> () {
+        match cmd {
             Command::StartClient { client_id } => {}
             Command::KillClient { client_id } => {}
+            Command::Stop => {}
         }
     }
 }
@@ -61,17 +62,26 @@ impl PubSubClient for Brewery {
     fn client_loop(self) -> Result<(), PubSubError> {
         let subject = Subject("command".into());
         let sub = self.subscribe(&subject);
-        let client = self.client.clone();
         loop {
             for msg in sub.messages() {
-                println!("Received a {}", msg);
+                let cmd = match Command::try_from_msg(&msg) {
+                    Ok(cmd) => cmd,
+                    Err(_) => {
+                        return Err(PubSubError::MessageParse(format!(
+                            "Error parsing command: {}",
+                            msg.to_string()
+                        )))
+                    }
+                };
+                self.process_command(&cmd);
             }
         }
     }
     fn subscribe(&self, subject: &Subject) -> Subscription {
         self.client.subscribe(subject)
     }
-    fn publish(&self, subject: &Subject, msg: &Message) {
+
+    fn publish(&self, subject: &Subject, msg: &PubSubMessage) {
         todo!();
     }
 }

@@ -17,8 +17,11 @@ fn main() {
         }
     };
     let mut nats_server_child = run_nats_server(&config.nats);
-    let mut brewery = Brewery::init_from_config(&config);
-    brewery.client_loop();
+    let brewery = Brewery::init_from_config(&config);
+    match brewery.client_loop() {
+        Ok(()) => {}
+        Err(err) => println!("Supervisor loop ended with err: {}", err.to_string()),
+    };
     let res = nats_server_child.kill();
     println!("{:?}", res);
 }
