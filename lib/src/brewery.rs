@@ -35,7 +35,7 @@ impl Brewery {
         let dummy_id = "dummy";
         let dummy_sensor =
             sensor::PubSubSensor::new(dummy_id, sensor::dummy::Sensor::new(dummy_id), &config.nats);
-        let dummy_handle = thread::spawn(move || dummy_sensor.start_loop());
+        let dummy_handle = thread::spawn(move || dummy_sensor.client_loop());
         brewery
             .active_clients
             .insert(ClientId(dummy_id.into()), dummy_handle);
@@ -58,7 +58,7 @@ impl Brewery {
 }
 
 impl PubSubClient for Brewery {
-    fn start_loop(self) -> Result<(), PubSubError> {
+    fn client_loop(self) -> Result<(), PubSubError> {
         let subject = Subject("command".into());
         let sub = self.subscribe(&subject);
         let client = self.client.clone();

@@ -18,7 +18,7 @@ fn main() {
     };
     let mut nats_server_child = run_nats_server(&config.nats);
     let mut brewery = Brewery::init_from_config(&config);
-    brewery.start_loop();
+    brewery.client_loop();
     let res = nats_server_child.kill();
     println!("{:?}", res);
 }

@@ -3,7 +3,7 @@ pub mod nats_client;
 use nats::Subscription;
 
 pub trait PubSubClient {
-    fn start_loop(self) -> Result<(), PubSubError>;
+    fn client_loop(self) -> Result<(), PubSubError>;
     fn subscribe(&self, subject: &Subject) -> Subscription;
     fn publish(&self, subject: &Subject, msg: &Message);
 }

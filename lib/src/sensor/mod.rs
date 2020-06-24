@@ -98,7 +98,7 @@ impl<S> PubSubClient for PubSubSensor<S>
 where
     S: Sensor,
 {
-    fn start_loop(self) -> Result<(), PubSubError> {
+    fn client_loop(self) -> Result<(), PubSubError> {
         let subject = Subject(format!("command.sensor.{}", self.id));
         let sub = self.subscribe(&subject);
         loop {
