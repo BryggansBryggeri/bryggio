@@ -43,6 +43,9 @@ pub fn run_nats_server(config: &NatsConfig) -> Child {
         .arg("config.yaml")
         .spawn()
         .expect("failed to execute child");
+
+    // Sleeps for a short while to ensure that the server is up and running before
+    // the first connection comes.
     sleep(Duration::from_millis(10));
     child
 }

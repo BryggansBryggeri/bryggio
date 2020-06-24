@@ -1,9 +1,14 @@
 use crate::config;
-use crate::pub_sub::{nats_client::NatsClient, ClientId, PubSubClient, PubSubError};
+use crate::pub_sub::{
+    nats_client::NatsClient, ClientId, Message, PubSubClient, PubSubError, Subject,
+};
 use crate::sensor;
+use nats::Subscription;
 use std::collections::HashMap;
 use std::error as std_error;
 use std::thread;
+use std::thread::sleep;
+use std::time::Duration;
 
 #[cfg(target_arch = "x86_64")]
 use crate::hardware::dummy as hardware_impl;
@@ -44,13 +49,30 @@ impl Brewery {
     {
     }
 
-    pub fn run(&mut self) {}
-
     fn process_request(&mut self, request: &Command) -> () {
         match request {
             Command::StartClient { client_id } => {}
             Command::KillClient { client_id } => {}
         }
+    }
+}
+
+impl PubSubClient for Brewery {
+    fn start_loop(self) -> Result<(), PubSubError> {
+        let subject = Subject("command".into());
+        let sub = self.subscribe(&subject);
+        let client = self.client.clone();
+        loop {
+            for msg in sub.messages() {
+                println!("Received a {}", msg);
+            }
+        }
+    }
+    fn subscribe(&self, subject: &Subject) -> Subscription {
+        self.client.subscribe(subject)
+    }
+    fn publish(&self, subject: &Subject, msg: &Message) {
+        todo!();
     }
 }
 

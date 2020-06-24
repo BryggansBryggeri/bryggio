@@ -99,20 +99,25 @@ where
     S: Sensor,
 {
     fn start_loop(self) -> Result<(), PubSubError> {
+        println!("Starting sensor");
         let subject = Subject("command".into());
         let sub = self.subscribe(&subject);
         let client = self.client.clone();
         let mut sensor = self.sensor;
         let id = self.id.clone();
         loop {
-            for msg in sub.messages() {
+            println!("Loop");
+            for msg in sub.try_iter() {
                 println!("Received a {}", msg);
             }
+            println!("Past msg's");
             let meas = sensor.get_measurement()?;
+            println!("Got meas");
             client.publish(
                 &Subject(format!("sensor.{}.measurement", id)),
                 &Message(format!("data: {}", meas)),
             );
+            println!("Publishing meas: {}", meas);
             sleep(Duration::from_millis(500));
         }
     }
