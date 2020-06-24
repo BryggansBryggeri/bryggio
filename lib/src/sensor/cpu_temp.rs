@@ -1,4 +1,4 @@
-use crate::sensor;
+use crate::sensor::{Error, Sensor};
 use crate::utils;
 
 #[derive(Debug)]
@@ -15,11 +15,11 @@ impl CpuTemp {
     /// Parse CPU temperature from file
     ///
     /// The value is given in millidegrees C, but parsed to C.
-    fn parse_temp_measurement(&self, raw_read: &str) -> Result<f32, sensor::Error> {
+    fn parse_temp_measurement(&self, raw_read: &str) -> Result<f32, Error> {
         let value: f32 = match raw_read.trim().parse() {
             Ok(value) => value,
             Err(err) => {
-                return Err(sensor::Error::FileParseError(format!(
+                return Err(Error::FileParseError(format!(
                     "Could not parse string '{}' to f32. Err: {}",
                     String::from(raw_read),
                     err.to_string()
@@ -30,13 +30,13 @@ impl CpuTemp {
     }
 }
 
-impl sensor::Sensor for CpuTemp {
-    fn get_measurement(&mut self) -> Result<f32, sensor::Error> {
+impl Sensor for CpuTemp {
+    fn get_measurement(&mut self) -> Result<f32, Error> {
         let device_path = "/sys/class/thermal/thermal_zone0/temp";
         let raw_read = match utils::read_file_to_string(&device_path) {
             Ok(raw_read) => raw_read,
             Err(err) => {
-                return Err(sensor::Error::FileReadError(format!(
+                return Err(Error::FileReadError(format!(
                     "'{}'. {}",
                     device_path,
                     err.to_string()

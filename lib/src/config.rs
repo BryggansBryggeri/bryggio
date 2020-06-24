@@ -1,4 +1,4 @@
-use crate::pub_sub::nats::NatsConfig;
+use crate::pub_sub::nats_client::NatsConfig;
 use serde::{Deserialize, Serialize};
 use std::error as std_error;
 use std::fs;

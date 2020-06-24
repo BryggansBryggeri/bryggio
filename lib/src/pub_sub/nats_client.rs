@@ -1,5 +1,5 @@
-use crate::pub_sub::PubSubError;
-use nats;
+use crate::pub_sub::{Message, PubSubError, Subject};
+use nats::{Connection, ConnectionOptions, Subscription};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -9,17 +9,27 @@ pub struct NatsConfig {
     pass: String,
 }
 
+#[derive(Clone)]
 pub struct NatsClient {
-    client: nats::Connection,
+    client: Connection,
 }
 
 impl NatsClient {
     pub fn try_new(config: &NatsConfig) -> Result<NatsClient, PubSubError> {
-        let opts = nats::ConnectionOptions::with_user_pass(&config.user, &config.pass);
+        let opts = ConnectionOptions::with_user_pass(&config.user, &config.pass);
         match opts.connect(&config.server) {
             Ok(nc) => Ok(NatsClient { client: nc }),
             Err(err) => Err(PubSubError::Generic(err.to_string())),
         }
+    }
+    pub fn subscribe(&self, subject: &Subject) -> Subscription {
+        self.client.subscribe(&subject.0).expect("Subscribe failed")
+    }
+
+    pub fn publish(&self, subject: &Subject, msg: &Message) {
+        self.client
+            .publish(&subject.0, &msg.0)
+            .expect("Subscribe failed");
     }
 }
 

@@ -1,0 +1,8 @@
+[package]
+name = "bryggio-supervisor"
+version = "0.1.0"
+authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+bryggio-lib = { path = "../lib" }

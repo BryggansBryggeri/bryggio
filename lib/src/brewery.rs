@@ -1,11 +1,9 @@
-use crate::actor;
 use crate::config;
-use crate::control;
-use crate::pub_sub::{nats::NatsClient, ClientId};
+use crate::pub_sub::{nats_client::NatsClient, ClientId, PubSubClient, PubSubError};
 use crate::sensor;
 use std::collections::HashMap;
 use std::error as std_error;
-use std::sync;
+use std::thread;
 
 #[cfg(target_arch = "x86_64")]
 use crate::hardware::dummy as hardware_impl;
@@ -19,7 +17,7 @@ pub enum Command {
 
 pub struct Brewery {
     client: NatsClient,
-    active_clients: HashMap<ClientId, ()>,
+    active_clients: HashMap<ClientId, thread::JoinHandle<Result<(), PubSubError>>>,
 }
 
 impl Brewery {
@@ -32,38 +30,20 @@ impl Brewery {
         let dummy_id = "dummy";
         let dummy_sensor =
             sensor::PubSubSensor::new(dummy_id, sensor::dummy::Sensor::new(dummy_id), &config.nats);
-        brewery.start_client(ClientId(dummy_id.into()));
+        let dummy_handle = thread::spawn(move || dummy_sensor.start_loop());
+        brewery
+            .active_clients
+            .insert(ClientId(dummy_id.into()), dummy_handle);
 
-        let cpu_id = "cpu";
-        let cpu_sensor = sensor::cpu_temp::CpuTemp::new(cpu_id);
-        brewery.start_client(ClientId(cpu_id.into()));
-
-        for sensor in &config.hardware.sensors {
-            let ds18_sensor = match sensor::ds18b20::Ds18b20::try_new(&sensor.id, &sensor.address) {
-                Ok(sensor) => sensor,
-                Err(err) => {
-                    println!("Error registering sensor, {}", err.to_string());
-                    continue;
-                }
-            };
-            brewery.start_client(ClientId(sensor.id.clone()));
-        }
-
-        for actor in &config.hardware.actors {
-            let gpio_pin = hardware_impl::get_gpio_pin(actor.gpio_pin, &actor.id).unwrap();
-            match actor::simple_gpio::Actor::new(&actor.id, gpio_pin) {
-                Ok(gpio_actor) => {
-                    let actor_handle: actor::ActorHandle =
-                        sync::Arc::new(sync::Mutex::new(gpio_actor));
-                    brewery.start_client(ClientId(actor.id.clone()));
-                }
-                Err(err) => println!("Error adding actor: {}", err),
-            };
-        }
         brewery
     }
 
-    fn start_client(&mut self, id: ClientId) {}
+    fn start_client<C>(&mut self, id: ClientId, client: C)
+    where
+        C: PubSubClient,
+    {
+    }
+
     pub fn run(&mut self) {}
 
     fn process_request(&mut self, request: &Command) -> () {

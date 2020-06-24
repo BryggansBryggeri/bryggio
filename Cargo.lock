@@ -181,6 +181,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "bryggio-supervisor"
+version = "0.1.0"
+dependencies = [
+ "bryggio-lib",
+]
+
+[[package]]
 name = "byte-tools"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

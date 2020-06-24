@@ -2,7 +2,12 @@ pub mod cool_ds18b20;
 pub mod cpu_temp;
 pub mod ds18b20;
 pub mod dummy;
-use crate::pub_sub;
+use crate::pub_sub::{
+    nats_client::NatsClient, nats_client::NatsConfig, Message, PubSubClient, PubSubError, Subject,
+};
+use nats::Subscription;
+use std::thread::sleep;
+use std::time::Duration;
 
 use std::error as std_error;
 use std::sync;
@@ -64,20 +69,60 @@ where
     id: String,
     sensor: S,
     /// TODO: Make generic over PubSubClient
-    client: pub_sub::nats::NatsClient,
+    client: NatsClient,
 }
 
 impl<S> PubSubSensor<S>
 where
     S: Sensor,
 {
-    pub fn new(id: &str, sensor: S, config: &pub_sub::nats::NatsConfig) -> Self {
-        let client = pub_sub::nats::NatsClient::try_new(config).unwrap();
+    pub fn new(id: &str, sensor: S, config: &NatsConfig) -> Self {
+        let client = NatsClient::try_new(config).unwrap();
         PubSubSensor {
             id: id.into(),
             sensor,
             client,
         }
+    }
+
+    fn gen_meas_msg(&self, meas: f32) -> Message {
+        Message(format!("data: {}", meas))
+    }
+
+    fn gen_meas_subject(&self) -> Subject {
+        Subject(format!("sensor.{}.measurement", self.id))
+    }
+}
+
+impl<S> PubSubClient for PubSubSensor<S>
+where
+    S: Sensor,
+{
+    fn start_loop(self) -> Result<(), PubSubError> {
+        let subject = Subject("command".into());
+        let sub = self.subscribe(&subject);
+        let client = self.client.clone();
+        let mut sensor = self.sensor;
+        let id = self.id.clone();
+        loop {
+            for msg in sub.messages() {
+                println!("Received a {}", msg);
+            }
+            let meas = sensor.get_measurement()?;
+            client.publish(
+                &Subject(format!("sensor.{}.measurement", id)),
+                &Message(format!("data: {}", meas)),
+            );
+            sleep(Duration::from_millis(500));
+        }
+    }
+
+    fn subscribe(&self, subject: &Subject) -> Subscription {
+        self.client.subscribe(subject)
+    }
+
+    fn publish(&self, subject: &Subject, msg: &Message) {
+        todo!();
     }
 }
 
@@ -90,6 +135,12 @@ pub enum Error {
     ThreadLockError(String),
     InvalidParam(String),
     UnknownSensor(String),
+}
+
+impl From<Error> for PubSubError {
+    fn from(x: Error) -> PubSubError {
+        PubSubError::Generic("Sensor error".into())
+    }
 }
 
 impl std::fmt::Display for Error {

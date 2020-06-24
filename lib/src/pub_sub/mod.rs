@@ -1,14 +1,17 @@
 use std::error as std_error;
-pub(crate) mod nats;
+pub(crate) mod nats_client;
+use nats::Subscription;
 
 pub(crate) trait PubSubClient {
-    fn subscribe(subject: &Subject);
-    fn publish(subject: &Subject, msg: &Message);
+    fn start_loop(self) -> Result<(), PubSubError>;
+    fn subscribe(&self, subject: &Subject) -> Subscription;
+    fn publish(&self, subject: &Subject, msg: &Message);
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ClientId(pub String);
-pub(crate) struct Subject(String);
-pub(crate) struct Message(String);
+pub struct Subject(pub String);
+pub struct Message(pub String);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PubSubError {

@@ -14,3 +14,8 @@ offset_off = 0.0
     {id = "mash_tun", gpio_pin = 13},
     {id = "kettle", gpio_pin = 16}
   ]
+
+[nats]
+  server = "localhost"
+  user = "jackonelli"
+  pass = "penna1glas"
