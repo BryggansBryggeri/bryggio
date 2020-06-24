@@ -3,40 +3,64 @@
 BRYGGANS BRYGGERI's very own brewery control software.
 
 Currently under heavy developement.
-The goal is to develop a stand-alone backend to which any client can send http requests to and thereby control the brewery hardware.
+The goal is to develop a stand-alone Pub-sub backend with which any client can communicate with and thereby control the brewery hardware.
+
+## Philosophy
+
+Having started our brewery career with first a horrible Python loop and then the much nicer [Craftbeer Pi](http://web.craftbeerpi.com/)
+we knew we always wanted to write our own brewery software.
+
+Although we are ever grateful for Craftbeer Pi, which has helped us brew a lot of beer,
+there were a few things we did not like with it:
+
+- Reliability, sometimes sensors or plugins would stop working and a restart was the only fix.
+- There were a lot of versions in use at the same time.
+- Modifying the software, especially the frontend was a bit obscure.
+
+Most of all, we always had the goal of making our own brewery software so do take this mild criticism of CbPi as a
+rationalisation for us to spend a lot of time on BryggIO.
+
+To remedy these projects BryggIO is:
+
+- Implemented in rust, a strictly typed, compiled and safe language (no unsafe code is used in the core software).
+  Using rust, makes sure that all edge cases are handled and crashing the software is extremely difficult.
+  As a bonus, it also makes BryggIO very fast and memory efficient.
+- We aim to be very stable and use semantic versioning to communicate changes' impact.
+  Note: We are currently in pre-release (<1.0) and during that period wild changes can occur.
+- BryggIO is, and will remain, free and open source. We will keep backend and frontend separated so that any frontend can be used.
+
 
 ## Development
 
  - Install rust from [here](https://www.rust-lang.org/tools/install).
 
- - Rocket needs nightly build so run
-   ```bash
-   rustup override set nightly
-   ```
-
- - Clone the repo and run it
+ - Clone the repo and build the different targets
    ```bash
    git clone git@github.com:BryggansBryggeri/bryggio.git bryggio
    cd bryggio
-   cargo run --bin bryggio-server
+   cargo make <target>
    ```
+ - The different `cargo make` are:
 
 ## Run on Rbpi
 
-Build for rbpi (Needs arm-compatible rust toolchain installed)
+Build for rbpi needs
+
+- arm-compatible rust toolchain installed
+- OpenSSL lib for arm
 
 ```bash
-cargo build --target=armv7-unknown-linux-gnueabihf
+cargo make rbpi-build
 ```
 
-Move the resulting binary (`target/armv7-unknown-linux-gnueabihf/<build-mode>/bryggio-server`) to the rbpi.
+Move the resulting binary (`target/armv7-unknown-linux-gnueabihf/<build-mode>/bryggio-supervisor`) to the rbpi.
 
-Also needed: A `Rocket.toml` and a `Bryggio.toml` config file (Rocket dependency is being removed).
+Also needed: A `Bryggio.toml` config file.
 
 On the rbpi, currently the config files need to be in the same directory as the binary, then:
 
 ```bash
-sudo ./bryggio-server
+sudo ./bryggio-supervisor
 ```
 `sudo` is required for gpio manipulation.
 
