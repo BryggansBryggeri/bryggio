@@ -245,10 +245,13 @@ impl Brewery {
         self.validate_controller_id(controller_id)?;
 
         let controller: Box<dyn control::Control> = match controller_type {
-            control::ControllerType::Manual => Box::new(control::manual::Controller::new()),
             control::ControllerType::Hysteresis => Box::new(
                 control::hysteresis::Controller::new(1.0, 0.0).expect("Invalid parameters."),
             ),
+            control::ControllerType::DutyCycle => {
+                Box::new(control::duty_cycle::DutyCycleController::new(10.0))
+            }
+            control::ControllerType::Manual => Box::new(control::manual::Controller::new()),
         };
         let controller_lock: control::ControllerLock = sync::Arc::new(sync::Mutex::new(controller));
 

@@ -13,6 +13,7 @@ use std::{thread, time};
 
 pub enum ControllerType {
     Hysteresis,
+    DutyCycle,
     Manual,
 }
 
@@ -21,6 +22,7 @@ impl TryFrom<String> for ControllerType {
     fn try_from(string: String) -> Result<Self, Error> {
         match string.to_ascii_lowercase().as_ref() {
             "hysteresis" => Ok(ControllerType::Hysteresis),
+            "dutycycle" => Ok(ControllerType::DutyCycle),
             "manual" => Ok(ControllerType::Manual),
             _ => Err(Error::ConversionError(string.into())),
         }
