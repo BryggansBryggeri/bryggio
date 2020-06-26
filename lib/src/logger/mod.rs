@@ -54,7 +54,6 @@ impl PubSubClient for Log {
             for msg in sensor_sub.messages() {
                 println!("Received a {}", msg);
             }
-            println!("Log loop");
         }
     }
 
