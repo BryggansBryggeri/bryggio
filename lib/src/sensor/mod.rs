@@ -107,6 +107,7 @@ where
             }
             let meas = self.sensor.get_measurement()?;
             self.publish(&self.gen_meas_subject(), &self.gen_meas_msg(meas));
+            //self.publish(&Subject("sensor".into()), &self.gen_meas_msg(meas));
             sleep(Duration::from_millis(500));
         }
     }
@@ -116,6 +117,7 @@ where
     }
 
     fn publish(&self, subject: &Subject, msg: &Message) {
+        println!("Publishing {:?}: {:?}", subject, msg);
         self.client.publish(subject, msg);
     }
 }

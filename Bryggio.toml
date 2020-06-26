@@ -1,5 +1,6 @@
 [general]
 brewery_name = "BRYGGANS BRYGGERI BÄRS BB"
+log_level = "Debug"
 
 [control]
 offset_on = 1.0

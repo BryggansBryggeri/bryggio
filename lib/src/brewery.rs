@@ -1,4 +1,5 @@
 use crate::config;
+use crate::logger::Log;
 use crate::pub_sub::Message as PubSubMessage;
 use crate::pub_sub::{nats_client::NatsClient, ClientId, PubSubClient, PubSubError, Subject};
 use crate::sensor;
@@ -38,10 +39,16 @@ impl Brewery {
             client,
             active_clients: HashMap::new(),
         };
+        let log = Log::new(&config.nats, config.general.log_level);
+        let log_handle = thread::spawn(|| log.client_loop());
+        brewery
+            .active_clients
+            .insert(ClientId("log".into()), log_handle);
+
         let dummy_id = "dummy";
         let dummy_sensor =
             sensor::PubSubSensor::new(dummy_id, sensor::dummy::Sensor::new(dummy_id), &config.nats);
-        let dummy_handle = thread::spawn(move || dummy_sensor.client_loop());
+        let dummy_handle = thread::spawn(|| dummy_sensor.client_loop());
         brewery
             .active_clients
             .insert(ClientId(dummy_id.into()), dummy_handle);
