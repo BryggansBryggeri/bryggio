@@ -10,7 +10,6 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use std::error as std_error;
-use std::sync;
 
 pub enum SensorType {
     Dummy,
@@ -28,29 +27,6 @@ impl SensorType {
             "rbpicpu" => Self::RbpiCPU,
             _ => Self::UnknownSensor,
         }
-    }
-}
-
-pub type SensorHandle = sync::Arc<sync::Mutex<dyn Sensor>>;
-
-pub fn get_measurement(sensor_mut: &SensorHandle) -> Result<f32, Error> {
-    let mut sensor = match sensor_mut.lock() {
-        Ok(sensor) => sensor,
-        Err(err) => {
-            return Err(Error::ThreadLockError(err.to_string()));
-        }
-    };
-
-    match sensor.get_measurement() {
-        Ok(measurement) => Ok(measurement),
-        Err(err) => Err(err),
-    }
-}
-
-pub fn get_id(sensor_mut: &SensorHandle) -> Result<String, Error> {
-    match sensor_mut.lock() {
-        Ok(sensor) => Ok(sensor.get_id()),
-        Err(err) => Err(Error::ThreadLockError(err.to_string())),
     }
 }
 

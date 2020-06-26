@@ -8,8 +8,6 @@ use crate::sensor;
 use std::convert::TryFrom;
 use std::error as std_error;
 use std::f32;
-use std::sync;
-use std::{thread, time};
 
 pub enum ControllerType {
     Hysteresis,
@@ -27,75 +25,10 @@ impl TryFrom<String> for ControllerType {
     }
 }
 
-pub struct ControllerHandle {
-    pub lock: ControllerLock,
-    pub thread: thread::JoinHandle<Result<(), Error>>,
-}
-
-pub type ControllerLock = sync::Arc<sync::Mutex<Box<dyn Control>>>;
-
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum State {
     Inactive,
     Active,
-}
-
-pub fn run_controller(
-    controller_lock: ControllerLock,
-    sensor_handle: sensor::SensorHandle,
-    actor_handle: actor::ActorHandle,
-    update_freq: u64,
-) -> Result<(), Error> {
-    let _start_time = time::SystemTime::now();
-    let mut actor = match actor_handle.lock() {
-        Ok(actor) => actor,
-        Err(err) => {
-            return Err(Error::ConcurrencyError(format!(
-                "Could not acquire actor lock: {}",
-                err
-            )))
-        }
-    };
-    loop {
-        let mut controller = match controller_lock.lock() {
-            Ok(controller) => controller,
-            Err(err) => {
-                return Err(Error::ConcurrencyError(format!(
-                    "Could not acquire controller lock: {}",
-                    err
-                )))
-            }
-        };
-        match controller.get_state() {
-            State::Inactive => {
-                println!("Inactivating controller, stopping");
-                return Ok(());
-            }
-            State::Active => {
-                let measurement = match sensor::get_measurement(&sensor_handle) {
-                    Ok(measurement) => Some(measurement),
-                    Err(err) => {
-                        println!(
-                            "Error getting measurment from sensor: '{}'. Error: {}",
-                            sensor::get_id(&sensor_handle)
-                                .unwrap_or_else(|_| String::from("Unknown id")),
-                            err
-                        );
-                        None
-                    }
-                };
-                let signal = controller.calculate_signal(measurement);
-                // Need to drop controller so it is unlocked when the thread sleeps, otherwise it
-                // will be unresponsive.
-                drop(controller);
-                match actor.set_signal(signal) {
-                    Ok(()) => {}
-                    Err(err) => println!("Error setting signal: {}", err),
-                };
-            }
-        }
-        thread::sleep(time::Duration::from_millis(update_freq));
-    }
 }
 
 pub trait Control: Send {
