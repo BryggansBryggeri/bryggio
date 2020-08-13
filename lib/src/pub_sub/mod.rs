@@ -10,7 +10,9 @@ pub trait PubSubClient {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ClientId(pub String);
+#[derive(Debug)]
 pub struct Subject(pub String);
+#[derive(Debug)]
 pub struct Message(pub String);
 
 #[derive(Debug, Clone, PartialEq)]

@@ -14,24 +14,22 @@ pub struct NatsConfig {
 }
 
 #[derive(Clone)]
-pub struct NatsClient {
-    client: Connection,
-}
+pub struct NatsClient(Connection);
 
 impl NatsClient {
     pub fn try_new(config: &NatsConfig) -> Result<NatsClient, PubSubError> {
         let opts = ConnectionOptions::with_user_pass(&config.user, &config.pass);
         match opts.connect(&config.server) {
-            Ok(nc) => Ok(NatsClient { client: nc }),
+            Ok(nc) => Ok(NatsClient(nc)),
             Err(err) => Err(PubSubError::Generic(err.to_string())),
         }
     }
     pub fn subscribe(&self, subject: &Subject) -> Subscription {
-        self.client.subscribe(&subject.0).expect("Subscribe failed")
+        self.0.subscribe(&subject.0).expect("Subscribe failed")
     }
 
     pub fn publish(&self, subject: &Subject, msg: &Message) {
-        self.client
+        self.0
             .publish(&subject.0, &msg.0)
             .expect("Subscribe failed");
     }

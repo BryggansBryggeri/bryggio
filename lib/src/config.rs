@@ -1,3 +1,4 @@
+use crate::logger::LogLevel;
 use crate::pub_sub::nats_client::NatsConfig;
 use serde::{Deserialize, Serialize};
 use std::error as std_error;
@@ -14,12 +15,15 @@ pub struct Config {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct General {
     pub brewery_name: String,
+    // TODO: Rename all
+    pub log_level: LogLevel,
 }
 
 impl Default for General {
     fn default() -> Self {
         General {
             brewery_name: "No name".into(),
+            log_level: LogLevel::Info,
         }
     }
 }
@@ -81,6 +85,7 @@ mod tests {
             r#"
             [general]
             brewery_name = "BRYGGANS BRYGGERI BÄRS BB"
+            log_level = "Debug"
             [sensors]
             id = "Mash tun"
             address = "random address"

@@ -1,9 +1,6 @@
 pub mod simple_gpio;
 
 use std::error as std_error;
-use std::sync;
-
-pub type ActorHandle = sync::Arc<sync::Mutex<dyn Actor>>;
 
 pub trait Actor: Send {
     fn validate_signal(&self, signal: f32) -> Result<(), Error>;

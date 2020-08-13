@@ -1,7 +1,7 @@
-use gpio_cdev::{errors, Chip, LineHandle, LineRequestFlags};
+use gpio_cdev::{errors::Error, Chip, LineHandle, LineRequestFlags};
 use linux_embedded_hal::CdevPin;
 
-pub fn get_gpio_pin(pin_number: u32, label: &str) -> Result<CdevPin, errors::Error> {
+pub fn get_gpio_pin(pin_number: u32, label: &str) -> Result<CdevPin, Error> {
     let mut chip = match Chip::new("/dev/gpiochip0") {
         Ok(chip) => chip,
         Err(e) => return Err(e),
