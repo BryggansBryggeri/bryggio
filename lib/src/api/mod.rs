@@ -102,7 +102,7 @@
 //! | ----------- | ----------- |
 //! | "dummy"     | `actor::dummy::Actor`       |
 //!
-use crate::brewery;
+use crate::supervisor;
 use rocket_contrib::json;
 use serde::{Deserialize, Serialize};
 use std::error;
@@ -126,7 +126,7 @@ pub struct WebEndpoint<T>
 where
     T: Serialize,
 {
-    sender: sync::Mutex<mpsc::Sender<brewery::Command>>,
+    sender: sync::Mutex<mpsc::Sender<supervisor::Command>>,
     receiver: sync::Mutex<mpsc::Receiver<Response<T>>>,
 }
 
@@ -136,7 +136,7 @@ where
 {
     pub fn send_and_wait_for_response(
         &self,
-        request: brewery::Command,
+        request: supervisor::Command,
     ) -> Result<Response<T>, Error> {
         let sender = match self.sender.lock() {
             Ok(sender) => sender,
@@ -180,7 +180,7 @@ where
     T: Serialize,
 {
     pub sender: mpsc::Sender<Response<T>>,
-    pub receiver: mpsc::Receiver<brewery::Command>,
+    pub receiver: mpsc::Receiver<supervisor::Command>,
 }
 
 pub fn create_api_endpoints<T>() -> (WebEndpoint<T>, BreweryEndpoint<T>)

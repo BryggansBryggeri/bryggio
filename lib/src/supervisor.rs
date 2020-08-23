@@ -25,21 +25,21 @@ impl Command {
     }
 }
 
-pub struct Brewery {
+pub struct Supervisor {
     client: NatsClient,
     active_clients: HashMap<ClientId, thread::JoinHandle<Result<(), PubSubError>>>,
 }
 
-impl Brewery {
-    pub fn init_from_config(config: &config::Config) -> Brewery {
+impl Supervisor {
+    pub fn init_from_config(config: &config::Config) -> Supervisor {
         let client = NatsClient::try_new(&config.nats).unwrap();
-        let mut brewery = Brewery {
+        let mut supervisor = Supervisor {
             client,
             active_clients: HashMap::new(),
         };
         let log = Log::new(&config.nats, config.general.log_level);
         let log_handle = thread::spawn(|| log.client_loop());
-        brewery
+        supervisor
             .active_clients
             .insert(ClientId("log".into()), log_handle);
 
@@ -47,11 +47,11 @@ impl Brewery {
         let dummy_sensor =
             sensor::PubSubSensor::new(dummy_id, sensor::dummy::Sensor::new(dummy_id), &config.nats);
         let dummy_handle = thread::spawn(|| dummy_sensor.client_loop());
-        brewery
+        supervisor
             .active_clients
             .insert(ClientId(dummy_id.into()), dummy_handle);
 
-        brewery
+        supervisor
     }
 
     fn process_command(&self, cmd: &Command) -> bool {
@@ -63,7 +63,7 @@ impl Brewery {
     }
 }
 
-impl PubSubClient for Brewery {
+impl PubSubClient for Supervisor {
     fn client_loop(self) -> Result<(), PubSubError> {
         let subject = Subject("command".into());
         let sub = self.subscribe(&subject)?;

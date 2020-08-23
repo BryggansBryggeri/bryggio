@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-use bryggio_lib::brewery::Brewery;
+use bryggio_lib::supervisor::Supervisor;
 use bryggio_lib::config;
 use bryggio_lib::pub_sub::{nats_client::run_nats_server, PubSubClient, PubSubError};
 
@@ -17,8 +17,8 @@ fn main() -> Result<(), PubSubError> {
         }
     };
     let mut nats_server_child = run_nats_server(&config.nats)?;
-    let brewery = Brewery::init_from_config(&config);
-    brewery.client_loop()?;
+    let supervisor = Supervisor::init_from_config(&config);
+    supervisor.client_loop()?;
     nats_server_child
         .kill()
         .map_err(|err| PubSubError::Server(err.to_string()))
