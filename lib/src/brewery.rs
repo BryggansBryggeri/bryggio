@@ -56,11 +56,11 @@ impl Brewery {
         brewery
     }
 
-    fn process_command(&self, cmd: &Command) -> () {
+    fn process_command(&self, cmd: &Command) -> bool {
         match cmd {
-            Command::StartClient { client_id } => {}
-            Command::KillClient { client_id } => {}
-            Command::Stop => {}
+            Command::StartClient { client_id } => true,
+            Command::KillClient { client_id } => true,
+            Command::Stop => true,
         }
     }
 }
@@ -69,7 +69,8 @@ impl PubSubClient for Brewery {
     fn client_loop(self) -> Result<(), PubSubError> {
         let subject = Subject("command".into());
         let sub = self.subscribe(&subject);
-        loop {
+        let mut keep_running = true;
+        while keep_running {
             for msg in sub.messages() {
                 let cmd = match Command::try_from_msg(&msg) {
                     Ok(cmd) => cmd,
@@ -80,9 +81,10 @@ impl PubSubClient for Brewery {
                         )))
                     }
                 };
-                self.process_command(&cmd);
+                keep_running = self.process_command(&cmd);
             }
         }
+        Ok(())
     }
     fn subscribe(&self, subject: &Subject) -> Subscription {
         self.client.subscribe(subject)

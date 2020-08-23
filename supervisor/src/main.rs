@@ -2,8 +2,9 @@
 use bryggio_lib::brewery::Brewery;
 use bryggio_lib::config;
 use bryggio_lib::pub_sub::{nats_client::run_nats_server, PubSubClient};
+use std::io;
 
-fn main() {
+fn main() -> Result<(), io::Error> {
     let config_file = "./Bryggio.toml";
     let config = match config::Config::new(&config_file) {
         Ok(config) => config,
@@ -22,6 +23,5 @@ fn main() {
         Ok(()) => {}
         Err(err) => println!("Supervisor loop ended with err: {}", err.to_string()),
     };
-    let res = nats_server_child.kill();
-    println!("{:?}", res);
+    nats_server_child.kill()
 }
