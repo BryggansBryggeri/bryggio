@@ -7,8 +7,6 @@ use nats::{Message, Subscription};
 use std::collections::HashMap;
 use std::error as std_error;
 use std::thread;
-use std::thread::sleep;
-use std::time::Duration;
 
 #[cfg(target_arch = "x86_64")]
 use crate::hardware::dummy as hardware_impl;
@@ -22,7 +20,7 @@ pub enum Command {
 }
 
 impl Command {
-    pub fn try_from_msg(msg: &Message) -> Result<Self, PubSubError> {
+    pub fn try_from_msg(_msg: &Message) -> Result<Self, PubSubError> {
         todo!();
     }
 }
@@ -90,7 +88,7 @@ impl PubSubClient for Brewery {
         self.client.subscribe(subject)
     }
 
-    fn publish(&self, subject: &Subject, msg: &PubSubMessage) {
+    fn publish(&self, _subject: &Subject, _msg: &PubSubMessage) {
         todo!();
     }
 }

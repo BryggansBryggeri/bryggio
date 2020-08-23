@@ -1,5 +1,5 @@
 use crate::pub_sub::{Message, PubSubError, Subject};
-use nats::{Connection, ConnectionOptions, Subscription};
+use nats::{Connection, Options, Subscription};
 use serde::{Deserialize, Serialize};
 use std::process::{Child, Command};
 use std::thread::sleep;
@@ -18,7 +18,7 @@ pub struct NatsClient(Connection);
 
 impl NatsClient {
     pub fn try_new(config: &NatsConfig) -> Result<NatsClient, PubSubError> {
-        let opts = ConnectionOptions::with_user_pass(&config.user, &config.pass);
+        let opts = Options::with_user_pass(&config.user, &config.pass);
         match opts.connect(&config.server) {
             Ok(nc) => Ok(NatsClient(nc)),
             Err(err) => Err(PubSubError::Generic(err.to_string())),
