@@ -66,7 +66,7 @@ impl Brewery {
 impl PubSubClient for Brewery {
     fn client_loop(self) -> Result<(), PubSubError> {
         let subject = Subject("command".into());
-        let sub = self.subscribe(&subject);
+        let sub = self.subscribe(&subject)?;
         let mut keep_running = true;
         while keep_running {
             for msg in sub.messages() {
@@ -84,12 +84,12 @@ impl PubSubClient for Brewery {
         }
         Ok(())
     }
-    fn subscribe(&self, subject: &Subject) -> Subscription {
+    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
         self.client.subscribe(subject)
     }
 
-    fn publish(&self, _subject: &Subject, _msg: &PubSubMessage) {
-        todo!();
+    fn publish(&self, _subject: &Subject, _msg: &PubSubMessage) -> Result<(), PubSubError> {
+        todo!()
     }
 }
 

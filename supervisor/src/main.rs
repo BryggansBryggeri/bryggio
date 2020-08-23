@@ -1,10 +1,9 @@
 #![forbid(unsafe_code)]
 use bryggio_lib::brewery::Brewery;
 use bryggio_lib::config;
-use bryggio_lib::pub_sub::{nats_client::run_nats_server, PubSubClient};
-use std::io;
+use bryggio_lib::pub_sub::{nats_client::run_nats_server, PubSubClient, PubSubError};
 
-fn main() -> Result<(), io::Error> {
+fn main() -> Result<(), PubSubError> {
     let config_file = "./Bryggio.toml";
     let config = match config::Config::new(&config_file) {
         Ok(config) => config,
@@ -17,11 +16,10 @@ fn main() -> Result<(), io::Error> {
             config::Config::default()
         }
     };
-    let mut nats_server_child = run_nats_server(&config.nats);
+    let mut nats_server_child = run_nats_server(&config.nats)?;
     let brewery = Brewery::init_from_config(&config);
-    match brewery.client_loop() {
-        Ok(()) => {}
-        Err(err) => println!("Supervisor loop ended with err: {}", err.to_string()),
-    };
-    nats_server_child.kill()
+    brewery.client_loop()?;
+    nats_server_child
+        .kill()
+        .map_err(|err| PubSubError::Server(err.to_string()))
 }

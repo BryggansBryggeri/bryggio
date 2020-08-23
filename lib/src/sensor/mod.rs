@@ -76,7 +76,7 @@ where
 {
     fn client_loop(self) -> Result<(), PubSubError> {
         let subject = Subject(format!("command.sensor.{}", self.id));
-        let sub = self.subscribe(&subject);
+        let sub = self.subscribe(&subject)?;
         loop {
             for _msg in sub.try_iter() {}
             let meas = self.sensor.get_measurement()?;
@@ -86,12 +86,12 @@ where
         }
     }
 
-    fn subscribe(&self, subject: &Subject) -> Subscription {
+    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
         self.client.subscribe(subject)
     }
 
-    fn publish(&self, subject: &Subject, msg: &Message) {
-        self.client.publish(subject, msg);
+    fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg)
     }
 }
 
