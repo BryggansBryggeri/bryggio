@@ -1,4 +1,4 @@
-# bryggIO
+# BryggIO
 
 BRYGGANS BRYGGERI's very own brewery control software.
 
@@ -22,13 +22,21 @@ rationalisation for us to spend a lot of time on BryggIO.
 
 To remedy these projects BryggIO is:
 
-- Implemented in rust, a strictly typed, compiled and safe language (no unsafe code is used in the core software).
-  Using rust, makes sure that all edge cases are handled and crashing the software is extremely difficult.
+- Implemented in rust, a strictly typed, compiled and safe language (no unsafe code is used in the core software),
+  makes BryggIO very reliable. The compiler checks all edge cases and crashing the software is extremely difficult.
   As a bonus, it also makes BryggIO very fast and memory efficient.
 - We aim to be very stable and use semantic versioning to communicate changes' impact.
   Note: We are currently in pre-release (<1.0) and during that period wild changes can occur.
 - BryggIO is, and will remain, free and open source. We will keep backend and frontend separated so that any frontend can be used.
 
+### Control
+
+Standard is to use a simple PID controller. This is slightly nihilistic given the almost complete model information one usually has when dealing with a simple brewery.
+The arguments in favour of PID control are: ignorance, efficiency, laziness; what if we disregard some information? The system is slow and simple and it works fine.
+
+BryggIO takes the opposite approach: Given a simple and slow system, we have the possibility to have a complicated control. Furthermore, a slow system demands the best possible control in order to save precious time and energy.
+
+Due to the inherent inertia in the objective (heating a lot of water), we can have quite long time between signal updates, providing time to calculate a nearly optimal control sequence.
 
 ## Development
 
@@ -40,7 +48,8 @@ To remedy these projects BryggIO is:
    cd bryggio
    cargo make <target>
    ```
- - The different `cargo make` are:
+ - The different `cargo make` tasks are:
+   TODO: List
 
 ## Run on Rbpi
 
@@ -63,16 +72,6 @@ On the rbpi, currently the config files need to be in the same directory as the 
 sudo ./bryggio-supervisor
 ```
 `sudo` is required for gpio manipulation.
-
-
-## Control
-
-Standard is to use a simple PID controller. This is slightly nihilistic given the almost complete model information one usually has when dealing with a simple brewery.
-The arguments in favour of PID control are: ignorance, efficiency, laziness; what if we disregard some information? The system is slow and simple and it works fine.
-
-`bryggio` takes the opposite approach: Given a simple and slow system, we have the possibility to have a complicated control. Furthermore, a slow system demands the best possible control in order to save precious time and energy.
-
-Due to the inherent inertia in the objective (heating a lot of water), we can have quite long time between signal updates, providing time to calculate a nearly optimal control sequence.
 
 ### Literature
 (http://www.iiisci.org/journal/CV$/sci/pdfs/ZA191KB18.pdf)
