@@ -17,6 +17,8 @@ pub struct Ds18b20 {
 // TODO: Can this be done with a const fn?
 // Or does that require the regex crate to provide const constructor?
 // I tried it: it would work if Regex::new() was const fn.
+// const TEMP_PATTERN: regex::Regex = regex::Regex::new(r"t=(-?[0-9]{4,6})").unwrap();
+// Instead, resort to lazy_static.
 lazy_static! {
     static ref TEMP_PATTERN: regex::Regex = regex::Regex::new(
         r"t=(-?[0-9]{4,6})"

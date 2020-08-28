@@ -18,7 +18,9 @@ pub fn install_server(opt: &ServerOpt) {
 }
 
 fn setup_directory() {}
-fn download_bryggio_binary() {}
+fn download_bryggio_binary() {
+    info!("Downloading bryggio v{}", bryggio_lib::utils::get_bryggio_version());
+}
 fn generate_config() {}
 fn enable_one_wire() {}
 fn setup_gpio_user() {}

@@ -38,4 +38,4 @@ mod hardware;
 mod logger;
 pub mod pub_sub;
 pub mod sensor;
-pub(crate) mod utils;
+pub mod utils;
