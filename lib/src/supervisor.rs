@@ -7,8 +7,6 @@ use nats::{Message, Subscription};
 use std::collections::HashMap;
 use std::error as std_error;
 use std::thread;
-use std::thread::sleep;
-use std::time::Duration;
 
 #[cfg(target_arch = "x86_64")]
 use crate::hardware::dummy as hardware_impl;
@@ -22,26 +20,26 @@ pub enum Command {
 }
 
 impl Command {
-    pub fn try_from_msg(msg: &Message) -> Result<Self, PubSubError> {
+    pub fn try_from_msg(_msg: &Message) -> Result<Self, PubSubError> {
         todo!();
     }
 }
 
-pub struct Brewery {
+pub struct Supervisor {
     client: NatsClient,
     active_clients: HashMap<ClientId, thread::JoinHandle<Result<(), PubSubError>>>,
 }
 
-impl Brewery {
-    pub fn init_from_config(config: &config::Config) -> Brewery {
+impl Supervisor {
+    pub fn init_from_config(config: &config::Config) -> Supervisor {
         let client = NatsClient::try_new(&config.nats).unwrap();
-        let mut brewery = Brewery {
+        let mut supervisor = Supervisor {
             client,
             active_clients: HashMap::new(),
         };
         let log = Log::new(&config.nats, config.general.log_level);
         let log_handle = thread::spawn(|| log.client_loop());
-        brewery
+        supervisor
             .active_clients
             .insert(ClientId("log".into()), log_handle);
 
@@ -49,27 +47,28 @@ impl Brewery {
         let dummy_sensor =
             sensor::PubSubSensor::new(dummy_id, sensor::dummy::Sensor::new(dummy_id), &config.nats);
         let dummy_handle = thread::spawn(|| dummy_sensor.client_loop());
-        brewery
+        supervisor
             .active_clients
             .insert(ClientId(dummy_id.into()), dummy_handle);
 
-        brewery
+        supervisor
     }
 
-    fn process_command(&self, cmd: &Command) -> () {
+    fn process_command(&self, cmd: &Command) -> bool {
         match cmd {
-            Command::StartClient { client_id } => {}
-            Command::KillClient { client_id } => {}
-            Command::Stop => {}
+            Command::StartClient { client_id } => true,
+            Command::KillClient { client_id } => true,
+            Command::Stop => true,
         }
     }
 }
 
-impl PubSubClient for Brewery {
+impl PubSubClient for Supervisor {
     fn client_loop(self) -> Result<(), PubSubError> {
         let subject = Subject("command".into());
-        let sub = self.subscribe(&subject);
-        loop {
+        let sub = self.subscribe(&subject)?;
+        let mut keep_running = true;
+        while keep_running {
             for msg in sub.messages() {
                 let cmd = match Command::try_from_msg(&msg) {
                     Ok(cmd) => cmd,
@@ -80,16 +79,17 @@ impl PubSubClient for Brewery {
                         )))
                     }
                 };
-                self.process_command(&cmd);
+                keep_running = self.process_command(&cmd);
             }
         }
+        Ok(())
     }
-    fn subscribe(&self, subject: &Subject) -> Subscription {
+    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
         self.client.subscribe(subject)
     }
 
-    fn publish(&self, subject: &Subject, msg: &PubSubMessage) {
-        todo!();
+    fn publish(&self, _subject: &Subject, _msg: &PubSubMessage) -> Result<(), PubSubError> {
+        todo!()
     }
 }
 

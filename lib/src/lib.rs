@@ -31,11 +31,11 @@
 #![cfg_attr(feature = "clippy", warn(wrong_pub_self_convention))]
 
 mod actor;
-pub mod brewery;
 pub mod config;
 mod control;
 mod hardware;
 mod logger;
 pub mod pub_sub;
 pub mod sensor;
+pub mod supervisor;
 pub mod utils;

@@ -48,7 +48,7 @@ impl PubSubClient for Log {
         let log_sub = self.subscribe(&log);
 
         let sensor = Subject(format!("sensor.*.measurement"));
-        let sensor_sub = self.subscribe(&sensor);
+        let sensor_sub = self.subscribe(&sensor)?;
 
         loop {
             for msg in sensor_sub.messages() {
@@ -57,12 +57,12 @@ impl PubSubClient for Log {
         }
     }
 
-    fn subscribe(&self, subject: &Subject) -> Subscription {
+    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
         self.client.subscribe(subject)
     }
 
-    fn publish(&self, subject: &Subject, msg: &Message) {
-        self.client.publish(subject, msg);
+    fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg)
     }
 }
 
