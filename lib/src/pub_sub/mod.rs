@@ -1,3 +1,4 @@
+use derive_more::{Display, From};
 use std::error as std_error;
 pub mod nats_client;
 use nats::Subscription;
@@ -8,8 +9,14 @@ pub trait PubSubClient {
     fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError>;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(From, Display, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ClientId(pub String);
+
+impl From<&str> for ClientId {
+    fn from(x: &str) -> Self {
+        String::from(x).into()
+    }
+}
 #[derive(Debug)]
 pub struct Subject(pub String);
 #[derive(Debug)]

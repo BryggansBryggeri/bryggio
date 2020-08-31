@@ -3,13 +3,77 @@ pub mod cpu_temp;
 pub mod ds18b20;
 pub mod dummy;
 use crate::pub_sub::{
-    nats_client::NatsClient, nats_client::NatsConfig, Message, PubSubClient, PubSubError, Subject,
+    nats_client::NatsClient, nats_client::NatsConfig, ClientId, Message, PubSubClient, PubSubError,
+    Subject,
 };
 use nats::Subscription;
+use std::error as std_error;
 use std::thread::sleep;
 use std::time::Duration;
 
-use std::error as std_error;
+pub trait Sensor: Send {
+    // TODO: it's nice to have this return a common sensor error,
+    // but this might snowball when more sensors are added.
+    // This should be more generic
+    fn get_measurement(&self) -> Result<f32, Error>;
+    fn get_id(&self) -> String;
+}
+
+pub struct SensorClient<S>
+where
+    S: Sensor,
+{
+    id: ClientId,
+    sensor: S,
+    /// TODO: Make generic over PubSubClient
+    client: NatsClient,
+}
+
+impl<S> SensorClient<S>
+where
+    S: Sensor,
+{
+    pub fn new(id: &str, sensor: S, config: &NatsConfig) -> Self {
+        let client = NatsClient::try_new(config).unwrap();
+        SensorClient {
+            id: id.into(),
+            sensor,
+            client,
+        }
+    }
+
+    fn gen_meas_msg(&self, meas: f32) -> Message {
+        Message(format!("data: {}", meas))
+    }
+
+    fn gen_meas_subject(&self) -> Subject {
+        Subject(format!("sensor.{}.measurement", self.id))
+    }
+}
+
+impl<S> PubSubClient for SensorClient<S>
+where
+    S: Sensor,
+{
+    fn client_loop(self) -> Result<(), PubSubError> {
+        let subject = Subject(format!("command.sensor.{}", self.id));
+        let sub = self.subscribe(&subject)?;
+        loop {
+            for _msg in sub.try_iter() {}
+            let meas = self.sensor.get_measurement()?;
+            self.publish(&self.gen_meas_subject(), &self.gen_meas_msg(meas))?;
+            sleep(Duration::from_millis(500));
+        }
+    }
+
+    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
+        self.client.subscribe(subject)
+    }
+
+    fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg)
+    }
+}
 
 pub enum SensorType {
     Dummy,
@@ -27,71 +91,6 @@ impl SensorType {
             "rbpicpu" => Self::RbpiCPU,
             _ => Self::UnknownSensor,
         }
-    }
-}
-
-pub trait Sensor: Send {
-    // TODO: it's nice to have this return a common sensor error,
-    // but this might snowball when more sensors are added.
-    // This should be more generic
-    fn get_measurement(&self) -> Result<f32, Error>;
-    fn get_id(&self) -> String;
-}
-
-pub struct PubSubSensor<S>
-where
-    S: Sensor,
-{
-    id: String,
-    sensor: S,
-    /// TODO: Make generic over PubSubClient
-    client: NatsClient,
-}
-
-impl<S> PubSubSensor<S>
-where
-    S: Sensor,
-{
-    pub fn new(id: &str, sensor: S, config: &NatsConfig) -> Self {
-        let client = NatsClient::try_new(config).unwrap();
-        PubSubSensor {
-            id: id.into(),
-            sensor,
-            client,
-        }
-    }
-
-    fn gen_meas_msg(&self, meas: f32) -> Message {
-        Message(format!("data: {}", meas))
-    }
-
-    fn gen_meas_subject(&self) -> Subject {
-        Subject(format!("sensor.{}.measurement", self.id))
-    }
-}
-
-impl<S> PubSubClient for PubSubSensor<S>
-where
-    S: Sensor,
-{
-    fn client_loop(self) -> Result<(), PubSubError> {
-        let subject = Subject(format!("command.sensor.{}", self.id));
-        let sub = self.subscribe(&subject)?;
-        loop {
-            for _msg in sub.try_iter() {}
-            let meas = self.sensor.get_measurement()?;
-            self.publish(&self.gen_meas_subject(), &self.gen_meas_msg(meas));
-            //self.publish(&Subject("sensor".into()), &self.gen_meas_msg(meas));
-            sleep(Duration::from_millis(500));
-        }
-    }
-
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
-        self.client.subscribe(subject)
-    }
-
-    fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError> {
-        self.client.publish(subject, msg)
     }
 }
 

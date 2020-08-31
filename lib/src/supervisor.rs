@@ -45,7 +45,7 @@ impl Supervisor {
 
         let dummy_id = "dummy";
         let dummy_sensor =
-            sensor::PubSubSensor::new(dummy_id, sensor::dummy::Sensor::new(dummy_id), &config.nats);
+            sensor::SensorClient::new(dummy_id, sensor::dummy::Sensor::new(dummy_id), &config.nats);
         let dummy_handle = thread::spawn(|| dummy_sensor.client_loop());
         supervisor
             .active_clients

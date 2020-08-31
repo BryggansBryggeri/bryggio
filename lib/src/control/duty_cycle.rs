@@ -1,6 +1,6 @@
 use crate::control;
 use std::f32;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 pub struct DutyCycleController {
     pub target: f32,
