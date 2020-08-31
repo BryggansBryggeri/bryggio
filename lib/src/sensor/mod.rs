@@ -52,12 +52,14 @@ where
     S: Sensor,
 {
     fn client_loop(self) -> Result<(), PubSubError> {
-        let subject = Subject(format!("command.sensor.{}", self.id));
-        let sub = self.subscribe(&subject)?;
+        let supervisor = self.subscribe(&Subject(format!("command.sensor.{}", self.id)))?;
+        let meas_sub = self.gen_meas_subject();
         loop {
-            for _msg in sub.try_iter() {}
+            for _msg in supervisor.try_iter() {
+                // Deal with supervisor command
+            }
             let meas = self.sensor.get_measurement()?;
-            self.publish(&self.gen_meas_subject(), &self.gen_meas_msg(meas))?;
+            self.publish(&meas_sub, &self.gen_meas_msg(meas))?;
             sleep(Duration::from_millis(5000));
         }
     }
