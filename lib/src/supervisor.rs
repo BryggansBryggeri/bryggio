@@ -1,4 +1,6 @@
 use crate::config;
+use crate::control::manual;
+use crate::control::ControllerClient;
 use crate::logger::Log;
 use crate::pub_sub::Message as PubSubMessage;
 use crate::pub_sub::{nats_client::NatsClient, ClientId, PubSubClient, PubSubError, Subject};
@@ -44,12 +46,29 @@ impl Supervisor {
             .insert(ClientId("log".into()), log_handle);
 
         let dummy_id = "dummy";
-        let dummy_sensor =
-            sensor::SensorClient::new(dummy_id, sensor::dummy::Sensor::new(dummy_id), &config.nats);
+        let dummy_sensor = sensor::SensorClient::new(
+            dummy_id.into(),
+            sensor::dummy::Sensor::new(dummy_id),
+            &config.nats,
+        );
         let dummy_handle = thread::spawn(|| dummy_sensor.client_loop());
         supervisor
             .active_clients
             .insert(ClientId(dummy_id.into()), dummy_handle);
+
+        let controller_id = ClientId::from("test");
+        let controller = manual::Controller::new();
+        let controller_client = ControllerClient::new(
+            controller_id.clone(),
+            "dummy".into(),
+            dummy_id.into(),
+            controller,
+            &config.nats,
+        );
+        let control_handle = thread::spawn(|| controller_client.client_loop());
+        supervisor
+            .active_clients
+            .insert(controller_id, control_handle);
 
         supervisor
     }

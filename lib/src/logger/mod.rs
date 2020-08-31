@@ -44,14 +44,16 @@ impl Log {
 
 impl PubSubClient for Log {
     fn client_loop(self) -> Result<(), PubSubError> {
-        let log = Subject(format!("log.*"));
-        let log_sub = self.subscribe(&log);
-
         let sensor = Subject(format!("sensor.*.measurement"));
         let sensor_sub = self.subscribe(&sensor)?;
 
+        let actor_sub = self.subscribe(&Subject(format!("actor.*.signal")))?;
+
         loop {
-            for msg in sensor_sub.messages() {
+            if let Some(msg) = sensor_sub.next() {
+                println!("Received a {}", msg);
+            }
+            if let Some(msg) = actor_sub.next() {
                 println!("Received a {}", msg);
             }
         }

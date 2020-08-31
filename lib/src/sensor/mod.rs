@@ -33,17 +33,13 @@ impl<S> SensorClient<S>
 where
     S: Sensor,
 {
-    pub fn new(id: &str, sensor: S, config: &NatsConfig) -> Self {
+    pub fn new(id: ClientId, sensor: S, config: &NatsConfig) -> Self {
         let client = NatsClient::try_new(config).unwrap();
-        SensorClient {
-            id: id.into(),
-            sensor,
-            client,
-        }
+        SensorClient { id, sensor, client }
     }
 
     fn gen_meas_msg(&self, meas: f32) -> Message {
-        Message(format!("data: {}", meas))
+        Message(format!("{}", meas))
     }
 
     fn gen_meas_subject(&self) -> Subject {
@@ -62,7 +58,7 @@ where
             for _msg in sub.try_iter() {}
             let meas = self.sensor.get_measurement()?;
             self.publish(&self.gen_meas_subject(), &self.gen_meas_msg(meas))?;
-            sleep(Duration::from_millis(500));
+            sleep(Duration::from_millis(5000));
         }
     }
 

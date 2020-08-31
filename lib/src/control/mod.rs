@@ -7,9 +7,12 @@ use crate::pub_sub::{
     nats_client::NatsClient, nats_client::NatsConfig, ClientId, Message, PubSubClient, PubSubError,
     Subject,
 };
+use nats::Subscription;
 use std::convert::TryFrom;
 use std::error as std_error;
 use std::f32;
+use std::thread::sleep;
+use std::time::Duration;
 
 pub trait Control: Send {
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32;
@@ -25,6 +28,8 @@ where
     C: Control,
 {
     id: ClientId,
+    actor_id: ClientId,
+    sensor_id: ClientId,
     controller: C,
     client: NatsClient,
 }
@@ -33,41 +38,63 @@ impl<C> ControllerClient<C>
 where
     C: Control,
 {
-    pub fn new(id: ClientId, controller: C, config: &NatsConfig) -> Self {
+    pub fn new(
+        id: ClientId,
+        actor_id: ClientId,
+        sensor_id: ClientId,
+        controller: C,
+        config: &NatsConfig,
+    ) -> Self {
         let client = NatsClient::try_new(config).unwrap();
         ControllerClient {
             id,
+            actor_id,
+            sensor_id,
             controller,
             client,
         }
     }
+
+    fn gen_signal_msg(&self, signal: f32) -> Message {
+        Message(format!("{}", signal))
+    }
+
+    fn gen_meas_subject(&self) -> Subject {
+        Subject(format!("actor.{}.signal", self.actor_id))
+    }
 }
 
-// impl<C> PubSubClient for ControllerClient<C>
-// where
-//     C: Control,
-// {
-//     fn client_loop(self) -> Result<(), PubSubError> {
-//         let sensor_subject = Subject(format!("sensor.{}", self.id));
-//         let sensor = self.subscribe(&sensor_subject)?;
-//         let actor_subject = Subject(format!("actor.{}", self.id));
-//         loop {
-//             for meas in sensor.try_iter() {
-//                 self.controller.calculate_signal(meas);
-//                 self.publish(&self.gen_meas_subject(), &self.gen_meas_msg(meas))?;
-//                 sleep(Duration::from_millis(500));
-//             }
-//         }
-//     }
-//
-//     fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
-//         self.client.subscribe(subject)
-//     }
-//
-//     fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError> {
-//         self.client.publish(subject, msg)
-//     }
-// }
+impl<C> PubSubClient for ControllerClient<C>
+where
+    C: Control,
+{
+    fn client_loop(mut self) -> Result<(), PubSubError> {
+        let sensor_subject = Subject(format!("sensor.{}.measurement", self.sensor_id));
+        let sensor = self.subscribe(&sensor_subject)?;
+        loop {
+            if let Some(meas_message) = sensor.next() {
+                if let Ok(meas) = String::from_utf8(meas_message.data) {
+                    if let Ok(meas) = meas.parse() {
+                        println!("CONTROL: {:?}", meas);
+                        self.controller.calculate_signal(Some(meas));
+                    }
+                }
+                self.publish(
+                    &self.gen_meas_subject(),
+                    &self.gen_signal_msg(self.controller.get_control_signal()),
+                )?;
+            }
+        }
+    }
+
+    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
+        self.client.subscribe(subject)
+    }
+
+    fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg)
+    }
+}
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum State {
