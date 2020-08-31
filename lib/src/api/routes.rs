@@ -1,9 +1,9 @@
 //! # Web server routes
 use crate::api;
-use crate::brewery;
 use crate::config;
 use crate::control;
 use crate::sensor;
+use crate::supervisor;
 use crate::utils;
 use rocket::{catch, get};
 use rocket_contrib::json;
@@ -40,7 +40,7 @@ pub fn start_controller(
     let controller_type = control::ControllerType::try_from(controller_type);
     let api_response = match controller_type {
         Ok(controller_type) => {
-            let request = brewery::Command::StartController {
+            let request = supervisor::Command::StartController {
                 controller_id,
                 controller_type,
                 sensor_id,
@@ -84,7 +84,7 @@ pub fn stop_controller(
     controller_id: String,
     api_endpoint: rocket::State<api::WebEndpoint<f32>>,
 ) -> json::Json<api::Response<f32>> {
-    let request = brewery::Command::StopController { controller_id };
+    let request = supervisor::Command::StopController { controller_id };
     let api_response = api_endpoint.send_and_wait_for_response(request);
     api::generate_api_response(api_response)
 }
@@ -106,7 +106,7 @@ pub fn set_target_signal(
     new_target_signal: f32,
     api_endpoint: rocket::State<api::WebEndpoint<f32>>,
 ) -> json::Json<api::Response<f32>> {
-    let request = brewery::Command::SetTarget {
+    let request = supervisor::Command::SetTarget {
         controller_id,
         new_target_signal,
     };
@@ -119,7 +119,7 @@ pub fn get_target_signal(
     controller_id: String,
     api_endpoint: rocket::State<api::WebEndpoint<f32>>,
 ) -> json::Json<api::Response<f32>> {
-    let request = brewery::Command::GetTarget { controller_id };
+    let request = supervisor::Command::GetTarget { controller_id };
     let api_response = api_endpoint.send_and_wait_for_response(request);
     api::generate_api_response(api_response)
 }
@@ -129,7 +129,7 @@ pub fn get_control_signal(
     controller_id: String,
     api_endpoint: rocket::State<api::WebEndpoint<f32>>,
 ) -> json::Json<api::Response<f32>> {
-    let request = brewery::Command::GetControlSignal { controller_id };
+    let request = supervisor::Command::GetControlSignal { controller_id };
     let api_response = api_endpoint.send_and_wait_for_response(request);
     api::generate_api_response(api_response)
 }
@@ -138,7 +138,7 @@ pub fn get_measurement(
     sensor_id: String,
     api_endpoint: rocket::State<api::WebEndpoint<f32>>,
 ) -> json::Json<api::Response<f32>> {
-    let request = brewery::Command::GetMeasurement { sensor_id };
+    let request = supervisor::Command::GetMeasurement { sensor_id };
     let api_response = api_endpoint.send_and_wait_for_response(request);
     api::generate_api_response(api_response)
 }
@@ -150,7 +150,7 @@ pub fn add_sensor(
     api_endpoint: rocket::State<api::WebEndpoint<f32>>,
 ) -> json::Json<api::Response<f32>> {
     let sensor_type = sensor::SensorType::from_str(sensor_type);
-    let request = brewery::Command::AddSensor {
+    let request = supervisor::Command::AddSensor {
         sensor_id,
         sensor_type,
     };
@@ -162,7 +162,7 @@ pub fn add_sensor(
 pub fn get_full_state(
     api_endpoint: rocket::State<api::WebEndpoint<f32>>,
 ) -> json::Json<api::Response<f32>> {
-    let request = brewery::Command::GetFullState;
+    let request = supervisor::Command::GetFullState;
     let api_response = api_endpoint.send_and_wait_for_response(request);
     api::generate_api_response(api_response)
 }
