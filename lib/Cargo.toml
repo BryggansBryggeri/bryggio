@@ -15,7 +15,8 @@ serde_json = ">=1.0"
 regex = "1"
 lazy_static = "1"
 pid = ">=2.1"
-nats = {git = "https://github.com/nats-io/nats.rs.git", branch = "rustls"}
+nats = ">=0.7"
+derive_more = ">=0.99"
 
 [target.'cfg(target_arch = "arm")'.dependencies]
 linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", rev="25bf2be", features=["gpio_cdev"]}
