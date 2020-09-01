@@ -11,8 +11,6 @@ use nats::Subscription;
 use std::convert::TryFrom;
 use std::error as std_error;
 use std::f32;
-use std::thread::sleep;
-use std::time::Duration;
 
 pub trait Control: Send {
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32;

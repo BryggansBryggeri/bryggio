@@ -60,7 +60,7 @@ where
             }
             let meas = self.sensor.get_measurement()?;
             self.publish(&meas_sub, &self.gen_meas_msg(meas))?;
-            sleep(Duration::from_millis(5000));
+            sleep(Duration::from_millis(500));
         }
     }
 
