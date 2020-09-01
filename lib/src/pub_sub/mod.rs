@@ -12,6 +12,18 @@ pub trait PubSubClient {
 #[derive(From, Display, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ClientId(pub String);
 
+impl ClientId {
+    fn conv(self) -> String {
+        self.into()
+    }
+}
+
+impl From<ClientId> for String {
+    fn from(x: ClientId) -> Self {
+        x.0
+    }
+}
+
 impl From<&str> for ClientId {
     fn from(x: &str) -> Self {
         String::from(x).into()

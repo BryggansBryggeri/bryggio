@@ -60,7 +60,7 @@ where
     }
 
     fn gen_meas_subject(&self) -> Subject {
-        Subject(format!("actor.{}.signal", self.actor_id))
+        Subject(format!("actor.{}.set_signal", self.actor_id))
     }
 }
 
@@ -69,13 +69,14 @@ where
     C: Control,
 {
     fn client_loop(mut self) -> Result<(), PubSubError> {
+        let supervisor = self.subscribe(&Subject(format!("command.controller.{}.*", self.id)))?;
         let sensor_subject = Subject(format!("sensor.{}.measurement", self.sensor_id));
         let sensor = self.subscribe(&sensor_subject)?;
         loop {
+            // TODO: abstract the parsing of messages.
             if let Some(meas_message) = sensor.next() {
                 if let Ok(meas) = String::from_utf8(meas_message.data) {
                     if let Ok(meas) = meas.parse() {
-                        println!("CONTROL: {:?}", meas);
                         self.controller.calculate_signal(Some(meas));
                     }
                 }

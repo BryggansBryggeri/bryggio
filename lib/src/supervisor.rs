@@ -1,12 +1,17 @@
+use crate::actor;
 use crate::config;
 use crate::control::manual;
 use crate::control::ControllerClient;
 use crate::logger::Log;
 use crate::pub_sub::Message as PubSubMessage;
-use crate::pub_sub::{nats_client::NatsClient, ClientId, PubSubClient, PubSubError, Subject};
+use crate::pub_sub::{
+    nats_client::{NatsClient, NatsConfig},
+    ClientId, PubSubClient, PubSubError, Subject,
+};
 use crate::sensor;
 use nats::{Message, Subscription};
 use std::collections::HashMap;
+use std::convert::From;
 use std::error as std_error;
 use std::thread;
 
@@ -33,35 +38,57 @@ pub struct Supervisor {
 }
 
 impl Supervisor {
+    fn add_logger(&mut self, config: &config::Config) {
+        let log = Log::new(&config.nats, config.general.log_level);
+        let log_handle = thread::spawn(|| log.client_loop());
+        self.active_clients
+            .insert(ClientId("log".into()), log_handle);
+    }
+
+    fn add_sensor(&mut self, id: ClientId, config: &NatsConfig) {
+        let sensor = sensor::SensorClient::new(
+            id.clone(),
+            sensor::dummy::Sensor::new(&String::from(id.clone())),
+            config,
+        );
+        let handle = thread::spawn(|| sensor.client_loop());
+        self.active_clients.insert(id, handle);
+    }
+
+    fn add_actor(&mut self, actor_id: ClientId, controller_id: ClientId, config: &NatsConfig) {
+        let tmp_id = String::from(actor_id.clone());
+        let gpio_pin = hardware_impl::get_gpio_pin(0, &tmp_id).unwrap();
+        let sensor = actor::ActorClient::new(
+            actor_id.clone(),
+            controller_id,
+            actor::simple_gpio::Actor::new(&tmp_id, gpio_pin).unwrap(),
+            config,
+        );
+        let handle = thread::spawn(|| sensor.client_loop());
+        self.active_clients.insert(actor_id, handle);
+    }
+
     pub fn init_from_config(config: &config::Config) -> Supervisor {
         let client = NatsClient::try_new(&config.nats).unwrap();
         let mut supervisor = Supervisor {
             client,
             active_clients: HashMap::new(),
         };
-        let log = Log::new(&config.nats, config.general.log_level);
-        let log_handle = thread::spawn(|| log.client_loop());
-        supervisor
-            .active_clients
-            .insert(ClientId("log".into()), log_handle);
 
-        let dummy_id = "dummy";
-        let dummy_sensor = sensor::SensorClient::new(
-            dummy_id.into(),
-            sensor::dummy::Sensor::new(dummy_id),
-            &config.nats,
-        );
-        let dummy_handle = thread::spawn(|| dummy_sensor.client_loop());
-        supervisor
-            .active_clients
-            .insert(ClientId(dummy_id.into()), dummy_handle);
+        supervisor.add_logger(config);
+
+        let dummy_sensor = ClientId("dummy".into());
+        supervisor.add_sensor(dummy_sensor.clone(), &config.nats);
 
         let controller_id = ClientId::from("test");
+        let dummy_actor = ClientId("dummy".into());
+        supervisor.add_actor(dummy_sensor.clone(), controller_id.clone(), &config.nats);
+
         let controller = manual::Controller::new();
         let controller_client = ControllerClient::new(
             controller_id.clone(),
-            "dummy".into(),
-            dummy_id.into(),
+            dummy_actor,
+            dummy_sensor,
             controller,
             &config.nats,
         );

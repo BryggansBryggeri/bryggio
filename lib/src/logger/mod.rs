@@ -49,6 +49,8 @@ impl PubSubClient for Log {
 
         let actor_sub = self.subscribe(&Subject(format!("actor.*.signal")))?;
 
+        // TODO: This is buggy since if nothing is published on one of the subjects,
+        // the loop will hang.
         loop {
             if let Some(msg) = sensor_sub.next() {
                 println!("Received a {}", msg);
