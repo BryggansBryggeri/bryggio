@@ -3,7 +3,7 @@ use crate::config;
 use crate::control::manual;
 use crate::control::ControllerClient;
 use crate::logger::Log;
-use crate::pub_sub::Message as PubSubMessage;
+use crate::pub_sub::PubSubMsg;
 use crate::pub_sub::{
     nats_client::{NatsClient, NatsConfig},
     ClientId, PubSubClient, PubSubError, Subject,
@@ -134,7 +134,7 @@ impl PubSubClient for Supervisor {
         self.client.subscribe(subject)
     }
 
-    fn publish(&self, _subject: &Subject, _msg: &PubSubMessage) -> Result<(), PubSubError> {
+    fn publish(&self, _subject: &Subject, _msg: &PubSubMsg) -> Result<(), PubSubError> {
         todo!()
     }
 }

@@ -6,7 +6,7 @@ use nats::Subscription;
 pub trait PubSubClient {
     fn client_loop(self) -> Result<(), PubSubError>;
     fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError>;
-    fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError>;
+    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError>;
 }
 
 #[derive(From, Display, Debug, Clone, PartialEq, Eq, Hash)]
@@ -32,7 +32,7 @@ impl From<&str> for ClientId {
 #[derive(Debug)]
 pub struct Subject(pub String);
 #[derive(Debug)]
-pub struct Message(pub String);
+pub struct PubSubMsg(pub String);
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum PubSubError {

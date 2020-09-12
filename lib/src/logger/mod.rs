@@ -1,5 +1,5 @@
 use crate::pub_sub::{
-    nats_client::NatsClient, nats_client::NatsConfig, Message, PubSubClient, PubSubError, Subject,
+    nats_client::NatsClient, nats_client::NatsConfig, PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use nats::Subscription;
 use serde::{Deserialize, Serialize};
@@ -69,7 +69,7 @@ impl PubSubClient for Log {
         self.client.subscribe(subject)
     }
 
-    fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError> {
+    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
         self.client.publish(subject, msg)
     }
 }

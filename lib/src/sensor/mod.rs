@@ -3,10 +3,11 @@ pub mod cpu_temp;
 pub mod ds18b20;
 pub mod dummy;
 use crate::pub_sub::{
-    nats_client::NatsClient, nats_client::NatsConfig, ClientId, Message, PubSubClient, PubSubError,
-    Subject,
+    nats_client::NatsClient, nats_client::NatsConfig, ClientId, PubSubClient, PubSubError,
+    PubSubMsg, Subject,
 };
-use nats::Subscription;
+use nats::{Message, Subscription};
+use std::convert::TryFrom;
 use std::error as std_error;
 use std::thread::sleep;
 use std::time::Duration;
@@ -38,12 +39,34 @@ where
         SensorClient { id, sensor, client }
     }
 
-    fn gen_meas_msg(&self, meas: f32) -> Message {
-        Message(format!("{}", meas))
+    fn gen_meas_msg(&self, meas: f32) -> PubSubMsg {
+        PubSubMsg(format!("{}", meas))
     }
 
     fn gen_meas_subject(&self) -> Subject {
         Subject(format!("sensor.{}.measurement", self.id))
+    }
+}
+
+#[derive(Debug)]
+pub struct SensorMsg {
+    pub meas: f32,
+}
+
+impl Into<PubSubMsg> for SensorMsg {
+    fn into(self) -> PubSubMsg {
+        PubSubMsg(self.meas.to_string())
+    }
+}
+
+impl TryFrom<Message> for SensorMsg {
+    type Error = PubSubError;
+    fn try_from(value: Message) -> Result<Self, Self::Error> {
+        let signal = String::from_utf8(value.data)
+            .map_err(|err| PubSubError::MessageParse(err.to_string()))?
+            .parse::<f32>()
+            .map_err(|err| PubSubError::MessageParse(err.to_string()))?;
+        Ok(SensorMsg { meas: signal })
     }
 }
 
@@ -68,7 +91,7 @@ where
         self.client.subscribe(subject)
     }
 
-    fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError> {
+    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
         self.client.publish(subject, msg)
     }
 }

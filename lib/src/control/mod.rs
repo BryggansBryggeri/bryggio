@@ -4,10 +4,11 @@ pub mod manual;
 pub mod pid;
 
 use crate::pub_sub::{
-    nats_client::NatsClient, nats_client::NatsConfig, ClientId, Message, PubSubClient, PubSubError,
-    Subject,
+    nats_client::NatsClient, nats_client::NatsConfig, ClientId, PubSubClient, PubSubError,
+    PubSubMsg, Subject,
 };
-use nats::Subscription;
+use crate::sensor::SensorMsg;
+use nats::{Message, Subscription};
 use std::convert::TryFrom;
 use std::error as std_error;
 use std::f32;
@@ -53,12 +54,34 @@ where
         }
     }
 
-    fn gen_signal_msg(&self, signal: f32) -> Message {
-        Message(format!("{}", signal))
+    fn gen_signal_msg(&self, signal: f32) -> PubSubMsg {
+        PubSubMsg(format!("{}", signal))
     }
 
     fn gen_meas_subject(&self) -> Subject {
         Subject(format!("actor.{}.set_signal", self.actor_id))
+    }
+}
+
+#[derive(Debug)]
+pub struct ControllerMsg {
+    pub new_signal: f32,
+}
+
+impl Into<PubSubMsg> for ControllerMsg {
+    fn into(self) -> PubSubMsg {
+        PubSubMsg(self.new_signal.to_string())
+    }
+}
+
+impl TryFrom<Message> for ControllerMsg {
+    type Error = PubSubError;
+    fn try_from(value: Message) -> Result<Self, Self::Error> {
+        let signal = String::from_utf8(value.data)
+            .map_err(|err| PubSubError::MessageParse(err.to_string()))?
+            .parse::<f32>()
+            .map_err(|err| PubSubError::MessageParse(err.to_string()))?;
+        Ok(ControllerMsg { new_signal: signal })
     }
 }
 
@@ -72,15 +95,16 @@ where
         let sensor = self.subscribe(&sensor_subject)?;
         loop {
             // TODO: abstract the parsing of messages.
-            if let Some(meas_message) = sensor.next() {
-                if let Ok(meas) = String::from_utf8(meas_message.data) {
-                    if let Ok(meas) = meas.parse() {
-                        self.controller.calculate_signal(Some(meas));
-                    }
+            if let Some(meas_msg) = sensor.next() {
+                if let Ok(msg) = SensorMsg::try_from(meas_msg) {
+                    self.controller.calculate_signal(Some(msg.meas));
                 }
                 self.publish(
                     &self.gen_meas_subject(),
-                    &self.gen_signal_msg(self.controller.get_control_signal()),
+                    &ControllerMsg {
+                        new_signal: self.controller.get_control_signal(),
+                    }
+                    .into(),
                 )?;
             }
         }
@@ -90,7 +114,7 @@ where
         self.client.subscribe(subject)
     }
 
-    fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError> {
+    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
         self.client.publish(subject, msg)
     }
 }

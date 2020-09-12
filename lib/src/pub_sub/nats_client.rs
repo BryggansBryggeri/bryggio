@@ -1,4 +1,4 @@
-use crate::pub_sub::{Message, PubSubError, Subject};
+use crate::pub_sub::{PubSubMsg, PubSubError, Subject};
 use nats::{Connection, Options, Subscription};
 use serde::{Deserialize, Serialize};
 use std::process::{Child, Command};
@@ -30,7 +30,7 @@ impl NatsClient {
             .map_err(|err| PubSubError::Subscription(err.to_string()))
     }
 
-    pub fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError> {
+    pub fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
         self.0
             .publish(&subject.0, &msg.0)
             .map_err(|err| PubSubError::Publish(err.to_string()))

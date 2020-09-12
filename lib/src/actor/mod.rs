@@ -1,9 +1,11 @@
 pub mod simple_gpio;
+use crate::control::ControllerMsg;
 use crate::pub_sub::{
-    nats_client::NatsClient, nats_client::NatsConfig, ClientId, Message, PubSubClient, PubSubError,
-    Subject,
+    nats_client::NatsClient, nats_client::NatsConfig, ClientId, PubSubClient, PubSubError,
+    PubSubMsg, Subject,
 };
-use nats::Subscription;
+use nats::{Message, Subscription};
+use std::convert::TryFrom;
 use std::error as std_error;
 
 pub trait Actor: Send {
@@ -36,12 +38,36 @@ where
         }
     }
 
-    fn gen_signal_msg(&self, signal: f32) -> Message {
-        Message(format!("{}", signal))
+    fn gen_signal_msg(&self, signal: f32) -> PubSubMsg {
+        PubSubMsg(format!("{}", signal))
     }
 
     fn gen_signal_subject(&self) -> Subject {
         Subject(format!("actor.{}.current_signal", self.id))
+    }
+}
+
+#[derive(Debug)]
+pub struct ActorMsg {
+    pub current_signal: f32,
+}
+
+impl Into<PubSubMsg> for ActorMsg {
+    fn into(self) -> PubSubMsg {
+        PubSubMsg(self.current_signal.to_string())
+    }
+}
+
+impl TryFrom<Message> for ActorMsg {
+    type Error = PubSubError;
+    fn try_from(value: Message) -> Result<Self, Self::Error> {
+        let signal = String::from_utf8(value.data)
+            .map_err(|err| PubSubError::MessageParse(err.to_string()))?
+            .parse::<f32>()
+            .map_err(|err| PubSubError::MessageParse(err.to_string()))?;
+        Ok(ActorMsg {
+            current_signal: signal,
+        })
     }
 }
 
@@ -56,12 +82,16 @@ where
             for _msg in supervisor.try_iter() {
                 // TODO: Deal with supervisor command
             }
-            // TODO: abstract the parsing of messages.
             if let Some(contr_message) = controller.next() {
-                if let Ok(signal) = String::from_utf8(contr_message.data) {
-                    if let Ok(signal) = signal.parse() {
-                        self.actor.set_signal(signal);
-                        self.publish(&self.gen_signal_subject(), &self.gen_signal_msg(signal))?;
+                if let Ok(msg) = ControllerMsg::try_from(contr_message) {
+                    if let Ok(()) = self.actor.set_signal(msg.new_signal) {
+                        self.publish(
+                            &self.gen_signal_subject(),
+                            &ActorMsg {
+                                current_signal: msg.new_signal,
+                            }
+                            .into(),
+                        )?;
                     }
                 }
             }
@@ -72,7 +102,7 @@ where
         self.client.subscribe(subject)
     }
 
-    fn publish(&self, subject: &Subject, msg: &Message) -> Result<(), PubSubError> {
+    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
         self.client.publish(subject, msg)
     }
 }
