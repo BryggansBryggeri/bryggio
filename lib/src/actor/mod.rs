@@ -1,5 +1,4 @@
 pub mod simple_gpio;
-use crate::control::ControllerMsg;
 use crate::pub_sub::{
     nats_client::NatsClient, nats_client::NatsConfig, ClientId, PubSubClient, PubSubError,
     PubSubMsg, Subject,
@@ -48,24 +47,19 @@ where
 }
 
 #[derive(Debug)]
-pub struct ActorMsg {
-    pub current_signal: f32,
+pub enum ActorSubMsg {
+    SetSignal(f32),
+    Stop,
 }
 
-impl Into<PubSubMsg> for ActorMsg {
-    fn into(self) -> PubSubMsg {
-        PubSubMsg(self.current_signal.to_string())
-    }
-}
-
-impl TryFrom<Message> for ActorMsg {
+impl TryFrom<Message> for ActorSubMsg {
     type Error = PubSubError;
     fn try_from(value: Message) -> Result<Self, Self::Error> {
         let signal = String::from_utf8(value.data)
             .map_err(|err| PubSubError::MessageParse(err.to_string()))?
             .parse::<f32>()
             .map_err(|err| PubSubError::MessageParse(err.to_string()))?;
-        Ok(ActorMsg {
+        Ok(ActorSubMsg {
             current_signal: signal,
         })
     }
@@ -76,22 +70,23 @@ where
     A: Actor,
 {
     fn client_loop(mut self) -> Result<(), PubSubError> {
-        let supervisor = self.subscribe(&Subject(format!("command.actor.{}.*", self.id)))?;
-        let controller = self.subscribe(&Subject(format!("actor.{}.set_signal", self.id)))?;
+        let sub = self.subscribe(&Subject(format!("actor.{}.set_signal", self.id)))?;
         loop {
-            for _msg in supervisor.try_iter() {
-                // TODO: Deal with supervisor command
-            }
-            if let Some(contr_message) = controller.next() {
-                if let Ok(msg) = ControllerMsg::try_from(contr_message) {
-                    if let Ok(()) = self.actor.set_signal(msg.new_signal) {
-                        self.publish(
-                            &self.gen_signal_subject(),
-                            &ActorMsg {
-                                current_signal: msg.new_signal,
+            if let Some(contr_message) = sub.next() {
+                if let Ok(msg) = SubActorMsg::try_from(contr_message) {
+                    match msg {
+                        SubActorMsg::SetTargetSignal(signal) => {
+                            if let Ok(()) = self.actor.set_signal(signal) {
+                                self.publish(
+                                    &self.gen_signal_subject(),
+                                    &ActorSubMsg {
+                                        current_signal: signal,
+                                    }
+                                    .into(),
+                                )?;
                             }
-                            .into(),
-                        )?;
+                        }
+                        SubActorMsg::Stop => todo!(),
                     }
                 }
             }
