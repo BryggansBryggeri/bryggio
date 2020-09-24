@@ -28,8 +28,10 @@ pub enum ControllerPubMsg {
 }
 
 impl ControllerPubMsg {
-    fn into_msg(self) -> Message {
-        todo!();
+    fn into_msg(&self) -> PubSubMsg {
+        match self {
+            ControllerPubMsg::SetSignal(signal) => PubSubMsg(format!("{}", signal)),
+        }
     }
 }
 
@@ -79,17 +81,13 @@ where
         let sensor_subject = Subject(format!("sensor.{}.measurement", self.sensor_id));
         let sensor = self.subscribe(&sensor_subject)?;
         loop {
-            // TODO: abstract the parsing of messages.
             if let Some(meas_msg) = sensor.next() {
                 if let Ok(msg) = SensorMsg::try_from(meas_msg) {
                     self.controller.calculate_signal(Some(msg.meas));
                 }
                 self.publish(
                     &self.gen_meas_subject(),
-                    &ControllerSubMsg {
-                        new_signal: self.controller.get_control_signal(),
-                    }
-                    .into(),
+                    &ControllerPubMsg::SetSignal(self.controller.get_control_signal()).into_msg(),
                 )?;
             }
         }

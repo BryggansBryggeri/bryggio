@@ -1,7 +1,7 @@
 pub mod simple_gpio;
 use crate::pub_sub::{
-    nats_client::NatsClient, nats_client::NatsConfig, ClientId, PubSubClient, PubSubError,
-    PubSubMsg, Subject,
+    nats_client::NatsClient, nats_client::NatsConfig, ClientId, ClientState, PubSubClient,
+    PubSubError, PubSubMsg, Subject,
 };
 use nats::{Message, Subscription};
 use std::convert::TryFrom;
@@ -59,9 +59,20 @@ impl TryFrom<Message> for ActorSubMsg {
             .map_err(|err| PubSubError::MessageParse(err.to_string()))?
             .parse::<f32>()
             .map_err(|err| PubSubError::MessageParse(err.to_string()))?;
-        Ok(ActorSubMsg {
-            current_signal: signal,
-        })
+        Ok(ActorSubMsg::SetSignal(signal))
+    }
+}
+
+#[derive(Debug)]
+pub enum ActorPubMsg {
+    CurrentSignal(f32),
+}
+
+impl ActorPubMsg {
+    fn into_msg(&self) -> PubSubMsg {
+        match self {
+            ActorPubMsg::CurrentSignal(signal) => PubSubMsg(format!("{}", signal)),
+        }
     }
 }
 
@@ -71,26 +82,26 @@ where
 {
     fn client_loop(mut self) -> Result<(), PubSubError> {
         let sub = self.subscribe(&Subject(format!("actor.{}.set_signal", self.id)))?;
-        loop {
+        let mut state = ClientState::Active;
+        while state == ClientState::Active {
             if let Some(contr_message) = sub.next() {
-                if let Ok(msg) = SubActorMsg::try_from(contr_message) {
+                if let Ok(msg) = ActorSubMsg::try_from(contr_message) {
                     match msg {
-                        SubActorMsg::SetTargetSignal(signal) => {
+                        ActorSubMsg::SetSignal(signal) => {
                             if let Ok(()) = self.actor.set_signal(signal) {
                                 self.publish(
                                     &self.gen_signal_subject(),
-                                    &ActorSubMsg {
-                                        current_signal: signal,
-                                    }
-                                    .into(),
+                                    &ActorPubMsg::CurrentSignal(signal).into_msg(),
                                 )?;
                             }
                         }
-                        SubActorMsg::Stop => todo!(),
+                        ActorSubMsg::Stop => state = ClientState::Inactive,
                     }
                 }
             }
         }
+        // TODO: Exit gracefully
+        Ok(())
     }
 
     fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {

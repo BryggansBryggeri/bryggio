@@ -3,6 +3,12 @@ use std::error as std_error;
 pub mod nats_client;
 use nats::Subscription;
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum ClientState {
+    Inactive,
+    Active,
+}
+
 pub trait PubSubClient {
     fn client_loop(self) -> Result<(), PubSubError>;
     fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError>;
@@ -11,12 +17,6 @@ pub trait PubSubClient {
 
 #[derive(From, Display, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ClientId(pub String);
-
-impl ClientId {
-    fn conv(self) -> String {
-        self.into()
-    }
-}
 
 impl From<ClientId> for String {
     fn from(x: ClientId) -> Self {

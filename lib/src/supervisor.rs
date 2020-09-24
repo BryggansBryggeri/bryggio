@@ -1,17 +1,17 @@
 use crate::actor;
 use crate::config;
 use crate::control::manual;
-use crate::control::ControllerClient;
+use crate::control::pub_sub::ControllerClient;
 use crate::logger::Log;
 use crate::pub_sub::PubSubMsg;
 use crate::pub_sub::{
     nats_client::{NatsClient, NatsConfig},
-    ClientId, PubSubClient, PubSubError, Subject,
+    ClientId, ClientState, PubSubClient, PubSubError, Subject,
 };
 use crate::sensor;
 use nats::{Message, Subscription};
 use std::collections::HashMap;
-use std::convert::From;
+use std::convert::TryFrom;
 use std::error as std_error;
 use std::thread;
 
@@ -20,14 +20,15 @@ use crate::hardware::dummy as hardware_impl;
 #[cfg(target_arch = "arm")]
 use crate::hardware::rbpi as hardware_impl;
 
-pub enum Command {
+pub enum SupervisorSubMsg {
     StartClient { client_id: ClientId },
     KillClient { client_id: ClientId },
     Stop,
 }
 
-impl Command {
-    pub fn try_from_msg(_msg: &Message) -> Result<Self, PubSubError> {
+impl TryFrom<Message> for SupervisorSubMsg {
+    type Error = PubSubError;
+    fn try_from(msg: Message) -> Result<Self, PubSubError> {
         todo!();
     }
 }
@@ -100,11 +101,11 @@ impl Supervisor {
         supervisor
     }
 
-    fn process_command(&self, cmd: &Command) -> bool {
+    fn process_command(&self, cmd: &SupervisorSubMsg) -> ClientState {
         match cmd {
-            Command::StartClient { client_id } => true,
-            Command::KillClient { client_id } => true,
-            Command::Stop => true,
+            SupervisorSubMsg::StartClient { client_id } => ClientState::Active,
+            SupervisorSubMsg::KillClient { client_id } => ClientState::Active,
+            SupervisorSubMsg::Stop => ClientState::Active,
         }
     }
 }
@@ -113,19 +114,18 @@ impl PubSubClient for Supervisor {
     fn client_loop(self) -> Result<(), PubSubError> {
         let subject = Subject("command".into());
         let sub = self.subscribe(&subject)?;
-        let mut keep_running = true;
-        while keep_running {
-            for msg in sub.messages() {
-                let cmd = match Command::try_from_msg(&msg) {
-                    Ok(cmd) => cmd,
-                    Err(_) => {
+        let mut state = ClientState::Active;
+        while state == ClientState::Active {
+            if let Some(msg) = sub.next() {
+                state = match SupervisorSubMsg::try_from(msg) {
+                    Ok(cmd) => self.process_command(&cmd),
+                    Err(err) => {
                         return Err(PubSubError::MessageParse(format!(
                             "Error parsing command: {}",
-                            msg.to_string()
+                            err.to_string()
                         )))
                     }
                 };
-                keep_running = self.process_command(&cmd);
             }
         }
         Ok(())
