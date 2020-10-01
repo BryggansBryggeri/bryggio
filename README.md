@@ -74,8 +74,8 @@ sudo ./bryggio-supervisor
 `sudo` is required for gpio manipulation.
 
 ### Literature
-(http://www.iiisci.org/journal/CV$/sci/pdfs/ZA191KB18.pdf)
-
-(http://kchbi.chtf.stuba.sk/upload_new/file/Miro/Proc%20problemy%20odovzdane%20zadania/%C5%A0uhaj/Predictive%20modelling%20of%20brewing%20fermentation%20from%20knowledge-based%20to%20black-box%20models.pdf)
+- Energy efficiency: (https://greenlab.di.uminho.pt/wp-content/uploads/2017/10/sleFinal.pdf)
+- (http://www.iiisci.org/journal/CV$/sci/pdfs/ZA191KB18.pdf)
+- (http://kchbi.chtf.stuba.sk/upload_new/file/Miro/Proc%21problemy%20odovzdane%20zadania/%C5%A0uhaj/Predictive%20modelling%20of%20brewing%20fermentation%20from%20knowledge-based%20to%20black-box%20models.pdf)
 
 (https://scholarworks.uni.edu/cgi/viewcontent.cgi?article=1661&context=etd)
