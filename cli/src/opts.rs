@@ -1,3 +1,4 @@
+use crate::wifi_settings::{Password, Ssid};
 use std::path;
 use structopt::StructOpt;
 use url::{ParseError, Url};
@@ -5,12 +6,15 @@ use url::{ParseError, Url};
 #[derive(Debug, StructOpt)]
 #[structopt(name = "bryggio-cli", about = "cli usage")]
 pub enum Opt {
-    ///Control a `bryggio-server`
+    ///Communicate with a `bryggio-server` instance.
     #[structopt(name = "brewery")]
     Brewery(BreweryOpt),
-    ///Install bryggio software
+    ///Install bryggio software.
     #[structopt(name = "install")]
     Install(InstallTarget),
+    ///Automated raspberry pi setup.
+    #[structopt(name = "rbpi-setup")]
+    RbPiSetup(RbPiOpt),
 }
 
 impl Opt {
@@ -18,6 +22,7 @@ impl Opt {
         match self {
             Self::Brewery(opt) => opt.common.verbose,
             Self::Install(target) => target.verbose(),
+            Self::RbPiSetup(opt) => opt.common.verbose,
         }
     }
 }
@@ -25,13 +30,13 @@ impl Opt {
 #[derive(Debug, StructOpt)]
 pub struct BreweryOpt {
     #[structopt(long)]
-    pub config: Option<path::PathBuf>,
+    config: Option<path::PathBuf>,
     #[structopt(long)]
-    pub ip: String,
+    ip: String,
     #[structopt(long)]
-    pub port: u16,
+    port: u16,
     #[structopt(long)]
-    pub command: String,
+    command: String,
     #[structopt(flatten)]
     common: Common,
 }
@@ -79,11 +84,18 @@ pub struct ServerOpt {
 }
 
 #[derive(Debug, StructOpt)]
+pub struct RbPiOpt {
+    #[structopt(flatten)]
+    common: Common,
+    #[structopt(long)]
+    pub ssid: Ssid,
+    #[structopt(long)]
+    pub password: Password,
+}
+
+#[derive(Debug, StructOpt)]
 pub struct Common {
     /// Verbose output
     #[structopt(long)]
     verbose: bool,
-    /// Disable `sudo` use. Warning: setup will not function properly
-    #[structopt(long)]
-    no_sudo: bool,
 }

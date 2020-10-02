@@ -8,6 +8,8 @@ use url::Url;
 pub mod brewery;
 pub mod install;
 pub mod opts;
+pub mod rbpi;
+pub mod wifi_settings;
 
 pub fn send<T>(request: &Url) -> Result<T, serde_json::error::Error>
 where

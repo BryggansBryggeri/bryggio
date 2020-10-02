@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 use bryggio_cli::opts::{InstallTarget, Opt};
-use bryggio_cli::{brewery, install};
+use bryggio_cli::{brewery, install, rbpi};
 use log::info;
 use structopt::StructOpt;
 
@@ -13,6 +13,9 @@ fn run_subcommand(opt: Opt) {
             InstallTarget::Server(opt) => install::server::install_server(&opt),
             InstallTarget::Cli(_opt) => info!("Installing `bryggio-cli`"),
         },
+        Opt::RbPiSetup(opt) => {
+            rbpi::setup(&opt);
+        }
     }
 }
 

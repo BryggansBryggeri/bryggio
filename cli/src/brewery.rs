@@ -3,5 +3,5 @@ use crate::send;
 use log::{debug, error, info};
 
 pub fn process_command(command: &BreweryOpt) {
-    todo!()
+    error!("`process_command` is not implemented yet.")
 }
