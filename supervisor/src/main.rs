@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
-use bryggio_lib::supervisor::Supervisor;
 use bryggio_lib::config;
 use bryggio_lib::pub_sub::{nats_client::run_nats_server, PubSubClient, PubSubError};
+use bryggio_lib::supervisor::Supervisor;
 
 fn main() -> Result<(), PubSubError> {
     let config_file = "./Bryggio.toml";

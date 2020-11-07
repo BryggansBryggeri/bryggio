@@ -3,6 +3,8 @@ use crate::pub_sub::{
 };
 use nats::Subscription;
 use serde::{Deserialize, Serialize};
+use std::thread::sleep;
+use std::time::Duration;
 pub struct Log {
     level: LogLevel,
     client: NatsClient,
@@ -62,6 +64,7 @@ impl PubSubClient for Log {
             if let Some(msg) = actor_sub.try_next() {
                 println!("LOG: Actor {}", msg);
             }
+            sleep(Duration::from_millis(50));
         }
     }
 
