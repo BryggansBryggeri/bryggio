@@ -42,7 +42,6 @@ impl TryFrom<String> for ControllerType {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     ParamError(String),
-    ConcurrencyError(String),
     ConversionError(String),
 }
 
@@ -50,7 +49,6 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Error::ParamError(param) => write!(f, "Invalid param: {}", param),
-            Error::ConcurrencyError(err) => write!(f, "Concurrency error: {}", err),
             Error::ConversionError(type_string) => {
                 write!(f, "Unable to parse '{}' to ControllerType", type_string)
             }
@@ -61,7 +59,6 @@ impl std_error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::ParamError(_) => "Invalid param",
-            Error::ConcurrencyError(_) => "Concurrency error",
             Error::ConversionError(_) => "Conversion error",
         }
     }

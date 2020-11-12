@@ -46,11 +46,10 @@ impl Log {
 
 impl PubSubClient for Log {
     fn client_loop(self) -> Result<(), PubSubError> {
-        let sensor = Subject(format!("sensor.*.measurement"));
-        let sensor_sub = self.subscribe(&sensor)?;
-
-        let control_sub = self.subscribe(&Subject(format!("actor.*.set_signal")))?;
-        let actor_sub = self.subscribe(&Subject(format!("actor.*.current_signal")))?;
+        //let sensor = Subject(format!("sensor.*.measurement"));
+        //let sensor_sub = self.subscribe(&sensor)?;
+        //let control_sub = self.subscribe(&Subject(format!("actor.*.set_signal")))?;
+        //let actor_sub = self.subscribe(&Subject(format!("actor.*.current_signal")))?;
         let ui_sub = self.subscribe(&Subject(format!("ext_comm.ui.test")))?;
 
         loop {
@@ -64,7 +63,7 @@ impl PubSubClient for Log {
             //    println!("LOG: Actor {}", msg);
             //}
             if let Some(msg) = ui_sub.try_next() {
-                println!("EXT_COMM: UI {}", msg);
+                self.debug(&format!("EXT_COMM: UI {}", msg));
             }
             sleep(Duration::from_millis(10));
         }

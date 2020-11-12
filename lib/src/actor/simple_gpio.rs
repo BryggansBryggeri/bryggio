@@ -16,8 +16,15 @@ impl<T: OutputPin + Send> Actor<T> {
 }
 
 impl<T: OutputPin + Send> actor::Actor for Actor<T> {
-    fn validate_signal(&self, _signal: f32) -> Result<(), actor::Error> {
-        Ok(())
+    fn validate_signal(&self, signal: f32) -> Result<(), actor::Error> {
+        if signal > 0.0 {
+            Ok(())
+        } else {
+            Err(actor::Error::InvalidSignal(format!(
+                "Negative signal: '{}'",
+                signal
+            )))
+        }
     }
 
     fn set_signal(&mut self, signal: f32) -> Result<(), actor::Error> {

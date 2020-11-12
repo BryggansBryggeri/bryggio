@@ -28,7 +28,7 @@ pub enum SupervisorSubMsg {
 
 impl TryFrom<Message> for SupervisorSubMsg {
     type Error = PubSubError;
-    fn try_from(msg: Message) -> Result<Self, PubSubError> {
+    fn try_from(_msg: Message) -> Result<Self, PubSubError> {
         todo!();
     }
 }
@@ -103,8 +103,8 @@ impl Supervisor {
 
     fn process_command(&self, cmd: &SupervisorSubMsg) -> ClientState {
         match cmd {
-            SupervisorSubMsg::StartClient { client_id } => ClientState::Active,
-            SupervisorSubMsg::KillClient { client_id } => ClientState::Active,
+            SupervisorSubMsg::StartClient { client_id: _ } => ClientState::Active,
+            SupervisorSubMsg::KillClient { client_id: _ } => ClientState::Active,
             SupervisorSubMsg::Stop => ClientState::Active,
         }
     }

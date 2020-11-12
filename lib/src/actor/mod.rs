@@ -37,10 +37,6 @@ where
         }
     }
 
-    fn gen_signal_msg(&self, signal: f32) -> PubSubMsg {
-        PubSubMsg(format!("{}", signal))
-    }
-
     fn gen_signal_subject(&self) -> Subject {
         Subject(format!("actor.{}.current_signal", self.id))
     }
@@ -115,7 +111,7 @@ where
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    InvalidSignal(f32),
+    InvalidSignal(String),
     ActorError(String),
 }
 

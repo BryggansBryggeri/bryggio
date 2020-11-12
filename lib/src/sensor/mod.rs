@@ -127,8 +127,8 @@ pub enum Error {
 }
 
 impl From<Error> for PubSubError {
-    fn from(x: Error) -> PubSubError {
-        PubSubError::Generic("Sensor error".into())
+    fn from(err: Error) -> PubSubError {
+        PubSubError::Subscription(format!("Sensor error: '{}'", err))
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::control::Control;
+use crate::control::{Control, State};
 use crate::pub_sub::{
     nats_client::NatsClient, nats_client::NatsConfig, ClientId, PubSubClient, PubSubError,
     PubSubMsg, Subject,
@@ -9,7 +9,7 @@ use std::convert::TryFrom;
 
 pub enum ControllerSubMsg {
     SetTarget(f32),
-    Stop,
+    _Stop,
 }
 
 impl TryFrom<Message> for ControllerSubMsg {
@@ -80,7 +80,12 @@ where
         let supervisor = self.subscribe(&Subject(format!("controller.{}.*", self.id)))?;
         let sensor_subject = Subject(format!("sensor.{}.measurement", self.sensor_id));
         let sensor = self.subscribe(&sensor_subject)?;
-        loop {
+        let mut state = State::Active;
+        while state == State::Active {
+            if let Some(_msg) = supervisor.try_next() {
+                println!("Exiting control loop");
+                state = State::Inactive;
+            }
             if let Some(meas_msg) = sensor.next() {
                 if let Ok(msg) = SensorMsg::try_from(meas_msg) {
                     self.controller.calculate_signal(Some(msg.meas));
@@ -91,6 +96,7 @@ where
                 )?;
             }
         }
+        Ok(())
     }
 
     fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
