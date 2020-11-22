@@ -71,14 +71,22 @@ Due to the inherent inertia in the objective (heating a lot of water), we can ha
    The supervisor, starts up a `nats-server` in a separate process and then runs a supervisor pub sub client which,
    listening to special command subjects, starts and stops other clients like sensors, actors and controllers.
 
-## Run on Rbpi
+### Run on Rbpi
 
 Build for rbpi needs
 
 - arm-compatible rust toolchain installed
 
 ```bash
+# In the bryggio repo root
 cargo make rbpi-build
+```
+
+Cross compile nats-server for rbpi
+```bash
+git clone --branch=master https://github.com/nats-io/nats-server.git nats-server
+cd nats-server
+env GOOS=linux GOARCH=arm GOARM=5 go build
 ```
 
 Move the resulting binary (`target/armv7-unknown-linux-gnueabihf/<build-mode>/bryggio-supervisor`) to the rbpi.
