@@ -93,34 +93,6 @@ impl Config {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse() {
-        let _config: Config = Config::parse_toml(
-            r#"
-            [general]
-            brewery_name = "BRYGGANS BRYGGERI BÄRS BB"
-            log_level = "Debug"
-            [sensors]
-            id = "Mash tun"
-            address = "random address"
-            [hardware]
-            sensors = []
-            actors = []
-            [nats]
-            bin_path="/some/path/to/bin"
-            server="localhost"
-            user="jackonelli"
-            pass="very_secret"
-        "#,
-        )
-        .unwrap();
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Error {
     IO(String),
@@ -148,5 +120,34 @@ impl std_error::Error for Error {
 
     fn cause(&self) -> Option<&dyn std_error::Error> {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse() {
+        let _config: Config = Config::parse_toml(
+            r#"
+            [general]
+            brewery_name = "BRYGGANS BRYGGERI BÄRS BB"
+            log_level = "Debug"
+            [sensors]
+            id = "Mash tun"
+            address = "random address"
+            [hardware]
+            sensors = []
+            actors = []
+            [nats]
+            bin_path="/some/path/to/bin"
+            config="/some/path/to/config"
+            server="localhost"
+            user="jackonelli"
+            pass="very_secret"
+        "#,
+        )
+        .unwrap();
     }
 }
