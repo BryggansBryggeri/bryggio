@@ -1,0 +1,12 @@
+listen: localhost:4222
+
+authorization: {
+    user: "jackonelli"
+    password: "$2a$11$Nzjot89fFgeuMVoAUObIeOqRm/zoqr6rjebsJ7INALJOEuIhBQS/C"
+}
+debug: true
+
+websocket: {
+  port: 9222
+  no_tls: true
+}

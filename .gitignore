@@ -14,3 +14,6 @@ tags.temp
 
 nats-server
 *yaml
+*toml
+!sample-*.yaml
+!sample-*.toml

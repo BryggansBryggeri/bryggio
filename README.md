@@ -51,15 +51,16 @@ Due to the inherent inertia in the objective (heating a lot of water), we can ha
    go build
    ```
  - Configuration is currently split into
-    - `bryggio.toml` which specifies general settings, and importantly *the path to the nats-server binary*.
-    - `config.yaml` particular config file for the `nats-server`
+    - *`bryggio` config:* TOML file which specifies general settings, and importantly *the path to the `nats-server` binary and config file*.
+    - *`nats`* particular YAML config file for the `nats-server`.
+
    Check out the sample configs in this repo for usage.
 
  - Clone the `bryggio` repo and run the binary `bryggio-supervisor`.
    ```bash
    git clone git@github.com:BryggansBryggeri/bryggio.git bryggio
    cd bryggio
-   cargo run --bin bryggio-supervisor
+   cargo run --bin bryggio-supervisor -- <path_to_bryggio_config_file>
    ```
 
    The supervisor, starts up a `nats-server` in a separate process and then runs a supervisor pub sub client which,
@@ -77,12 +78,14 @@ cargo make rbpi-build
 
 Move the resulting binary (`target/armv7-unknown-linux-gnueabihf/<build-mode>/bryggio-supervisor`) to the rbpi.
 
-Also needed: A `Bryggio.toml` config file.
+Also needed: A `bryggio` TOML config file.
 
 On the rbpi, currently the config files need to be in the same directory as the binary, then:
 
 ```bash
-sudo ./bryggio-supervisor
+sudo ./bryggio-supervisor <path_to_bryggio_config_file>
+# E.g.:
+# sudo ./bryggio-supervisor sample-bryggio.toml
 ```
 `sudo` is required for gpio manipulation.
 
