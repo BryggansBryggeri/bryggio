@@ -1,5 +1,5 @@
 [general]
-brewery_name = "BRYGGANS BRYGGERI BÄRS BB"
+brewery_name = "My brewery"
 log_level = "Debug"
 
 [control]
@@ -17,7 +17,7 @@ offset_off = 0.0
   ]
 
 [nats]
-  bin_path = "../nats-server/nats-server"
-  server = "localhost"
-  user = "jackonelli"
-  pass = "penna1glas"
+  bin_path = "<path_to_nats_server_binary>"
+  server = "<ip>"
+  user = "<username>"
+  pass = "<password>"

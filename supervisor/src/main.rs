@@ -4,7 +4,7 @@ use bryggio_lib::pub_sub::{nats_client::run_nats_server, PubSubClient, PubSubErr
 use bryggio_lib::supervisor::Supervisor;
 
 fn main() -> Result<(), PubSubError> {
-    let config_file = "./Bryggio.toml";
+    let config_file = "./bryggio.toml";
     let config = match config::Config::new(&config_file) {
         Ok(config) => config,
         Err(err) => {

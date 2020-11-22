@@ -1,4 +1,4 @@
-use crate::pub_sub::{PubSubMsg, PubSubError, Subject};
+use crate::pub_sub::{PubSubError, PubSubMsg, Subject};
 use nats::{Connection, Options, Subscription};
 use serde::{Deserialize, Serialize};
 use std::process::{Child, Command};

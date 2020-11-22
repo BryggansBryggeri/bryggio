@@ -42,21 +42,34 @@ Due to the inherent inertia in the objective (heating a lot of water), we can ha
 
  - Install rust from [here](https://www.rust-lang.org/tools/install).
 
- - Clone the repo and build the different targets
+ - Install `nats-server`.
+   The latest released version does not yet support web-sockets, so it needs to be built from the master branch.
+   This step obviously requires installation of golang, hopefully this feature will soon be on the stable release and a simple download will suffice.
+   ```bash
+   git clone --branch=master https://github.com/nats-io/nats-server.git nats-server
+   cd nats-server
+   go build
+   ```
+ - Configuration is currently split into
+    - `bryggio.toml` which specifies general settings, and importantly *the path to the nats-server binary*.
+    - `config.yaml` particular config file for the `nats-server`
+   Check out the sample configs in this repo for usage.
+
+ - Clone the `bryggio` repo and run the binary `bryggio-supervisor`.
    ```bash
    git clone git@github.com:BryggansBryggeri/bryggio.git bryggio
    cd bryggio
-   cargo make <target>
+   cargo run --bin bryggio-supervisor
    ```
- - The different `cargo make` tasks are:
-   TODO: List
+
+   The supervisor, starts up a `nats-server` in a separate process and then runs a supervisor pub sub client which,
+   listening to special command subjects, starts and stops other clients like sensors, actors and controllers.
 
 ## Run on Rbpi
 
 Build for rbpi needs
 
 - arm-compatible rust toolchain installed
-- OpenSSL lib for arm
 
 ```bash
 cargo make rbpi-build
