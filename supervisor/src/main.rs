@@ -5,15 +5,14 @@ use bryggio_lib::supervisor::Supervisor;
 
 fn main() -> Result<(), PubSubError> {
     let config_file = "./bryggio.toml";
-    let config = match config::Config::new(&config_file) {
+    let config = match config::Config::try_new(&config_file) {
         Ok(config) => config,
         Err(err) => {
-            println!(
-                "Invalid config file '{}'. Error: {}. Using default.",
+            return Err(PubSubError::Configuration(format!(
+                "Invalid config file '{}'. Error: {}.",
                 config_file,
                 err.to_string()
-            );
-            config::Config::default()
+            )));
         }
     };
     let mut nats_server_child = run_nats_server(&config.nats)?;

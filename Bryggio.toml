@@ -18,6 +18,7 @@ offset_off = 0.0
 
 [nats]
   bin_path = "../nats-server/nats-server"
+  config = "./nats-config.yaml"
   server = "localhost"
   user = "jackonelli"
   pass = "penna1glas"

@@ -1,13 +1,15 @@
 use crate::pub_sub::{PubSubError, PubSubMsg, Subject};
 use nats::{Connection, Options, Subscription};
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 use std::process::{Child, Command};
 use std::thread::sleep;
 use std::time::Duration;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NatsConfig {
-    bin_path: String,
+    pub(crate) bin_path: PathBuf,
+    pub(crate) config: PathBuf,
     server: String,
     user: String,
     pass: String,
@@ -40,7 +42,7 @@ impl NatsClient {
 pub fn run_nats_server(config: &NatsConfig) -> Result<Child, PubSubError> {
     let child = Command::new(&config.bin_path)
         .arg("-c")
-        .arg("config.yaml")
+        .arg(&config.config)
         .spawn();
 
     // Sleeps for a short while to ensure that the server is up and running before

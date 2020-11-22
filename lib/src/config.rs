@@ -5,7 +5,7 @@ use std::error as std_error;
 use std::fs;
 use std::io::Read;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
     pub general: General,
     pub hardware: Hardware,
@@ -49,7 +49,7 @@ pub struct Actor {
 }
 
 impl Config {
-    pub fn new(config_file: &str) -> Result<Config, Error> {
+    pub fn try_new(config_file: &str) -> Result<Config, Error> {
         let mut f = match fs::File::open(config_file) {
             Ok(f) => f,
             Err(err) => return Err(Error::IO(format!("Error opening file, {}", err))),
@@ -59,7 +59,24 @@ impl Config {
             Ok(_) => {}
             Err(err) => return Err(Error::IO(format!("Error reading file to string, {}", err))),
         };
-        Config::parse_toml(&toml_config)
+        let conf_presumptive = Config::parse_toml(&toml_config)?;
+        Config::validate(conf_presumptive)
+    }
+
+    fn validate(pres: Config) -> Result<Config, Error> {
+        if !pres.nats.bin_path.as_path().exists() {
+            return Err(Error::Config(format!(
+                "NATS server bin '{}' missing",
+                pres.nats.bin_path.as_path().to_string_lossy()
+            )));
+        };
+        if !pres.nats.config.as_path().exists() {
+            return Err(Error::Config(format!(
+                "NATS config '{}' missing",
+                pres.nats.config.as_path().to_string_lossy()
+            )));
+        };
+        Ok(pres)
     }
 
     fn parse_toml(toml_string: &str) -> Result<Config, Error> {
@@ -107,6 +124,7 @@ mod tests {
 pub enum Error {
     IO(String),
     Parse(String),
+    Config(String),
 }
 
 impl std::fmt::Display for Error {
@@ -114,14 +132,16 @@ impl std::fmt::Display for Error {
         match self {
             Error::IO(err) => write!(f, "IO error: {}", err),
             Error::Parse(err) => write!(f, "Parse error: {}", err),
+            Error::Config(err) => write!(f, "Config error: {}", err),
         }
     }
 }
 impl std_error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::IO(_) => "Config error",
+            Error::IO(_) => "IO error",
             Error::Parse(_) => "Parse error",
+            Error::Config(_) => "Config error",
         }
     }
 

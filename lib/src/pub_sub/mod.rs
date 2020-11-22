@@ -39,6 +39,7 @@ pub enum PubSubError {
     Generic(String),
     Subscription(String),
     Publish(String),
+    Configuration(String),
     Server(String),
     MessageParse(String),
 }
@@ -51,6 +52,7 @@ impl std::fmt::Display for PubSubError {
                 write!(f, "Error subscribing to NATS server: {}", msg)
             }
             PubSubError::Publish(msg) => write!(f, "Error publishing to NATS server: {}", msg),
+            PubSubError::Configuration(msg) => write!(f, "Configuration error: {}", msg),
             PubSubError::Server(msg) => write!(f, "Server error: {}", msg),
             PubSubError::MessageParse(msg) => write!(f, "Could not parse message {}", msg),
         }
@@ -62,6 +64,7 @@ impl std_error::Error for PubSubError {
             PubSubError::Generic(_) => "Can you be more specfic?",
             PubSubError::Subscription(_) => "Subscription error",
             PubSubError::Publish(_) => "Publishing error",
+            PubSubError::Configuration(_) => "Configuration error",
             PubSubError::Server(_) => "Server error",
             PubSubError::MessageParse(_) => "Message parsing error",
         }
