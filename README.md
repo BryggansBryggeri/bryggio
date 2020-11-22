@@ -22,11 +22,11 @@ rationalisation for us to spend a lot of time on BryggIO.
 
 To remedy these projects BryggIO is:
 
-- Implemented in rust, a strictly typed, compiled and safe language (no unsafe code is used in the core software),
-  makes BryggIO very reliable. The compiler checks all edge cases and crashing the software is extremely difficult.
+- Implemented in rust --- a strictly typed, compiled and safe language (no unsafe code is used in the core software) ---
+  BryggIO is very reliable. The compiler checks many edge cases and crashing the software is extremely difficult.
   As a bonus, it also makes BryggIO very fast and memory efficient.
 - We aim to be very stable and use semantic versioning to communicate changes' impact.
-  Note: We are currently in pre-release (<1.0) and during that period wild changes can occur.
+  *Note:* We are currently in pre-release (<1.0, <0.1.0 to be perfectly honest) and during that period wild changes can and will occur.
 - BryggIO is, and will remain, free and open source. We will keep backend and frontend separated so that any frontend can be used.
 
 ### Control
@@ -38,7 +38,11 @@ BryggIO takes the opposite approach: Given a simple and slow system, we have the
 
 Due to the inherent inertia in the objective (heating a lot of water), we can have quite long time between signal updates, providing time to calculate a nearly optimal control sequence.
 
-## Development
+## Installation
+
+  Before the first release we will not publish any binaries, see [Install from source](#install-from-source)
+
+## Install from source
 
  - Install rust from [here](https://www.rust-lang.org/tools/install).
 
@@ -60,6 +64,7 @@ Due to the inherent inertia in the objective (heating a lot of water), we can ha
    ```bash
    git clone git@github.com:BryggansBryggeri/bryggio.git bryggio
    cd bryggio
+   git checkout pub_sub # Pub sub version not yet merged.
    cargo run --bin bryggio-supervisor -- <path_to_bryggio_config_file>
    ```
 
