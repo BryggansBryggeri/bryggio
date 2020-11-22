@@ -26,7 +26,7 @@ To remedy these projects BryggIO is:
   BryggIO is very reliable. The compiler checks many edge cases and crashing the software is extremely difficult.
   As a bonus, it also makes BryggIO very fast and memory efficient.
 - We aim to be very stable and use semantic versioning to communicate changes' impact.
-  *Note:* We are currently in pre-release (<1.0, <0.1.0 to be perfectly honest) and during that period wild changes can and will occur.
+  **Note:** We are currently in pre-release (<1.0, <0.1.0 to be perfectly honest) and during that period wild changes can and will occur.
 - BryggIO is, and will remain, free and open source. We will keep backend and frontend separated so that any frontend can be used.
 
 ### Control
@@ -55,8 +55,8 @@ Due to the inherent inertia in the objective (heating a lot of water), we can ha
    go build
    ```
  - Configuration is currently split into
-    - *`bryggio` config:* TOML file which specifies general settings, and importantly *the path to the `nats-server` binary and config file*.
-    - *`nats`* particular YAML config file for the `nats-server`.
+    - **`bryggio` config:** TOML file which specifies general settings, and importantly **the path to the `nats-server` binary and config file**.
+    - **`nats`** particular YAML config file for the `nats-server`.
 
    Check out the sample configs in this repo for usage.
 
