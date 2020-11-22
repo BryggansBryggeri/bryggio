@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::error as std_error;
 use std::fs;
 use std::io::Read;
+use std::path::Path;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Config {
@@ -49,7 +50,7 @@ pub struct Actor {
 }
 
 impl Config {
-    pub fn try_new(config_file: &str) -> Result<Config, Error> {
+    pub fn try_new(config_file: &Path) -> Result<Config, Error> {
         let mut f = match fs::File::open(config_file) {
             Ok(f) => f,
             Err(err) => return Err(Error::IO(format!("Error opening file, {}", err))),
