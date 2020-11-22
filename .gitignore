@@ -12,7 +12,6 @@ tags.temp
 # ARCHIVES
 *.zip
 
-nats-server
 *yaml
 *toml
 !sample-*.yaml

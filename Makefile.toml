@@ -10,6 +10,14 @@ description = "Build all targets for RbPi (armv7-target)"
 command = "cargo"
 args = ["build", "--target=armv7-unknown-linux-gnueabihf"]
 
+[tasks.build-nats]
+description = "Build nats-server"
+  "cd deps/nats-server/",
+  "git pull",
+  "go build",
+  "cd ../.."
+]
+
 [tasks.rbpi-install-server]
 description = "scp all targets to RbPi (armv7-target)"
 dependencies = ["rbpi-build"]
