@@ -44,7 +44,11 @@ Due to the inherent inertia in the objective (heating a lot of water), we can ha
 
 ## Install from source
 
- - Install rust from [here](https://www.rust-lang.org/tools/install).
+ - Install rust, cargo and cargo-make from [here](https://www.rust-lang.org/tools/install).
+   Rust and cargo are provided by official distributions, while cargo-make can be installed with
+   ```
+   cargo install cargo-make
+   ```
 
  - Install and running `bryggio` and `nats-server` from source
    The latest released version `nats-server` does not yet support web-sockets, so it needs to be built from the master branch.
