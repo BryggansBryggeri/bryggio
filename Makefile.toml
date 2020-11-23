@@ -22,14 +22,14 @@ description = "Build nats-server"
 description = "scp all targets to RbPi (armv7-target)"
 dependencies = ["rbpi-build"]
 script = [
-    "scp target/armv7-unknown-linux-gnueabihf/debug/bryggio-server pi_louron:",
+  "scp target/armv7-unknown-linux-gnueabihf/debug/bryggio-server pi_louron:",
 ]
 
 [tasks.rbpi-install-cli]
 description = "scp all targets to RbPi (armv7-target)"
 dependencies = ["rbpi-build"]
 script = [
-    "scp target/armv7-unknown-linux-gnueabihf/debug/bryggio-cli pi_louron:",
+  "scp target/armv7-unknown-linux-gnueabihf/debug/bryggio-cli pi_louron:",
 ]
 
 [tasks.rbpi-install]
