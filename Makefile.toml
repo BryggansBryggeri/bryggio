@@ -12,9 +12,9 @@ args = ["build", "--target=armv7-unknown-linux-gnueabihf"]
 
 [tasks.build-nats]
 description = "Build nats-server"
+script = [
   "cd deps/nats-server/",
-  "git pull",
-  "go build",
+  "go build -o ../../target/",
   "cd ../.."
 ]
 

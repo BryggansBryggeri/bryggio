@@ -46,27 +46,24 @@ Due to the inherent inertia in the objective (heating a lot of water), we can ha
 
  - Install rust from [here](https://www.rust-lang.org/tools/install).
 
- - Install `nats-server`.
-   The latest released version does not yet support web-sockets, so it needs to be built from the master branch.
+ - Install and running `bryggio` and `nats-server` from source
+   The latest released version `nats-server` does not yet support web-sockets, so it needs to be built from the master branch.
    This step obviously requires installation of golang, hopefully this feature will soon be on the stable release and a simple download will suffice.
-   ```bash
-   git clone --branch=master https://github.com/nats-io/nats-server.git nats-server
-   cd nats-server
-   go build
+   Until then, the NATS server repo is included as a submodule in the BryggIO repo.
+
+    ```bash
+   # Pub sub version not yet merged.
+   git clone --branch=pub_sub --recurse-submodules git@github.com:BryggansBryggeri/bryggio.git bryggio
+   cd bryggio
+   cargo make --no-workspace build-nats
+   cargo run --bin bryggio-supervisor -- <path_to_bryggio_config_file>
    ```
+
  - Configuration is currently split into
     - **`bryggio` config:** TOML file which specifies general settings, and importantly **the path to the `nats-server` binary and config file**.
     - **`nats`** particular YAML config file for the `nats-server`.
 
    Check out the sample configs in this repo for usage.
-
- - Clone the `bryggio` repo and run the binary `bryggio-supervisor`.
-   ```bash
-   git clone git@github.com:BryggansBryggeri/bryggio.git bryggio
-   cd bryggio
-   git checkout pub_sub # Pub sub version not yet merged.
-   cargo run --bin bryggio-supervisor -- <path_to_bryggio_config_file>
-   ```
 
    The supervisor, starts up a `nats-server` in a separate process and then runs a supervisor pub sub client which,
    listening to special command subjects, starts and stops other clients like sensors, actors and controllers.
