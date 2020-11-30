@@ -35,26 +35,20 @@ impl ControllerPubMsg {
     }
 }
 
-pub struct ControllerClient<C>
-where
-    C: Control,
-{
+pub struct ControllerClient {
     id: ClientId,
     actor_id: ClientId,
     sensor_id: ClientId,
-    controller: C,
+    controller: Box<dyn Control>,
     client: NatsClient,
 }
 
-impl<C> ControllerClient<C>
-where
-    C: Control,
-{
+impl ControllerClient {
     pub fn new(
         id: ClientId,
         actor_id: ClientId,
         sensor_id: ClientId,
-        controller: C,
+        controller: Box<dyn Control>,
         config: &NatsConfig,
     ) -> Self {
         let client = NatsClient::try_new(config).unwrap();
@@ -72,10 +66,7 @@ where
     }
 }
 
-impl<C> PubSubClient for ControllerClient<C>
-where
-    C: Control,
-{
+impl PubSubClient for ControllerClient {
     fn client_loop(mut self) -> Result<(), PubSubError> {
         let supervisor = self.subscribe(&Subject(format!("controller.{}.*", self.id)))?;
         let sensor_subject = Subject(format!("sensor.{}.measurement", self.sensor_id));

@@ -17,7 +17,6 @@ where
     A: Actor,
 {
     id: ClientId,
-    controller_id: ClientId,
     actor: A,
     /// TODO: Make generic over PubSubClient
     client: NatsClient,
@@ -27,14 +26,9 @@ impl<A> ActorClient<A>
 where
     A: Actor,
 {
-    pub fn new(id: ClientId, controller_id: ClientId, actor: A, config: &NatsConfig) -> Self {
+    pub fn new(id: ClientId, actor: A, config: &NatsConfig) -> Self {
         let client = NatsClient::try_new(config).unwrap();
-        ActorClient {
-            id,
-            controller_id,
-            actor,
-            client,
-        }
+        ActorClient { id, actor, client }
     }
 
     fn gen_signal_subject(&self) -> Subject {

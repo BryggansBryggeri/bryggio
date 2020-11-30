@@ -4,6 +4,7 @@ pub mod manual;
 pub mod pid;
 pub mod pub_sub;
 
+use crate::pub_sub::ClientId;
 use std::convert::TryFrom;
 use std::error as std_error;
 use std::f32;
@@ -23,18 +24,35 @@ pub enum State {
     Active,
 }
 
+#[non_exhaustive]
 pub enum ControllerType {
-    Hysteresis,
+    Hysteresis { offset_on: f32, offset_off: f32 },
     Manual,
 }
 
-impl TryFrom<String> for ControllerType {
-    type Error = Error;
-    fn try_from(string: String) -> Result<Self, Error> {
-        match string.to_ascii_lowercase().as_ref() {
-            "hysteresis" => Ok(ControllerType::Hysteresis),
-            "manual" => Ok(ControllerType::Manual),
-            _ => Err(Error::ConversionError(string.into())),
+pub struct ControllerConfig {
+    pub(crate) controller_id: ClientId,
+    pub(crate) actor_id: ClientId,
+    pub(crate) sensor_id: ClientId,
+    type_: ControllerType,
+}
+
+impl ControllerConfig {
+    pub fn client_ids(&self) -> impl Iterator<Item = &ClientId> {
+        std::iter::once(&self.actor_id).chain(std::iter::once(&self.sensor_id))
+    }
+
+    pub fn get_controller(&self) -> Result<Box<dyn Control>, Error> {
+        match self.type_ {
+            ControllerType::Hysteresis {
+                offset_on,
+                offset_off,
+            } => {
+                let control = hysteresis::Controller::try_new(offset_on, offset_off)?;
+                Ok(Box::new(control))
+            }
+            ControllerType::Manual { .. } => Ok(Box::new(manual::Controller::new())),
+            _ => unimplemented!(),
         }
     }
 }

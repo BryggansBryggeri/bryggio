@@ -1,7 +1,7 @@
 use crate::actor;
 use crate::config;
-use crate::control::manual;
 use crate::control::pub_sub::ControllerClient;
+use crate::control::{manual, ControllerConfig};
 use crate::logger::Log;
 use crate::pub_sub::PubSubMsg;
 use crate::pub_sub::{
@@ -56,17 +56,53 @@ impl Supervisor {
         self.active_clients.insert(id, handle);
     }
 
-    fn add_actor(&mut self, actor_id: ClientId, controller_id: ClientId, config: &NatsConfig) {
+    fn add_actor(&mut self, actor_id: ClientId, config: &NatsConfig) {
         let tmp_id = String::from(actor_id.clone());
         let gpio_pin = hardware_impl::get_gpio_pin(0, &tmp_id).unwrap();
         let sensor = actor::ActorClient::new(
             actor_id.clone(),
-            controller_id,
             actor::simple_gpio::Actor::new(&tmp_id, gpio_pin).unwrap(),
             config,
         );
         let handle = thread::spawn(|| sensor.client_loop());
         self.active_clients.insert(actor_id, handle);
+    }
+
+    fn start_controller(
+        &mut self,
+        config: &ControllerConfig,
+        nats_config: &NatsConfig,
+    ) -> Result<(), PubSubError> {
+        config
+            .client_ids()
+            .map(|id| self.client_is_active(id))
+            .collect::<Result<Vec<_>, PubSubError>>()?;
+
+        let controller = config.get_controller().map_err(|err| {
+            PubSubError::Client(format!("Could not start control: {}", err.to_string()))
+        })?;
+        let controller_client = ControllerClient::new(
+            config.controller_id.clone(),
+            config.actor_id.clone(),
+            config.sensor_id.clone(),
+            controller,
+            nats_config,
+        );
+        let control_handle = thread::spawn(|| controller_client.client_loop());
+        self.active_clients
+            .insert(config.controller_id.clone(), control_handle);
+        Ok(())
+    }
+
+    fn client_is_active(&self, id: &ClientId) -> Result<(), PubSubError> {
+        if self.active_clients.contains_key(id) {
+            Ok(())
+        } else {
+            Err(PubSubError::Client(format!(
+                "No active client with id '{}'",
+                id
+            )))
+        }
     }
 
     pub fn init_from_config(config: &config::Config) -> Supervisor {
@@ -81,22 +117,8 @@ impl Supervisor {
         let dummy_sensor = ClientId("dummy".into());
         supervisor.add_sensor(dummy_sensor.clone(), &config.nats);
 
-        let controller_id = ClientId::from("test");
         let dummy_actor = ClientId("dummy".into());
-        supervisor.add_actor(dummy_sensor.clone(), controller_id.clone(), &config.nats);
-
-        let controller = manual::Controller::new();
-        let controller_client = ControllerClient::new(
-            controller_id.clone(),
-            dummy_actor,
-            dummy_sensor,
-            controller,
-            &config.nats,
-        );
-        let control_handle = thread::spawn(|| controller_client.client_loop());
-        supervisor
-            .active_clients
-            .insert(controller_id, control_handle);
+        supervisor.add_actor(dummy_sensor.clone(), &config.nats);
 
         supervisor
     }

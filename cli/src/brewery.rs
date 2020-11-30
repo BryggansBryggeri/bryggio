@@ -17,8 +17,10 @@ pub fn process_command(command: &BreweryOpt) {
             &config.nats, err
         );
     });
-    client.publish(
-        &Subject(command.topic.clone()),
-        &PubSubMsg(command.msg.clone()),
-    );
+    client
+        .publish(
+            &Subject(command.topic.clone()),
+            &PubSubMsg(command.msg.clone()),
+        )
+        .unwrap_or_else(|err| panic!("Error publishing: '{}'", err));
 }
