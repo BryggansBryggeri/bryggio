@@ -50,7 +50,7 @@ impl PubSubClient for Log {
         //let sensor_sub = self.subscribe(&sensor)?;
         //let control_sub = self.subscribe(&Subject(format!("actor.*.set_signal")))?;
         //let actor_sub = self.subscribe(&Subject(format!("actor.*.current_signal")))?;
-        let ui_sub = self.subscribe(&Subject(format!("ext_comm.ui.test")))?;
+        let ui_sub = self.subscribe(&Subject(format!("ext_comm.>")))?;
 
         loop {
             //if let Some(msg) = control_sub.try_next() {

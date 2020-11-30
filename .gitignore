@@ -12,7 +12,7 @@ tags.temp
 # ARCHIVES
 *.zip
 
-*yaml
-*toml
+bryggio.toml
+nats-config.yaml
 !sample-*.yaml
 !sample-*.toml

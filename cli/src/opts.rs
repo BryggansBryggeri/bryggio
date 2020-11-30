@@ -1,7 +1,6 @@
 use crate::wifi_settings::{Password, Ssid};
 use std::path;
 use structopt::StructOpt;
-use url::{ParseError, Url};
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "bryggio-cli", about = "cli usage")]
@@ -30,24 +29,13 @@ impl Opt {
 #[derive(Debug, StructOpt)]
 pub struct BreweryOpt {
     #[structopt(long)]
-    config: Option<path::PathBuf>,
+    pub(crate) config: path::PathBuf,
     #[structopt(long)]
-    ip: String,
+    pub(crate) topic: String,
     #[structopt(long)]
-    port: u16,
-    #[structopt(long)]
-    command: String,
+    pub(crate) msg: String,
     #[structopt(flatten)]
-    common: Common,
-}
-
-impl BreweryOpt {
-    pub fn url(&self) -> Result<Url, ParseError> {
-        Url::parse(&format!(
-            "http://{}:{}/{}",
-            self.ip, self.port, self.command
-        ))
-    }
+    pub(crate) common: Common,
 }
 
 #[derive(Debug, StructOpt)]
