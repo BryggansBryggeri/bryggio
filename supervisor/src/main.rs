@@ -28,7 +28,7 @@ fn main() -> Result<(), PubSubError> {
         }
     };
     let mut nats_server_child = run_nats_server(&config.nats)?;
-    let supervisor = Supervisor::init_from_config(&config);
+    let supervisor = Supervisor::init_from_config(config);
     supervisor.client_loop()?;
     nats_server_child
         .kill()

@@ -23,4 +23,5 @@ pub fn process_command(command: &BreweryOpt) {
             &PubSubMsg(command.msg.clone()),
         )
         .unwrap_or_else(|err| panic!("Error publishing: '{}'", err));
+    println!("published!");
 }

@@ -5,6 +5,7 @@ pub mod pid;
 pub mod pub_sub;
 
 use crate::pub_sub::ClientId;
+use serde::Deserialize;
 use std::convert::TryFrom;
 use std::error as std_error;
 use std::f32;
@@ -25,11 +26,13 @@ pub enum State {
 }
 
 #[non_exhaustive]
+#[derive(Deserialize)]
 pub enum ControllerType {
     Hysteresis { offset_on: f32, offset_off: f32 },
     Manual,
 }
 
+#[derive(Deserialize)]
 pub struct ControllerConfig {
     pub(crate) controller_id: ClientId,
     pub(crate) actor_id: ClientId,

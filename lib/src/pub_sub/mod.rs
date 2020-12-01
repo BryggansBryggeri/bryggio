@@ -2,6 +2,7 @@ use derive_more::{Display, From};
 use std::error as std_error;
 pub mod nats_client;
 use nats::Subscription;
+use serde::Deserialize;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ClientState {
@@ -15,7 +16,7 @@ pub trait PubSubClient {
     fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError>;
 }
 
-#[derive(From, Display, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(From, Deserialize, Display, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ClientId(pub String);
 
 impl From<ClientId> for String {
