@@ -72,7 +72,7 @@ impl PubSubClient for Log {
             if let Some(msg) = ui_sub.try_next() {
                 match decode_nats_data::<ExtComm>(&msg.data) {
                     Ok(json) => {
-                        self.debug(&format!("EXT_COMM: UI {:?}", json));
+                        self.debug(&format!("{:?}", json));
                     }
                     Err(err) => self.error(&err.to_string()),
                 };
