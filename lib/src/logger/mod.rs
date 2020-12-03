@@ -1,5 +1,5 @@
 use crate::pub_sub::{
-    nats_client::decode_nats_msg, nats_client::NatsClient, nats_client::NatsConfig, PubSubClient,
+    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, PubSubClient,
     PubSubError, PubSubMsg, Subject,
 };
 use nats::Subscription;
@@ -57,7 +57,7 @@ impl PubSubClient for Log {
         //let sensor_sub = self.subscribe(&sensor)?;
         //let control_sub = self.subscribe(&Subject(format!("actor.*.set_signal")))?;
         //let actor_sub = self.subscribe(&Subject(format!("actor.*.current_signal")))?;
-        let ui_sub = self.subscribe(&Subject(format!("ext_comm.>")))?;
+        let ui_sub = self.subscribe(&Subject(String::from("ext_comm.>")))?;
 
         loop {
             //if let Some(msg) = control_sub.try_next() {
@@ -70,7 +70,7 @@ impl PubSubClient for Log {
             //    println!("LOG: Actor {}", msg);
             //}
             if let Some(msg) = ui_sub.try_next() {
-                match decode_nats_msg::<ExtComm>(&msg.data) {
+                match decode_nats_data::<ExtComm>(&msg.data) {
                     Ok(json) => {
                         self.debug(&format!("EXT_COMM: UI {:?}", json));
                     }

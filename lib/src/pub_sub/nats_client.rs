@@ -17,7 +17,7 @@ pub struct NatsConfig {
     pass: String,
 }
 
-pub(crate) fn decode_nats_msg<T: DeserializeOwned>(data: &[u8]) -> Result<T, PubSubError> {
+pub(crate) fn decode_nats_data<T: DeserializeOwned>(data: &[u8]) -> Result<T, PubSubError> {
     let json_string = from_utf8(&data).map_err(|err| {
         PubSubError::MessageParse(format!(
             "Invalid UTF-8: '{:?}', '{}'",
