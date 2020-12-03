@@ -1,5 +1,6 @@
 use crate::pub_sub::{
-    nats_client::NatsClient, nats_client::NatsConfig, PubSubClient, PubSubError, PubSubMsg, Subject,
+    nats_client::decode_nats_msg, nats_client::NatsClient, nats_client::NatsConfig, PubSubClient,
+    PubSubError, PubSubMsg, Subject,
 };
 use nats::Subscription;
 use serde::{Deserialize, Serialize};
@@ -44,6 +45,12 @@ impl Log {
     }
 }
 
+#[derive(Deserialize, Debug)]
+struct ExtComm {
+    id: String,
+    cmd: String,
+}
+
 impl PubSubClient for Log {
     fn client_loop(self) -> Result<(), PubSubError> {
         //let sensor = Subject(format!("sensor.*.measurement"));
@@ -63,7 +70,12 @@ impl PubSubClient for Log {
             //    println!("LOG: Actor {}", msg);
             //}
             if let Some(msg) = ui_sub.try_next() {
-                self.debug(&format!("EXT_COMM: UI {}", msg));
+                match decode_nats_msg::<ExtComm>(&msg.data) {
+                    Ok(json) => {
+                        self.debug(&format!("EXT_COMM: UI {:?}", json));
+                    }
+                    Err(err) => self.error(&err.to_string()),
+                };
             }
             sleep(Duration::from_millis(10));
         }

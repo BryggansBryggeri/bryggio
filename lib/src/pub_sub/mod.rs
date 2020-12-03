@@ -57,7 +57,7 @@ impl std::fmt::Display for PubSubError {
             PubSubError::Configuration(msg) => write!(f, "Configuration error: {}", msg),
             PubSubError::Server(msg) => write!(f, "Server error: {}", msg),
             PubSubError::Client(msg) => write!(f, "Client error: {}", msg),
-            PubSubError::MessageParse(msg) => write!(f, "Could not parse message {}", msg),
+            PubSubError::MessageParse(msg) => write!(f, "Message parse error. {}", msg),
         }
     }
 }

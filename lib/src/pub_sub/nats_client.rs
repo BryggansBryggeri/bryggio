@@ -1,8 +1,10 @@
 use crate::pub_sub::{PubSubError, PubSubMsg, Subject};
 use nats::{Connection, Options, Subscription};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::any::type_name;
 use std::path::PathBuf;
 use std::process::{Child, Command};
+use std::str::from_utf8;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -13,6 +15,24 @@ pub struct NatsConfig {
     server: String,
     user: String,
     pass: String,
+}
+
+pub(crate) fn decode_nats_msg<T: DeserializeOwned>(data: &[u8]) -> Result<T, PubSubError> {
+    let json_string = from_utf8(&data).map_err(|err| {
+        PubSubError::MessageParse(format!(
+            "Invalid UTF-8: '{:?}', '{}'",
+            data,
+            err.to_string()
+        ))
+    })?;
+    serde_json::from_str(json_string).map_err(|err| {
+        PubSubError::MessageParse(format!(
+            "Could not parse '{}' as '{}'. Err: '{}'",
+            json_string,
+            type_name::<T>(),
+            err.to_string()
+        ))
+    })
 }
 
 #[derive(Clone)]
