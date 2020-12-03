@@ -139,12 +139,12 @@ impl Supervisor {
     fn add_actor(&mut self, actor_id: ClientId, config: &NatsConfig) {
         let tmp_id = String::from(actor_id.clone());
         let gpio_pin = hardware_impl::get_gpio_pin(0, &tmp_id).unwrap();
-        let sensor = actor::ActorClient::new(
+        let actor = actor::ActorClient::new(
             actor_id.clone(),
             actor::simple_gpio::Actor::new(&tmp_id, gpio_pin).unwrap(),
             config,
         );
-        let handle = thread::spawn(|| sensor.client_loop());
+        let handle = thread::spawn(|| actor.client_loop());
         self.active_clients.insert(actor_id, handle);
     }
 
