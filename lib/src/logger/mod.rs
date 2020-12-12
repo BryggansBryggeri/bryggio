@@ -70,6 +70,7 @@ impl PubSubClient for Log {
             //    println!("LOG: Actor {}", msg);
             //}
             if let Some(msg) = ui_sub.try_next() {
+                println!("ababa");
                 match decode_nats_data::<ExtComm>(&msg.data) {
                     Ok(json) => {
                         self.debug(&format!("{:?}", json));

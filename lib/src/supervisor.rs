@@ -5,7 +5,7 @@ use crate::control::ControllerConfig;
 use crate::logger::Log;
 use crate::pub_sub::PubSubMsg;
 use crate::pub_sub::{
-    nats_client::{NatsClient, NatsConfig},
+    nats_client::{decode_nats_data, NatsClient, NatsConfig},
     ClientId, ClientState, PubSubClient, PubSubError, Subject,
 };
 use crate::sensor;
@@ -25,6 +25,10 @@ use crate::hardware::rbpi as hardware_impl;
 pub enum SupervisorSubMsg {
     #[serde(rename = "start_controller")]
     StartController { control_config: ControllerConfig },
+    #[serde(rename = "list_active_clients")]
+    ListActiveClients,
+    #[serde(rename = "toggle_controller")]
+    ToggleController(ClientId),
     #[serde(rename = "kill_client")]
     KillClient { client_id: ClientId },
     #[serde(rename = "stop")]
@@ -36,15 +40,14 @@ impl TryFrom<Message> for SupervisorSubMsg {
     fn try_from(msg: Message) -> Result<Self, PubSubError> {
         match msg.subject.as_ref() {
             "command.start_controller" => {
-                let control_config: ControllerConfig =
-                    serde_json::from_str(std::str::from_utf8(&msg.data).map_err(|err| {
-                        PubSubError::MessageParse(format!("data conv: {}", err.to_string()))
-                    })?)
-                    .map_err(|err| {
-                        PubSubError::MessageParse(format!("json deserialise: {}", err.to_string()))
-                    })?;
+                let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
                 Ok(SupervisorSubMsg::StartController { control_config })
             }
+            "command.toggle_controller" => {
+                let id: ClientId = decode_nats_data(&msg.data)?;
+                Ok(SupervisorSubMsg::ToggleController(id))
+            }
+            "command.list_active_clients" => Ok(SupervisorSubMsg::ListActiveClients),
             _ => Err(PubSubError::MessageParse(String::new())),
         }
     }
@@ -63,20 +66,18 @@ impl PubSubClient for Supervisor {
         let mut state = ClientState::Active;
         while state == ClientState::Active {
             if let Some(msg) = sub.next() {
-                println!("{}", msg);
                 state = match SupervisorSubMsg::try_from(msg) {
-                    Ok(cmd) => self.process_command(&cmd)?,
-                    Err(err) => {
-                        return Err(PubSubError::MessageParse(format!(
-                            "Error parsing command: {}",
-                            err.to_string()
-                        )))
-                    }
+                    Ok(cmd) => match self.process_command(&cmd) {
+                        Ok(state) => state,
+                        Err(err) => Supervisor::handle_err(err),
+                    },
+                    Err(err) => Supervisor::handle_err(err),
                 };
             }
         }
         Ok(())
     }
+
     fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
         self.client.subscribe(subject)
     }
@@ -87,16 +88,49 @@ impl PubSubClient for Supervisor {
 }
 
 impl Supervisor {
+    fn handle_err(err: PubSubError) -> ClientState {
+        println!("{}", err.to_string());
+        ClientState::Active
+    }
+
+    fn list_active_clients(&self) {
+        println!("Active clients:");
+        for cl in self.active_clients.keys() {
+            println!("{}", cl);
+        }
+    }
     fn process_command(&mut self, cmd: &SupervisorSubMsg) -> Result<ClientState, PubSubError> {
         match cmd {
             SupervisorSubMsg::StartController { control_config } => {
                 self.start_controller(&control_config)?;
+                println!("starting controller");
+                Ok(ClientState::Active)
+            }
+            SupervisorSubMsg::ToggleController(contr_id) => {
+                self.toggle_controller(contr_id)?;
+                Ok(ClientState::Active)
+            }
+            SupervisorSubMsg::ListActiveClients => {
+                self.list_active_clients();
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::KillClient { client_id: _ } => Ok(ClientState::Active),
             SupervisorSubMsg::Stop => Ok(ClientState::Active),
         }
     }
+
+    fn toggle_controller(&mut self, contr_id: &ClientId) -> Result<(), PubSubError> {
+        println!("togg contr method");
+        let controller = match self.active_clients.get(contr_id) {
+            Some(contr) => Ok(contr),
+            None => Err(PubSubError::Client(format!(
+                "'{}' not an active client",
+                contr_id
+            ))),
+        }?;
+        Ok(())
+    }
+
     fn start_controller(&mut self, config: &ControllerConfig) -> Result<(), PubSubError> {
         config
             .client_ids()
@@ -114,26 +148,39 @@ impl Supervisor {
             &self.config.nats,
         );
         let control_handle = thread::spawn(|| controller_client.client_loop());
-        self.active_clients
-            .insert(config.controller_id.clone(), control_handle);
+        match self.add_client(config.controller_id.clone(), control_handle) {
+            Ok(_) => {}
+            Err(err) => {
+                Supervisor::handle_err(err);
+            }
+        };
         Ok(())
     }
 
     fn add_logger(&mut self, config: &config::Config) {
         let log = Log::new(&config.nats, config.general.log_level);
         let log_handle = thread::spawn(|| log.client_loop());
-        self.active_clients
-            .insert(ClientId("log".into()), log_handle);
+        match self.add_client(ClientId("log".into()), log_handle) {
+            Ok(_) => {}
+            Err(err) => {
+                Supervisor::handle_err(err);
+            }
+        };
     }
 
-    fn add_sensor(&mut self, id: ClientId, config: &NatsConfig) {
+    fn add_sensor(&mut self, sensor_id: ClientId, config: &NatsConfig) {
         let sensor = sensor::SensorClient::new(
-            id.clone(),
-            sensor::dummy::Sensor::new(&String::from(id.clone())),
+            sensor_id.clone(),
+            sensor::dummy::Sensor::new(&String::from(sensor_id.clone())),
             config,
         );
         let handle = thread::spawn(|| sensor.client_loop());
-        self.active_clients.insert(id, handle);
+        match self.add_client(sensor_id, handle) {
+            Ok(_) => {}
+            Err(err) => {
+                Supervisor::handle_err(err);
+            }
+        };
     }
 
     fn add_actor(&mut self, actor_id: ClientId, config: &NatsConfig) {
@@ -145,7 +192,12 @@ impl Supervisor {
             config,
         );
         let handle = thread::spawn(|| actor.client_loop());
-        self.active_clients.insert(actor_id, handle);
+        match self.add_client(actor_id, handle) {
+            Ok(_) => {}
+            Err(err) => {
+                Supervisor::handle_err(err);
+            }
+        };
     }
 
     fn client_is_active(&self, id: &ClientId) -> Result<(), PubSubError> {
@@ -169,13 +221,29 @@ impl Supervisor {
 
         supervisor.add_logger(&config);
 
-        let dummy_sensor = ClientId("dummy".into());
-        supervisor.add_sensor(dummy_sensor.clone(), &config.nats);
+        let dummy_sensor = ClientId("dummy_sensor".into());
+        supervisor.add_sensor(dummy_sensor, &config.nats);
 
-        let dummy_actor = ClientId("dummy".into());
+        let dummy_actor = ClientId("dummy_actor".into());
         supervisor.add_actor(dummy_actor, &config.nats);
 
         supervisor
+    }
+
+    fn add_client(
+        &mut self,
+        new_client: ClientId,
+        handle: thread::JoinHandle<Result<(), PubSubError>>,
+    ) -> Result<(), PubSubError> {
+        if self.active_clients.contains_key(&new_client) {
+            Err(PubSubError::Client(format!(
+                "'{}' already in active clients",
+                &new_client
+            )))
+        } else {
+            self.active_clients.insert(new_client, handle);
+            Ok(())
+        }
     }
 }
 

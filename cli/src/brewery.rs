@@ -1,7 +1,7 @@
 use crate::opts::BreweryOpt;
 use bryggio_lib::config::Config;
 use bryggio_lib::pub_sub::nats_client::NatsClient;
-use bryggio_lib::pub_sub::{PubSubMsg, Subject};
+use bryggio_lib::pub_sub::{ClientId, PubSubMsg, Subject};
 
 pub fn process_command(command: &BreweryOpt) {
     let config = Config::try_new(&command.config).unwrap_or_else(|err| {
@@ -17,6 +17,7 @@ pub fn process_command(command: &BreweryOpt) {
             &config.nats, err
         );
     });
+
     client
         .publish(
             &Subject(command.topic.clone()),
