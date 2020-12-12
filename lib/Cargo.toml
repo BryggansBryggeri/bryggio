@@ -17,6 +17,7 @@ lazy_static = "1"
 pid = ">=2.1"
 nats = ">=0.7"
 derive_more = ">=0.99"
+thiserror = "1.0.22"
 
 [target.'cfg(target_arch = "arm")'.dependencies]
 linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", rev="25bf2be", features=["gpio_cdev"]}

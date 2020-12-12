@@ -21,6 +21,8 @@ use crate::hardware::dummy as hardware_impl;
 #[cfg(target_arch = "arm")]
 use crate::hardware::rbpi as hardware_impl;
 
+type Handle = thread::JoinHandle<Result<(), PubSubError>>;
+
 #[derive(Deserialize)]
 pub enum SupervisorSubMsg {
     #[serde(rename = "start_controller")]
@@ -28,7 +30,7 @@ pub enum SupervisorSubMsg {
     #[serde(rename = "list_active_clients")]
     ListActiveClients,
     #[serde(rename = "toggle_controller")]
-    ToggleController(ClientId),
+    ToggleController { control_config: ControllerConfig },
     #[serde(rename = "kill_client")]
     KillClient { client_id: ClientId },
     #[serde(rename = "stop")]
@@ -44,8 +46,8 @@ impl TryFrom<Message> for SupervisorSubMsg {
                 Ok(SupervisorSubMsg::StartController { control_config })
             }
             "command.toggle_controller" => {
-                let id: ClientId = decode_nats_data(&msg.data)?;
-                Ok(SupervisorSubMsg::ToggleController(id))
+                let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
+                Ok(SupervisorSubMsg::ToggleController { control_config })
             }
             "command.list_active_clients" => Ok(SupervisorSubMsg::ListActiveClients),
             _ => Err(PubSubError::MessageParse(String::new())),
@@ -56,7 +58,7 @@ impl TryFrom<Message> for SupervisorSubMsg {
 pub struct Supervisor {
     client: NatsClient,
     config: config::Config,
-    active_clients: HashMap<ClientId, thread::JoinHandle<Result<(), PubSubError>>>,
+    active_clients: HashMap<ClientId, Handle>,
 }
 
 impl PubSubClient for Supervisor {
@@ -106,8 +108,8 @@ impl Supervisor {
                 println!("starting controller");
                 Ok(ClientState::Active)
             }
-            SupervisorSubMsg::ToggleController(contr_id) => {
-                self.toggle_controller(contr_id)?;
+            SupervisorSubMsg::ToggleController { control_config } => {
+                self.toggle_controller(control_config)?;
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::ListActiveClients => {
@@ -119,23 +121,33 @@ impl Supervisor {
         }
     }
 
-    fn toggle_controller(&mut self, contr_id: &ClientId) -> Result<(), PubSubError> {
-        println!("togg contr method");
-        let controller = match self.active_clients.get(contr_id) {
+    fn toggle_controller(&mut self, config: &ControllerConfig) -> Result<(), PubSubError> {
+        let contr_id = &config.controller_id;
+        self.kill_client(contr_id)
+    }
+
+    fn kill_client(&mut self, id: &ClientId) -> Result<(), PubSubError> {
+        let handle = match self.active_clients.remove(id) {
             Some(contr) => Ok(contr),
             None => Err(PubSubError::Client(format!(
                 "'{}' not an active client",
-                contr_id
+                id
             ))),
         }?;
-        Ok(())
+        match handle.join() {
+            Ok(res) => res,
+            Err(err) => Err(PubSubError::Client(format!(
+                "could not join client with id '{}'",
+                id,
+            ))),
+        }
     }
 
     fn start_controller(&mut self, config: &ControllerConfig) -> Result<(), PubSubError> {
         config
             .client_ids()
             .map(|id| self.client_is_active(id))
-            .collect::<Result<Vec<_>, PubSubError>>()?;
+            .collect::<Result<Vec<_>, SupervisorError>>()?;
 
         let controller = config.get_controller().map_err(|err| {
             PubSubError::Client(format!("Could not start control: {}", err.to_string()))
@@ -148,42 +160,34 @@ impl Supervisor {
             &self.config.nats,
         );
         let control_handle = thread::spawn(|| controller_client.client_loop());
-        match self.add_client(config.controller_id.clone(), control_handle) {
-            Ok(_) => {}
-            Err(err) => {
-                Supervisor::handle_err(err);
-            }
-        };
-        Ok(())
+        Ok(self.add_client(config.controller_id.clone(), control_handle)?)
     }
 
-    fn add_logger(&mut self, config: &config::Config) {
+    fn add_logger(&mut self, config: &config::Config) -> Result<(), SupervisorError> {
         let log = Log::new(&config.nats, config.general.log_level);
         let log_handle = thread::spawn(|| log.client_loop());
-        match self.add_client(ClientId("log".into()), log_handle) {
-            Ok(_) => {}
-            Err(err) => {
-                Supervisor::handle_err(err);
-            }
-        };
+        self.add_client(ClientId("log".into()), log_handle)
     }
 
-    fn add_sensor(&mut self, sensor_id: ClientId, config: &NatsConfig) {
+    fn add_sensor(
+        &mut self,
+        sensor_id: ClientId,
+        config: &NatsConfig,
+    ) -> Result<(), SupervisorError> {
         let sensor = sensor::SensorClient::new(
             sensor_id.clone(),
             sensor::dummy::Sensor::new(&String::from(sensor_id.clone())),
             config,
         );
         let handle = thread::spawn(|| sensor.client_loop());
-        match self.add_client(sensor_id, handle) {
-            Ok(_) => {}
-            Err(err) => {
-                Supervisor::handle_err(err);
-            }
-        };
+        self.add_client(sensor_id, handle)
     }
 
-    fn add_actor(&mut self, actor_id: ClientId, config: &NatsConfig) {
+    fn add_actor(
+        &mut self,
+        actor_id: ClientId,
+        config: &NatsConfig,
+    ) -> Result<(), SupervisorError> {
         let tmp_id = String::from(actor_id.clone());
         let gpio_pin = hardware_impl::get_gpio_pin(0, &tmp_id).unwrap();
         let actor = actor::ActorClient::new(
@@ -192,22 +196,14 @@ impl Supervisor {
             config,
         );
         let handle = thread::spawn(|| actor.client_loop());
-        match self.add_client(actor_id, handle) {
-            Ok(_) => {}
-            Err(err) => {
-                Supervisor::handle_err(err);
-            }
-        };
+        self.add_client(actor_id, handle)
     }
 
-    fn client_is_active(&self, id: &ClientId) -> Result<(), PubSubError> {
+    fn client_is_active(&self, id: &ClientId) -> Result<(), SupervisorError> {
         if self.active_clients.contains_key(id) {
             Ok(())
         } else {
-            Err(PubSubError::Client(format!(
-                "No active client with id '{}'",
-                id
-            )))
+            Err(SupervisorError::Missing(id.clone()))
         }
     }
 
@@ -230,16 +226,9 @@ impl Supervisor {
         supervisor
     }
 
-    fn add_client(
-        &mut self,
-        new_client: ClientId,
-        handle: thread::JoinHandle<Result<(), PubSubError>>,
-    ) -> Result<(), PubSubError> {
+    fn add_client(&mut self, new_client: ClientId, handle: Handle) -> Result<(), SupervisorError> {
         if self.active_clients.contains_key(&new_client) {
-            Err(PubSubError::Client(format!(
-                "'{}' already in active clients",
-                &new_client
-            )))
+            Err(SupervisorError::AlreadyActive(new_client))
         } else {
             self.active_clients.insert(new_client, handle);
             Ok(())
@@ -248,33 +237,33 @@ impl Supervisor {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Error {
-    Missing(String, String),
-    AlreadyActive(String),
+pub enum SupervisorError {
+    Missing(ClientId),
+    AlreadyActive(ClientId),
     Sensor(String),
     ConcurrencyError(String),
     ThreadJoin,
 }
 
-impl std::fmt::Display for Error {
+impl std::fmt::Display for SupervisorError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Error::Missing(type_, id) => write!(f, "ID '{}' does not exist for {}", id, type_),
-            Error::AlreadyActive(id) => write!(f, "ID is already in use: {}", id),
-            Error::Sensor(err) => write!(f, "Measurement error: {}", err),
-            Error::ConcurrencyError(err) => write!(f, "Concurrency error: {}", err),
-            Error::ThreadJoin => write!(f, "Could not join thread"),
+            SupervisorError::Missing(id) => write!(f, "Id '{}' is not an active client", id),
+            SupervisorError::AlreadyActive(id) => write!(f, "Id '{}' is already id", id),
+            SupervisorError::Sensor(err) => write!(f, "Measurement error: {}", err),
+            SupervisorError::ConcurrencyError(err) => write!(f, "Concurrency error: {}", err),
+            SupervisorError::ThreadJoin => write!(f, "Could not join thread"),
         }
     }
 }
-impl std_error::Error for Error {
+impl std_error::Error for SupervisorError {
     fn description(&self) -> &str {
         match *self {
-            Error::Missing(_, _) => "Requested service does not exist.",
-            Error::AlreadyActive(_) => "ID is already in use.",
-            Error::Sensor(_) => "Measurement error.",
-            Error::ConcurrencyError(_) => "Concurrency error",
-            Error::ThreadJoin => "Error joining thread.",
+            SupervisorError::Missing(_) => "Requested client does not exist.",
+            SupervisorError::AlreadyActive(_) => "ID is already in use.",
+            SupervisorError::Sensor(_) => "Measurement error.",
+            SupervisorError::ConcurrencyError(_) => "Concurrency error",
+            SupervisorError::ThreadJoin => "Error joining thread.",
         }
     }
 
