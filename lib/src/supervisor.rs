@@ -16,6 +16,8 @@ use std::convert::TryFrom;
 use std::error as std_error;
 use std::thread;
 
+pub(crate) const SUPERVISOR_TOPIC: &str = "supervisor";
+
 #[cfg(target_arch = "x86_64")]
 use crate::hardware::dummy as hardware_impl;
 #[cfg(target_arch = "arm")]
@@ -84,8 +86,8 @@ impl PubSubClient for Supervisor {
         self.client.subscribe(subject)
     }
 
-    fn publish(&self, _subject: &Subject, _msg: &PubSubMsg) -> Result<(), PubSubError> {
-        todo!()
+    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg)
     }
 }
 
@@ -105,7 +107,6 @@ impl Supervisor {
         match cmd {
             SupervisorSubMsg::StartController { control_config } => {
                 self.start_controller(&control_config)?;
-                println!("starting controller");
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::ToggleController { control_config } => {
@@ -134,9 +135,13 @@ impl Supervisor {
                 id
             ))),
         }?;
+        self.publish(
+            &Subject(format!("{}.kill.{}", SUPERVISOR_TOPIC, id)),
+            &PubSubMsg(String::new()),
+        )?;
         match handle.join() {
             Ok(res) => res,
-            Err(err) => Err(PubSubError::Client(format!(
+            Err(_err) => Err(PubSubError::Client(format!(
                 "could not join client with id '{}'",
                 id,
             ))),
@@ -207,7 +212,7 @@ impl Supervisor {
         }
     }
 
-    pub fn init_from_config(config: config::Config) -> Supervisor {
+    pub fn init_from_config(config: config::Config) -> Result<Supervisor, SupervisorError> {
         let client = NatsClient::try_new(&config.nats).unwrap();
         let mut supervisor = Supervisor {
             client,
@@ -215,15 +220,15 @@ impl Supervisor {
             active_clients: HashMap::new(),
         };
 
-        supervisor.add_logger(&config);
+        supervisor.add_logger(&config)?;
 
         let dummy_sensor = ClientId("dummy_sensor".into());
-        supervisor.add_sensor(dummy_sensor, &config.nats);
+        supervisor.add_sensor(dummy_sensor, &config.nats)?;
 
         let dummy_actor = ClientId("dummy_actor".into());
-        supervisor.add_actor(dummy_actor, &config.nats);
+        supervisor.add_actor(dummy_actor, &config.nats)?;
 
-        supervisor
+        Ok(supervisor)
     }
 
     fn add_client(&mut self, new_client: ClientId, handle: Handle) -> Result<(), SupervisorError> {
