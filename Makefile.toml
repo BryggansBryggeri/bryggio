@@ -14,7 +14,7 @@ args = ["build", "--target=armv7-unknown-linux-gnueabihf"]
 description = "Build nats-server"
 script = [
   "cd deps/nats-server/",
-  "go build -o ../../target/",
+  "go build -o ../../target/nats-server",
   "cd ../.."
 ]
 
