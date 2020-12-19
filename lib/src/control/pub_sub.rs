@@ -68,7 +68,6 @@ impl ControllerClient {
 }
 
 impl PubSubClient for ControllerClient {
-    type Return = ();
     fn client_loop(mut self) -> Result<(), PubSubError> {
         let supervisor =
             self.subscribe(&Subject(format!("{}.kill.{}", SUPERVISOR_TOPIC, self.id)))?;
@@ -76,8 +75,11 @@ impl PubSubClient for ControllerClient {
         let sensor = self.subscribe(&sensor_subject)?;
         let mut state = State::Active;
         while state == State::Active {
-            if let Some(_msg) = supervisor.try_next() {
-                println!("Exiting control loop");
+            if let Some(msg) = supervisor.try_next() {
+                msg.respond(format!("{}", self.controller.get_target()))
+                    .map_err(|err| {
+                        PubSubError::Client(format!("could not respond: '{}'.", err.to_string()))
+                    })?;
                 state = State::Inactive;
             }
             if let Some(meas_msg) = sensor.next() {

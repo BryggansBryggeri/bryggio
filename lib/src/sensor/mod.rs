@@ -74,7 +74,6 @@ impl<S> PubSubClient for SensorClient<S>
 where
     S: Sensor,
 {
-    type Return = ();
     fn client_loop(self) -> Result<(), PubSubError> {
         let supervisor = self.subscribe(&Subject(format!("command.sensor.{}", self.id)))?;
         let meas_sub = self.gen_meas_subject();

@@ -11,11 +11,15 @@ pub struct Controller {
 }
 
 impl Controller {
-    pub fn try_new(offset_on: f32, offset_off: f32) -> Result<Controller, control::Error> {
+    pub fn try_new(
+        target: f32,
+        offset_on: f32,
+        offset_off: f32,
+    ) -> Result<Controller, control::Error> {
         if offset_off >= 0.0 {
             if offset_on > offset_off {
                 Ok(Controller {
-                    target: 50.0,
+                    target: target,
                     current_signal: 0.0,
                     previous_measurement: None,
                     state: control::State::Active,
@@ -50,7 +54,7 @@ impl control::Control for Controller {
             Some(measurement) => {
                 let diff = self.target - measurement;
                 if diff > self.offset_on {
-                    self.current_signal = 100.0;
+                    self.current_signal = 1.0;
                 } else if diff <= self.offset_off {
                     self.current_signal = 0.0;
                 } else {

@@ -12,7 +12,6 @@ pub enum ClientState {
 }
 
 pub trait PubSubClient {
-    type Return;
     fn client_loop(self) -> Result<(), PubSubError>;
     fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError>;
     fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError>;
@@ -39,20 +38,20 @@ pub struct PubSubMsg(pub String);
 
 #[derive(Error, Debug, Clone, PartialEq)]
 pub enum PubSubError {
-    #[error("Could you be more specific?")]
+    #[error("Could you be more specific? {0}")]
     Generic(String),
-    #[error("Error subscribing to NATS server")]
+    #[error("Error subscribing to NATS server: {0}")]
     Subscription(String),
-    #[error("Error publishing to NATS server")]
+    #[error("Error publishing to NATS server: {0}")]
     Publish(String),
-    #[error("Config error")]
+    #[error("Config error: {0}")]
     Configuration(String),
     #[error("Client error: {0}")]
     Client(String),
-    #[error("Server error")]
+    #[error("Server error: {0}")]
     Server(String),
-    #[error("Message parsing error")]
+    #[error("Message parsing erro: {0}r")]
     MessageParse(String),
-    #[error("Supervisor error")]
+    #[error("Supervisor error: {0}")]
     Supervisor(#[from] SupervisorError),
 }

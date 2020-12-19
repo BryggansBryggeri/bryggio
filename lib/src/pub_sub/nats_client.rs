@@ -57,6 +57,16 @@ impl NatsClient {
             .publish(&subject.0, &msg.0)
             .map_err(|err| PubSubError::Publish(err.to_string()))
     }
+
+    pub fn request(
+        &self,
+        subject: &Subject,
+        msg: &PubSubMsg,
+    ) -> Result<nats::Message, PubSubError> {
+        self.0
+            .request(&subject.0, &msg.0)
+            .map_err(|err| PubSubError::Publish(err.to_string()))
+    }
 }
 
 pub fn run_nats_server(config: &NatsConfig) -> Result<Child, PubSubError> {

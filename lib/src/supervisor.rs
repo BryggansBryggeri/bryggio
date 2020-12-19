@@ -10,7 +10,7 @@ use crate::pub_sub::{
 };
 use crate::sensor;
 use nats::{Message, Subscription};
-use serde::Deserialize;
+use serde::{de::DeserializeOwned, Deserialize};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::error as std_error;
@@ -67,7 +67,6 @@ pub struct Supervisor {
 }
 
 impl PubSubClient for Supervisor {
-    type Return = ();
     fn client_loop(mut self) -> Result<(), PubSubError> {
         let subject = Subject("command.>".into());
         let sub = self.subscribe(&subject)?;
@@ -97,7 +96,7 @@ impl PubSubClient for Supervisor {
 
 impl Supervisor {
     fn handle_err(err: PubSubError) -> ClientState {
-        println!("ababa{}", err.to_string());
+        println!("{}", err.to_string());
         ClientState::Active
     }
 
@@ -110,7 +109,7 @@ impl Supervisor {
     fn process_command(&mut self, cmd: &SupervisorSubMsg) -> Result<ClientState, PubSubError> {
         match cmd {
             SupervisorSubMsg::StartController { control_config } => {
-                self.start_controller(&control_config)?;
+                self.start_controller(&control_config, 0.0)?;
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::SwitchController { control_config } => {
@@ -126,13 +125,7 @@ impl Supervisor {
         }
     }
 
-    fn switch_controller(&mut self, config: &ControllerConfig) -> Result<(), PubSubError> {
-        let contr_id = &config.controller_id;
-        self.kill_client(contr_id)?;
-        self.start_controller(config)
-    }
-
-    fn kill_client(&mut self, id: &ClientId) -> Result<(), PubSubError> {
+    fn kill_client<T: DeserializeOwned>(&mut self, id: &ClientId) -> Result<T, PubSubError> {
         let handle = match self.active_clients.remove(id) {
             Some(contr) => Ok(contr),
             None => Err(PubSubError::Client(format!(
@@ -140,26 +133,39 @@ impl Supervisor {
                 id
             ))),
         }?;
-        self.publish(
+        let report = match self.client.request(
             &Subject(format!("{}.kill.{}", SUPERVISOR_TOPIC, id)),
             &PubSubMsg(String::new()),
-        )?;
+        ) {
+            Ok(report) => Ok(report),
+            Err(err) => {
+                //self.active_clients.insert(*id, handle.clone());
+                Err(err)
+            }
+        }?;
         match handle.join() {
-            Ok(res) => res,
-            Err(_err) => Err(PubSubError::Client(format!(
-                "could not join client with id '{}'",
-                id,
-            ))),
-        }
+            Ok(_) => {}
+            Err(_) => {
+                return Err(PubSubError::Client(format!(
+                    "could not join client with id '{}'",
+                    id,
+                )));
+            }
+        };
+        decode_nats_data::<T>(&report.data)
     }
 
-    fn start_controller(&mut self, config: &ControllerConfig) -> Result<(), PubSubError> {
+    fn start_controller(
+        &mut self,
+        config: &ControllerConfig,
+        target: f32,
+    ) -> Result<(), PubSubError> {
         config
             .client_ids()
             .map(|id| self.client_is_active(id))
             .collect::<Result<Vec<_>, SupervisorError>>()?;
 
-        let controller = config.get_controller().map_err(|err| {
+        let controller = config.get_controller(target).map_err(|err| {
             PubSubError::Client(format!("Could not start control: {}", err.to_string()))
         })?;
         let controller_client = ControllerClient::new(
@@ -171,6 +177,13 @@ impl Supervisor {
         );
         let control_handle = thread::spawn(|| controller_client.client_loop());
         Ok(self.add_client(config.controller_id.clone(), control_handle)?)
+    }
+
+    fn switch_controller(&mut self, config: &ControllerConfig) -> Result<(), PubSubError> {
+        let contr_id = &config.controller_id;
+        let target: f32 = self.kill_client(contr_id)?;
+        println!("Keeping target: {}", target);
+        self.start_controller(config, target)
     }
 
     fn add_logger(&mut self, config: &config::Config) -> Result<(), SupervisorError> {

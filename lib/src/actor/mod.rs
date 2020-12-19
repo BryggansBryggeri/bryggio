@@ -70,7 +70,6 @@ impl<A> PubSubClient for ActorClient<A>
 where
     A: Actor,
 {
-    type Return = ();
     fn client_loop(mut self) -> Result<(), PubSubError> {
         let sub = self.subscribe(&Subject(format!("actor.{}.set_signal", self.id)))?;
         let mut state = ClientState::Active;

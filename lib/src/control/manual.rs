@@ -8,9 +8,9 @@ pub struct Controller {
 }
 
 impl Controller {
-    pub fn new() -> Controller {
+    pub fn new(target: f32) -> Controller {
         Controller {
-            target: 0.0,
+            target,
             current_signal: 0.0,
             state: control::State::Active,
         }

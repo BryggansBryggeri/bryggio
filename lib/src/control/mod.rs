@@ -47,16 +47,16 @@ impl ControllerConfig {
         std::iter::once(&self.actor_id).chain(std::iter::once(&self.sensor_id))
     }
 
-    pub fn get_controller(&self) -> Result<Box<dyn Control>, Error> {
+    pub fn get_controller(&self, target: f32) -> Result<Box<dyn Control>, Error> {
         match self.type_ {
             ControllerType::Hysteresis {
                 offset_on,
                 offset_off,
             } => {
-                let control = hysteresis::Controller::try_new(offset_on, offset_off)?;
+                let control = hysteresis::Controller::try_new(target, offset_on, offset_off)?;
                 Ok(Box::new(control))
             }
-            ControllerType::Manual { .. } => Ok(Box::new(manual::Controller::new())),
+            ControllerType::Manual { .. } => Ok(Box::new(manual::Controller::new(target))),
             _ => unimplemented!(),
         }
     }
