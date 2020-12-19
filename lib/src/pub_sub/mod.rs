@@ -56,36 +56,3 @@ pub enum PubSubError {
     #[error("Supervisor error")]
     Supervisor(#[from] SupervisorError),
 }
-
-//impl std::fmt::Display for PubSubError {
-//    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-//        match self {
-//            PubSubError::Generic(err) => write!(f, "Can you be more specfic?: {}", err),
-//            PubSubError::Subscription(msg) => {
-//                write!(f, "Error subscribing to NATS server: {}", msg)
-//            }
-//            PubSubError::Publish(msg) => write!(f, "Error publishing to NATS server: {}", msg),
-//            PubSubError::Configuration(msg) => write!(f, "Configuration error: {}", msg),
-//            PubSubError::Server(msg) => write!(f, "Server error: {}", msg),
-//            PubSubError::Client(msg) => write!(f, "Client error: {}", msg),
-//            PubSubError::MessageParse(msg) => write!(f, "Message parse error. {}", msg),
-//        }
-//    }
-//}
-//impl std_error::Error for PubSubError {
-//    fn description(&self) -> &str {
-//        match *self {
-//            PubSubError::Generic(_) => "Can you be more specfic?",
-//            PubSubError::Subscription(_) => "Subscription error",
-//            PubSubError::Publish(_) => "Publishing error",
-//            PubSubError::Configuration(_) => "Configuration error",
-//            PubSubError::Server(_) => "Server error",
-//            PubSubError::Client(_) => "Client error",
-//            PubSubError::MessageParse(_) => "Message parsing error",
-//        }
-//    }
-//
-//    fn cause(&self) -> Option<&dyn std_error::Error> {
-//        None
-//    }
-//}
