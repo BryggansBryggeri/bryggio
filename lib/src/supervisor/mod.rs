@@ -9,14 +9,12 @@ use crate::pub_sub::{
     ClientId, ClientState, PubSubClient, PubSubError, Subject,
 };
 use crate::sensor;
-use nats::{Message, Subscription};
-use serde::{de::DeserializeOwned, Deserialize};
+use crate::supervisor::pub_sub::{SupervisorSubMsg, SUPERVISOR_SUBJECT};
+use serde::de::DeserializeOwned;
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::error as std_error;
 use std::thread;
-
-pub(crate) const SUPERVISOR_TOPIC: &str = "supervisor";
+pub mod pub_sub;
 
 #[cfg(target_arch = "x86_64")]
 use crate::hardware::dummy as hardware_impl;
@@ -25,73 +23,10 @@ use crate::hardware::rbpi as hardware_impl;
 
 type Handle = thread::JoinHandle<Result<(), PubSubError>>;
 
-#[derive(Deserialize)]
-pub enum SupervisorSubMsg {
-    #[serde(rename = "start_controller")]
-    StartController { control_config: ControllerConfig },
-    #[serde(rename = "list_active_clients")]
-    ListActiveClients,
-    #[serde(rename = "switch_controller")]
-    SwitchController { control_config: ControllerConfig },
-    #[serde(rename = "kill_client")]
-    KillClient { client_id: ClientId },
-    #[serde(rename = "stop")]
-    Stop,
-}
-
-impl TryFrom<Message> for SupervisorSubMsg {
-    type Error = PubSubError;
-    fn try_from(msg: Message) -> Result<Self, PubSubError> {
-        match msg.subject.as_ref() {
-            "command.start_controller" => {
-                let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
-                Ok(SupervisorSubMsg::StartController { control_config })
-            }
-            "command.switch_controller" => {
-                let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
-                Ok(SupervisorSubMsg::SwitchController { control_config })
-            }
-            "command.list_active_clients" => Ok(SupervisorSubMsg::ListActiveClients),
-            _ => {
-                let msg: String = decode_nats_data(&msg.data)?;
-                Err(PubSubError::MessageParse(msg))
-            }
-        }
-    }
-}
-
 pub struct Supervisor {
     client: NatsClient,
     config: config::Config,
     active_clients: HashMap<ClientId, Handle>,
-}
-
-impl PubSubClient for Supervisor {
-    fn client_loop(mut self) -> Result<(), PubSubError> {
-        let subject = Subject("command.>".into());
-        let sub = self.subscribe(&subject)?;
-        let mut state = ClientState::Active;
-        while state == ClientState::Active {
-            if let Some(msg) = sub.next() {
-                state = match SupervisorSubMsg::try_from(msg) {
-                    Ok(cmd) => match self.process_command(&cmd) {
-                        Ok(state) => state,
-                        Err(err) => Supervisor::handle_err(err),
-                    },
-                    Err(err) => Supervisor::handle_err(err),
-                };
-            }
-        }
-        Ok(())
-    }
-
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
-        self.client.subscribe(subject)
-    }
-
-    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
-        self.client.publish(subject, msg)
-    }
 }
 
 impl Supervisor {
@@ -134,7 +69,7 @@ impl Supervisor {
             ))),
         }?;
         let report = match self.client.request(
-            &Subject(format!("{}.kill.{}", SUPERVISOR_TOPIC, id)),
+            &Subject(format!("{}.kill.{}", SUPERVISOR_SUBJECT, id)),
             &PubSubMsg(String::new()),
         ) {
             Ok(report) => Ok(report),
