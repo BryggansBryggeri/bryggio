@@ -38,6 +38,7 @@ pub struct ControllerConfig {
     pub(crate) controller_id: ClientId,
     pub(crate) actor_id: ClientId,
     pub(crate) sensor_id: ClientId,
+    #[serde(rename = "type")]
     type_: ControllerType,
 }
 

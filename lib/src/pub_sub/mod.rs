@@ -47,7 +47,7 @@ pub enum PubSubError {
     Publish(String),
     #[error("Config error")]
     Configuration(String),
-    #[error("Client error")]
+    #[error("Client error: {0}")]
     Client(String),
     #[error("Server error")]
     Server(String),

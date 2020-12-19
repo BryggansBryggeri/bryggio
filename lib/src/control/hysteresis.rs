@@ -15,7 +15,7 @@ impl Controller {
         if offset_off >= 0.0 {
             if offset_on > offset_off {
                 Ok(Controller {
-                    target: 0.0,
+                    target: 50.0,
                     current_signal: 0.0,
                     previous_measurement: None,
                     state: control::State::Active,
@@ -24,14 +24,14 @@ impl Controller {
                 })
             } else {
                 Err(control::Error::ParamError(format!(
-                    "offset_off must be non-negative ({} !>= 0.0)",
-                    offset_off
+                    "offset_on must be greater than the offset_off ({} !> {})",
+                    offset_on, offset_off,
                 )))
             }
         } else {
             Err(control::Error::ParamError(format!(
-                "offset_on must be greater than the offset_off ({} !> {})",
-                offset_on, offset_off,
+                "offset_off must be non-negative ({} !>= 0.0)",
+                offset_off
             )))
         }
     }

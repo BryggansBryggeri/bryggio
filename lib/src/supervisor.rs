@@ -31,8 +31,8 @@ pub enum SupervisorSubMsg {
     StartController { control_config: ControllerConfig },
     #[serde(rename = "list_active_clients")]
     ListActiveClients,
-    #[serde(rename = "toggle_controller")]
-    ToggleController { control_config: ControllerConfig },
+    #[serde(rename = "switch_controller")]
+    SwitchController { control_config: ControllerConfig },
     #[serde(rename = "kill_client")]
     KillClient { client_id: ClientId },
     #[serde(rename = "stop")]
@@ -47,12 +47,15 @@ impl TryFrom<Message> for SupervisorSubMsg {
                 let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
                 Ok(SupervisorSubMsg::StartController { control_config })
             }
-            "command.toggle_controller" => {
+            "command.switch_controller" => {
                 let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
-                Ok(SupervisorSubMsg::ToggleController { control_config })
+                Ok(SupervisorSubMsg::SwitchController { control_config })
             }
             "command.list_active_clients" => Ok(SupervisorSubMsg::ListActiveClients),
-            _ => Err(PubSubError::MessageParse(String::new())),
+            _ => {
+                let msg: String = decode_nats_data(&msg.data)?;
+                Err(PubSubError::MessageParse(msg))
+            }
         }
     }
 }
@@ -94,7 +97,7 @@ impl PubSubClient for Supervisor {
 
 impl Supervisor {
     fn handle_err(err: PubSubError) -> ClientState {
-        println!("{}", err.to_string());
+        println!("ababa{}", err.to_string());
         ClientState::Active
     }
 
@@ -110,7 +113,7 @@ impl Supervisor {
                 self.start_controller(&control_config)?;
                 Ok(ClientState::Active)
             }
-            SupervisorSubMsg::ToggleController { control_config } => {
+            SupervisorSubMsg::SwitchController { control_config } => {
                 self.switch_controller(control_config)?;
                 Ok(ClientState::Active)
             }
