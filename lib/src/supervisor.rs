@@ -64,6 +64,7 @@ pub struct Supervisor {
 }
 
 impl PubSubClient for Supervisor {
+    type Return = ();
     fn client_loop(mut self) -> Result<(), PubSubError> {
         let subject = Subject("command.>".into());
         let sub = self.subscribe(&subject)?;
@@ -110,7 +111,7 @@ impl Supervisor {
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::ToggleController { control_config } => {
-                self.toggle_controller(control_config)?;
+                self.switch_controller(control_config)?;
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::ListActiveClients => {
@@ -122,9 +123,10 @@ impl Supervisor {
         }
     }
 
-    fn toggle_controller(&mut self, config: &ControllerConfig) -> Result<(), PubSubError> {
+    fn switch_controller(&mut self, config: &ControllerConfig) -> Result<(), PubSubError> {
         let contr_id = &config.controller_id;
-        self.kill_client(contr_id)
+        self.kill_client(contr_id)?;
+        self.start_controller(config)
     }
 
     fn kill_client(&mut self, id: &ClientId) -> Result<(), PubSubError> {

@@ -68,6 +68,7 @@ impl ControllerClient {
 }
 
 impl PubSubClient for ControllerClient {
+    type Return = ();
     fn client_loop(mut self) -> Result<(), PubSubError> {
         let supervisor =
             self.subscribe(&Subject(format!("{}.kill.{}", SUPERVISOR_TOPIC, self.id)))?;

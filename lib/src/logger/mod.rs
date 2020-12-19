@@ -52,6 +52,7 @@ struct ExtComm {
 }
 
 impl PubSubClient for Log {
+    type Return = ();
     fn client_loop(self) -> Result<(), PubSubError> {
         //let sensor = Subject(format!("sensor.*.measurement"));
         //let sensor_sub = self.subscribe(&sensor)?;

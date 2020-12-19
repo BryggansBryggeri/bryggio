@@ -6,7 +6,6 @@ pub mod pub_sub;
 
 use crate::pub_sub::ClientId;
 use serde::Deserialize;
-use std::convert::TryFrom;
 use std::error as std_error;
 use std::f32;
 
