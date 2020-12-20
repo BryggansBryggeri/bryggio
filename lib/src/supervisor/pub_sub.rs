@@ -17,6 +17,8 @@ pub enum SupervisorSubMsg {
     ListActiveClients,
     #[serde(rename = "switch_controller")]
     SwitchController { control_config: ControllerConfig },
+    #[serde(rename = "set_controller_target")]
+    SetControllerTarget { id: ClientId, new_target: f32 },
     #[serde(rename = "kill_client")]
     KillClient { client_id: ClientId },
     #[serde(rename = "stop")]
@@ -32,6 +34,10 @@ impl TryFrom<Message> for SupervisorSubMsg {
                 Ok(SupervisorSubMsg::StartController { control_config })
             }
             "command.switch_controller" => {
+                let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
+                Ok(SupervisorSubMsg::SwitchController { control_config })
+            }
+            "command.set_controller_target" => {
                 let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
                 Ok(SupervisorSubMsg::SwitchController { control_config })
             }

@@ -70,7 +70,7 @@ impl ControllerClient {
 impl PubSubClient for ControllerClient {
     fn client_loop(mut self) -> Result<(), PubSubError> {
         let supervisor =
-            self.subscribe(&Subject(format!("{}.kill.{}", SUPERVISOR_SUBJECT, self.id)))?;
+            self.subscribe(&Subject(format!("{}.*.{}", SUPERVISOR_SUBJECT, self.id)))?;
         let sensor_subject = Subject(format!("sensor.{}.measurement", self.sensor_id));
         let sensor = self.subscribe(&sensor_subject)?;
         let mut state = State::Active;

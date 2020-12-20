@@ -51,6 +51,10 @@ impl Supervisor {
                 self.switch_controller(control_config)?;
                 Ok(ClientState::Active)
             }
+            SupervisorSubMsg::SetControllerTarget { id, new_target } => {
+                self.set_controller_target(id, target);
+                Ok(ClientState::Active)
+            }
             SupervisorSubMsg::ListActiveClients => {
                 self.list_active_clients();
                 Ok(ClientState::Active)
@@ -119,6 +123,16 @@ impl Supervisor {
         let target: f32 = self.kill_client(contr_id)?;
         println!("Keeping target: {}", target);
         self.start_controller(config, target)
+    }
+
+    fn set_controller_target(&self, id: ClientId, new_target: f32) -> Result<(), PubSubError> {
+        self.publish(
+            &Subject(format!(
+                "{}.set_controller_target.{}",
+                SUPERVISOR_SUBJECT, id
+            )),
+            &PubSubMsg(format!("{}", new_target)),
+        )
     }
 
     fn add_logger(&mut self, config: &config::Config) -> Result<(), SupervisorError> {
