@@ -62,10 +62,13 @@ fn local_nats_version(nats_path: &Path) -> Version {
     let output: Vec<u8> = Command::new(nats_path)
         .arg("--version")
         .output()
-        .expect(&format!(
-            "Failed to get version from '{}'",
-            nats_path.to_str().unwrap()
-        ))
+        .unwrap_or_else(|err| {
+            panic!(
+                "Failed to get version from '{}'. Err: '{}'",
+                nats_path.to_str().unwrap(),
+                err.to_string()
+            )
+        })
         .stdout;
     let output = str::from_utf8(&output).unwrap();
     let raw_string = NATS_SERVER_VERSION_PATTERN

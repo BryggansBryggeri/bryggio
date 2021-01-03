@@ -23,13 +23,13 @@ impl Log {
         }
     }
 
-    pub fn info(&self, msg: &str) {
+    pub fn _info(&self, msg: &str) {
         if self.level >= LogLevel::Info {
             self.write(msg);
         }
     }
 
-    pub fn warning(&self, msg: &str) {
+    pub fn _warning(&self, msg: &str) {
         if self.level >= LogLevel::Warning {
             self.write(msg);
         }
@@ -55,7 +55,7 @@ impl PubSubClient for Log {
     fn client_loop(self) -> Result<(), PubSubError> {
         //let sensor = Subject(format!("sensor.*.measurement"));
         //let sensor_sub = self.subscribe(&sensor)?;
-        let control_sub = self.subscribe(&Subject(format!("actor.*.set_signal")))?;
+        let _control_sub = self.subscribe(&Subject(String::from("actor.*.set_signal")))?;
         //let actor_sub = self.subscribe(&Subject(format!("actor.*.current_signal")))?;
         let ui_sub = self.subscribe(&Subject(String::from("ext_comm.>")))?;
 

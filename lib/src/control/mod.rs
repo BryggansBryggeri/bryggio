@@ -26,6 +26,7 @@ pub enum State {
 
 #[non_exhaustive]
 #[derive(Deserialize)]
+#[non_exhaustive]
 pub enum ControllerType {
     #[serde(rename = "hysteresis")]
     Hysteresis { offset_on: f32, offset_off: f32 },
@@ -57,7 +58,7 @@ impl ControllerConfig {
                 Ok(Box::new(control))
             }
             ControllerType::Manual { .. } => Ok(Box::new(manual::Controller::new(target))),
-            _ => unimplemented!(),
+            //_ => unimplemented!(),
         }
     }
 }

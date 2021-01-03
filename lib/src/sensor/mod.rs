@@ -104,7 +104,7 @@ pub enum SensorType {
 }
 
 impl SensorType {
-    pub fn from_str(sensor_type: String) -> Self {
+    pub fn get_controller(sensor_type: String) -> Self {
         sensor_type.to_ascii_lowercase();
         match sensor_type.as_ref() {
             "dummy" => Self::Dummy,

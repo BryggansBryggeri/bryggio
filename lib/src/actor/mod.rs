@@ -59,7 +59,7 @@ pub enum ActorPubMsg {
 }
 
 impl ActorPubMsg {
-    fn into_msg(&self) -> PubSubMsg {
+    fn into_msg(self) -> PubSubMsg {
         match self {
             ActorPubMsg::CurrentSignal(signal) => PubSubMsg(format!("{}", signal)),
         }

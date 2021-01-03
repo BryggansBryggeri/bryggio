@@ -1,7 +1,6 @@
 use crate::opts::Opt;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use serde_json;
 use std::io::Write;
 use url::Url;
 

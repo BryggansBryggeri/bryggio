@@ -52,7 +52,7 @@ impl Supervisor {
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::SetControllerTarget { id, new_target } => {
-                self.set_controller_target(id, target);
+                self.set_controller_target(id, *new_target)?;
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::ListActiveClients => {
@@ -125,7 +125,7 @@ impl Supervisor {
         self.start_controller(config, target)
     }
 
-    fn set_controller_target(&self, id: ClientId, new_target: f32) -> Result<(), PubSubError> {
+    fn set_controller_target(&self, id: &ClientId, new_target: f32) -> Result<(), PubSubError> {
         self.publish(
             &Subject(format!(
                 "{}.set_controller_target.{}",

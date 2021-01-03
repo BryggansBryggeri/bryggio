@@ -83,12 +83,10 @@ impl Config {
     fn parse_toml(toml_string: &str) -> Result<Config, Error> {
         match toml::de::from_str::<Config>(toml_string) {
             Ok(config) => Ok(config),
-            Err(err) => {
-                return Err(Error::Parse(format!(
-                    "could not parse config file, {}",
-                    err
-                )))
-            }
+            Err(err) => Err(Error::Parse(format!(
+                "could not parse config file, {}",
+                err
+            ))),
         }
     }
 }
