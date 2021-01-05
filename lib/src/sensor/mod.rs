@@ -2,15 +2,11 @@
 pub mod cpu_temp;
 pub mod ds18b20;
 pub mod dummy;
-use crate::pub_sub::{
-    nats_client::NatsClient, nats_client::NatsConfig, ClientId, PubSubClient, PubSubError,
-    PubSubMsg, Subject,
-};
-use nats::{Message, Subscription};
-use std::convert::TryFrom;
+mod pub_sub;
+use crate::pub_sub::PubSubError;
 use std::error as std_error;
-use std::thread::sleep;
-use std::time::Duration;
+
+pub use crate::sensor::pub_sub::{SensorClient, SensorMsg};
 
 pub trait Sensor: Send {
     // TODO: it's nice to have this return a common sensor error,
@@ -18,82 +14,6 @@ pub trait Sensor: Send {
     // This should be more generic
     fn get_measurement(&self) -> Result<f32, Error>;
     fn get_id(&self) -> String;
-}
-
-pub struct SensorClient<S>
-where
-    S: Sensor,
-{
-    id: ClientId,
-    sensor: S,
-    /// TODO: Make generic over PubSubClient
-    client: NatsClient,
-}
-
-impl<S> SensorClient<S>
-where
-    S: Sensor,
-{
-    pub fn new(id: ClientId, sensor: S, config: &NatsConfig) -> Self {
-        let client = NatsClient::try_new(config).unwrap();
-        SensorClient { id, sensor, client }
-    }
-
-    fn gen_meas_msg(&self, meas: f32) -> PubSubMsg {
-        PubSubMsg(format!("{}", meas))
-    }
-
-    fn gen_meas_subject(&self) -> Subject {
-        Subject(format!("sensor.{}.measurement", self.id))
-    }
-}
-
-#[derive(Debug)]
-pub struct SensorMsg {
-    pub meas: f32,
-}
-
-impl Into<PubSubMsg> for SensorMsg {
-    fn into(self) -> PubSubMsg {
-        PubSubMsg(self.meas.to_string())
-    }
-}
-
-impl TryFrom<Message> for SensorMsg {
-    type Error = PubSubError;
-    fn try_from(value: Message) -> Result<Self, Self::Error> {
-        let signal = String::from_utf8(value.data)
-            .map_err(|err| PubSubError::MessageParse(err.to_string()))?
-            .parse::<f32>()
-            .map_err(|err| PubSubError::MessageParse(err.to_string()))?;
-        Ok(SensorMsg { meas: signal })
-    }
-}
-
-impl<S> PubSubClient for SensorClient<S>
-where
-    S: Sensor,
-{
-    fn client_loop(self) -> Result<(), PubSubError> {
-        let supervisor = self.subscribe(&Subject(format!("command.sensor.{}", self.id)))?;
-        let meas_sub = self.gen_meas_subject();
-        loop {
-            for _msg in supervisor.try_iter() {
-                // Deal with supervisor command
-            }
-            let meas = self.sensor.get_measurement()?;
-            self.publish(&meas_sub, &self.gen_meas_msg(meas))?;
-            sleep(Duration::from_millis(500));
-        }
-    }
-
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
-        self.client.subscribe(subject)
-    }
-
-    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
-        self.client.publish(subject, msg)
-    }
 }
 
 pub enum SensorType {

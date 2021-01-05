@@ -220,8 +220,8 @@ pub enum SupervisorError {
 impl std::fmt::Display for SupervisorError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            SupervisorError::Missing(id) => write!(f, "Id '{}' is not an active client", id),
-            SupervisorError::AlreadyActive(id) => write!(f, "Id '{}' is already id", id),
+            SupervisorError::Missing(id) => write!(f, "'{}' is not an active client", id),
+            SupervisorError::AlreadyActive(id) => write!(f, "'{}' is already an active client", id),
             SupervisorError::Sensor(err) => write!(f, "Measurement error: {}", err),
             SupervisorError::ConcurrencyError(err) => write!(f, "Concurrency error: {}", err),
             SupervisorError::ThreadJoin => write!(f, "Could not join thread"),
