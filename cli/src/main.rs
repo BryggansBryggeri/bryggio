@@ -1,7 +1,6 @@
 #![forbid(unsafe_code)]
 use bryggio_cli::opts::{InstallTarget, Opt};
 use bryggio_cli::{brewery, install, rbpi};
-use bryggio_lib::config::Config;
 use log::info;
 use structopt::StructOpt;
 
@@ -21,8 +20,7 @@ fn run_subcommand(opt: Opt) {
 }
 
 fn main() {
-    println!("{}", Config::dummy().pprint());
-    // let opt = Opt::from_args();
-    // bryggio_cli::init_logging(&opt);
-    // run_subcommand(opt)
+    let opt = Opt::from_args();
+    bryggio_cli::init_logging(&opt);
+    run_subcommand(opt)
 }

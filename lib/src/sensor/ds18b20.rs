@@ -34,6 +34,12 @@ impl Ds18b20 {
     }
 }
 
+impl AsRef<str> for Ds18b20Address {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
 impl sensor::Sensor for Ds18b20 {
     fn get_measurement(&self) -> Result<f32, sensor::Error> {
         let device_path = format!("/sys/bus/w1/devices/{}/w1_slave", self.address.0);

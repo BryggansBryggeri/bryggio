@@ -53,8 +53,8 @@ struct ExtComm {
 
 impl PubSubClient for Log {
     fn client_loop(self) -> Result<(), PubSubError> {
-        //let sensor = Subject(format!("sensor.*.measurement"));
-        //let sensor_sub = self.subscribe(&sensor)?;
+        let sensor = Subject(format!("sensor.*.measurement"));
+        let sensor_sub = self.subscribe(&sensor)?;
         let _control_sub = self.subscribe(&Subject(String::from("actor.*.set_signal")))?;
         //let actor_sub = self.subscribe(&Subject(format!("actor.*.current_signal")))?;
         let ui_sub = self.subscribe(&Subject(String::from("ext_comm.>")))?;
@@ -63,9 +63,9 @@ impl PubSubClient for Log {
             //if let Some(msg) = control_sub.try_next() {
             //    println!("LOG: Control {}", msg);
             //}
-            //if let Some(msg) = sensor_sub.try_next() {
-            //    println!("LOG: Sensor {}", msg);
-            //}
+            if let Some(msg) = sensor_sub.try_next() {
+                println!("LOG: Sensor {}", msg);
+            }
             //if let Some(msg) = actor_sub.try_next() {
             //    println!("LOG: Actor {}", msg);
             //}

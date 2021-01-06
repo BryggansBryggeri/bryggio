@@ -2,7 +2,7 @@ use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
 };
-use crate::sensor::Sensor;
+use crate::sensor::{Error, Sensor};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
@@ -23,15 +23,20 @@ impl SensorClient {
         SensorClient { id, sensor, client }
     }
 
-    fn gen_meas_subject(&self) -> Subject {
+    fn meas_subject(&self) -> Subject {
         Subject(format!("sensor.{}.measurement", self.id))
+    }
+
+    fn err_subject(&self) -> Subject {
+        Subject(format!("err.sensor.{}", self.id))
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SensorMsg {
     id: ClientId,
-    pub(crate) meas: f32,
+    pub(crate) meas: Option<f32>,
+    err: Option<Error>,
 }
 
 impl Into<PubSubMsg> for SensorMsg {
@@ -51,17 +56,21 @@ impl TryFrom<Message> for SensorMsg {
 impl PubSubClient for SensorClient {
     fn client_loop(self) -> Result<(), PubSubError> {
         let supervisor = self.subscribe(&Subject(format!("command.sensor.{}", self.id)))?;
-        let meas_sub = self.gen_meas_subject();
+        let meas_sub = self.meas_subject();
         loop {
             for _msg in supervisor.try_iter() {
                 // Deal with supervisor command
             }
-            let meas = self.sensor.get_measurement()?;
+            let (meas, err) = match self.sensor.get_measurement() {
+                Ok(meas) => (Some(meas), None),
+                Err(err) => (None, Some(err)),
+            };
             self.publish(
                 &meas_sub,
                 &SensorMsg {
                     id: self.id.clone(),
                     meas,
+                    err,
                 }
                 .into(),
             )?;

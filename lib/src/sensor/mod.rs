@@ -36,19 +36,24 @@ pub struct SensorConfig {
 
 impl SensorConfig {
     pub fn get_sensor(&self) -> Result<Box<dyn Sensor>, Error> {
-        match self.type_ {
+        match &self.type_ {
             SensorType::Dummy => {
-                let control = dummy::Sensor::new(self.id.as_ref());
-                Ok(Box::new(control))
+                let sensor = dummy::Sensor::new(self.id.as_ref());
+                Ok(Box::new(sensor))
             }
-            _ => {
-                todo!()
+            SensorType::Dsb(addr) => {
+                let sensor = ds18b20::Ds18b20::try_new(self.id.as_ref(), addr.as_ref())?;
+                Ok(Box::new(sensor))
+            }
+            SensorType::RbpiCPU => {
+                let sensor = cpu_temp::CpuTemp::new(self.id.as_ref());
+                Ok(Box::new(sensor))
             }
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum Error {
     InvalidAddressStart(String),
     InvalidAddressLength(usize),
@@ -72,7 +77,7 @@ impl std::fmt::Display for Error {
                 write!(f, "Address must start with 28, got {}", address)
             }
             Error::InvalidAddressLength(address_length) => {
-                write!(f, "Address length must be 13, got {}", address_length)
+                write!(f, "Address length must be 15, got {}", address_length)
             }
             Error::FileReadError(io_message) => {
                 write!(f, "Unable to read from file: {}", io_message)
