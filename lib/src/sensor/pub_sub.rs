@@ -26,10 +26,6 @@ impl SensorClient {
     fn meas_subject(&self) -> Subject {
         Subject(format!("sensor.{}.measurement", self.id))
     }
-
-    fn err_subject(&self) -> Subject {
-        Subject(format!("err.sensor.{}", self.id))
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
