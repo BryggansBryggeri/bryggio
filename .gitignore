@@ -12,7 +12,7 @@ tags.temp
 # ARCHIVES
 *.zip
 
-bryggio.toml
+bryggio.json
 nats-config.yaml
 !sample-*.yaml
-!sample-*.toml
+!sample-*.json

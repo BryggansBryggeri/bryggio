@@ -17,6 +17,18 @@ pub struct NatsConfig {
     pass: String,
 }
 
+impl NatsConfig {
+    pub(crate) fn dummy() -> Self {
+        NatsConfig {
+            bin_path: PathBuf::new(),
+            config: PathBuf::new(),
+            server: String::new(),
+            user: String::new(),
+            pass: String::new(),
+        }
+    }
+}
+
 pub(crate) fn decode_nats_data<T: DeserializeOwned>(data: &[u8]) -> Result<T, PubSubError> {
     let json_string = from_utf8(&data).map_err(|err| {
         PubSubError::MessageParse(format!(

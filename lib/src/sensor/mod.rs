@@ -3,7 +3,8 @@ pub mod cpu_temp;
 pub mod ds18b20;
 pub mod dummy;
 mod pub_sub;
-use crate::pub_sub::PubSubError;
+use crate::pub_sub::{ClientId, PubSubError};
+use serde::{Deserialize, Serialize};
 use std::error as std_error;
 
 pub use crate::sensor::pub_sub::{SensorClient, SensorMsg};
@@ -16,21 +17,33 @@ pub trait Sensor: Send {
     fn get_id(&self) -> String;
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub enum SensorType {
+    #[serde(rename = "dummy")]
     Dummy,
-    DSB,
+    #[serde(rename = "dsb")]
+    Dsb(ds18b20::Ds18b20Address),
+    #[serde(rename = "rbpi_cpu")]
     RbpiCPU,
-    UnknownSensor,
 }
 
-impl SensorType {
-    pub fn get_controller(sensor_type: String) -> Self {
-        sensor_type.to_ascii_lowercase();
-        match sensor_type.as_ref() {
-            "dummy" => Self::Dummy,
-            "dsb" => Self::DSB,
-            "rbpicpu" => Self::RbpiCPU,
-            _ => Self::UnknownSensor,
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SensorConfig {
+    pub id: ClientId,
+    #[serde(rename = "type")]
+    pub(crate) type_: SensorType,
+}
+
+impl SensorConfig {
+    pub fn get_sensor(&self) -> Result<Box<dyn Sensor>, Error> {
+        match self.type_ {
+            SensorType::Dummy => {
+                let control = dummy::Sensor::new(self.id.as_ref());
+                Ok(Box::new(control))
+            }
+            _ => {
+                todo!()
+            }
         }
     }
 }
@@ -88,5 +101,21 @@ impl std_error::Error for Error {
 
     fn cause(&self) -> Option<&dyn std_error::Error> {
         None
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_config_parse_dummy() {
+        let config: SensorType = serde_json::from_str(
+            r#"
+            "dummy"
+        "#,
+        )
+        .unwrap();
+        assert!(config == SensorType::Dummy);
     }
 }

@@ -1,5 +1,8 @@
 use crate::logger::LogLevel;
 use crate::pub_sub::nats_client::NatsConfig;
+use crate::pub_sub::ClientId;
+use crate::sensor::ds18b20::Ds18b20Address;
+use crate::sensor::{SensorConfig, SensorType};
 use serde::{Deserialize, Serialize};
 use std::error as std_error;
 use std::fs;
@@ -29,10 +32,10 @@ impl Default for General {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Hardware {
-    pub sensors: Vec<Sensor>,
     pub actors: Vec<Actor>,
+    pub sensors: Vec<SensorConfig>,
 }
 
 // TODO: Implement Deserialize for OneWireAddress
@@ -50,17 +53,37 @@ pub struct Actor {
 }
 
 impl Config {
+    pub fn dummy() -> Config {
+        Config {
+            general: General::default(),
+            nats: NatsConfig::dummy(),
+            hardware: Hardware {
+                sensors: vec![SensorConfig {
+                    id: ClientId("dummy".into()),
+                    type_: SensorType::Dsb(Ds18b20Address::dummy()),
+                }],
+                actors: Vec::new(),
+            },
+        }
+    }
+
+    pub fn pprint(&self) -> String {
+        //toml::ser::to_string_pretty(self).unwrap()
+        serde_json::to_string_pretty(self).unwrap()
+    }
+
     pub fn try_new(config_file: &Path) -> Result<Config, Error> {
         let mut f = match fs::File::open(config_file) {
             Ok(f) => f,
             Err(err) => return Err(Error::IO(format!("Error opening file, {}", err))),
         };
-        let mut toml_config = String::new();
-        match f.read_to_string(&mut toml_config) {
+        let mut config_string = String::new();
+        match f.read_to_string(&mut config_string) {
             Ok(_) => {}
             Err(err) => return Err(Error::IO(format!("Error reading file to string, {}", err))),
         };
-        let conf_presumptive = Config::parse_toml(&toml_config)?;
+        let conf_presumptive =
+            serde_json::from_str(&config_string).map_err(|err| Error::Parse(err.to_string()))?;
         Config::validate(conf_presumptive)
     }
 
@@ -78,16 +101,6 @@ impl Config {
             )));
         };
         Ok(pres)
-    }
-
-    fn parse_toml(toml_string: &str) -> Result<Config, Error> {
-        match toml::de::from_str::<Config>(toml_string) {
-            Ok(config) => Ok(config),
-            Err(err) => Err(Error::Parse(format!(
-                "could not parse config file, {}",
-                err
-            ))),
-        }
     }
 }
 
@@ -132,12 +145,11 @@ mod tests {
             [general]
             brewery_name = "BRYGGANS BRYGGERI BÄRS BB"
             log_level = "Debug"
-            [sensors]
-            id = "Mash tun"
-            address = "random address"
             [hardware]
-            sensors = []
-            actors = []
+                actors = []
+                [[hardware.sensors]]
+                    id = "mash"
+                    type = "dummy"
             [nats]
             bin_path="/some/path/to/bin"
             config="/some/path/to/config"

@@ -94,58 +94,58 @@ mod tests {
 
     #[test]
     fn test_constructor_valid_args() {
-        let controller = Controller::try_new(2.0, 1.0);
+        let controller = Controller::try_new(0.0, 2.0, 1.0);
         assert!(controller.is_ok())
     }
 
     #[test]
     fn test_constructor_neg_offset_off() {
-        let controller = Controller::try_new(-1.5, 0.5);
+        let controller = Controller::try_new(0.0, -1.5, 0.5);
         assert!(controller.is_err())
     }
 
     #[test]
     fn test_constructor_offset_off_lt_offset_on() {
-        let controller = Controller::try_new(3.0, 4.0);
+        let controller = Controller::try_new(0.0, 3.0, 4.0);
         assert!(controller.is_err())
     }
 
     #[test]
     fn test_constructor_active_on_init() {
-        let controller = Controller::try_new(2.0, 1.0).unwrap();
+        let controller = Controller::try_new(0.0, 2.0, 1.0).unwrap();
         assert_eq!(controller.get_state(), control::State::Active);
     }
 
     #[test]
     fn test_control_under() {
-        let mut controller = Controller::try_new(2.0, 1.0).unwrap();
+        let mut controller = Controller::try_new(0.0, 2.0, 1.0).unwrap();
         controller.set_target(100.0);
-        assert_approx_eq!(controller.calculate_signal(Some(90.0)), 100.0);
+        assert_approx_eq!(controller.calculate_signal(Some(90.0)), 1.0);
     }
 
     #[test]
     fn test_control_ower() {
-        let mut controller = Controller::try_new(2.0, 1.0).unwrap();
+        let mut controller = Controller::try_new(0.0, 2.0, 1.0).unwrap();
         controller.set_target(100.0);
         assert_approx_eq!(controller.calculate_signal(Some(110.0)), 0.0);
     }
 
     #[test]
     fn test_control_ower_offset_on() {
-        let mut controller = Controller::try_new(2.0, 1.0).unwrap();
+        let mut controller = Controller::try_new(0.0, 2.0, 1.0).unwrap();
         controller.set_target(100.0);
         assert_approx_eq!(controller.calculate_signal(Some(98.5)), 0.0);
     }
 
     #[test]
     fn test_control_hysteresis_logic() {
-        let mut controller = Controller::try_new(2.0, 1.0).unwrap();
+        let mut controller = Controller::try_new(0.0, 2.0, 1.0).unwrap();
         controller.set_target(100.0);
 
         // Make sure controller.current_signal is 100.0
-        assert_approx_eq!(controller.calculate_signal(Some(30.0)), 100.0);
+        assert_approx_eq!(controller.calculate_signal(Some(30.0)), 1.0);
         // Make sure controller.current_signal remains
-        assert_approx_eq!(controller.calculate_signal(Some(98.5)), 100.0);
+        assert_approx_eq!(controller.calculate_signal(Some(98.5)), 1.0);
         // Make sure controller.current_signal is switched to 0.0
         assert_approx_eq!(controller.calculate_signal(Some(99.5)), 0.0);
         // Make sure controller.current_signal remains

@@ -8,7 +8,7 @@ use crate::pub_sub::{
     nats_client::{decode_nats_data, NatsClient, NatsConfig},
     ClientId, ClientState, PubSubClient, PubSubError, Subject,
 };
-use crate::sensor;
+use crate::sensor::{SensorClient, SensorConfig};
 use crate::supervisor::pub_sub::{SupervisorSubMsg, SUPERVISOR_SUBJECT};
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
@@ -143,16 +143,18 @@ impl Supervisor {
 
     fn add_sensor(
         &mut self,
-        sensor_id: ClientId,
+        sensor_config: SensorConfig,
         config: &NatsConfig,
     ) -> Result<(), SupervisorError> {
-        let sensor = sensor::SensorClient::new(
-            sensor_id.clone(),
-            sensor::dummy::Sensor::new(&String::from(sensor_id.clone())),
+        let sensor = SensorClient::new(
+            sensor_config.id.clone(),
+            sensor_config
+                .get_sensor()
+                .map_err(|err| SupervisorError::Sensor(err.to_string()))?,
             config,
         );
         let handle = thread::spawn(|| sensor.client_loop());
-        self.add_client(sensor_id, handle)
+        self.add_client(sensor_config.id, handle)
     }
 
     fn add_actor(
@@ -189,8 +191,9 @@ impl Supervisor {
 
         supervisor.add_logger(&config)?;
 
-        let dummy_sensor = ClientId("dummy_sensor".into());
-        supervisor.add_sensor(dummy_sensor, &config.nats)?;
+        for sensor_config in config.hardware.sensors {
+            supervisor.add_sensor(sensor_config, &config.nats)?;
+        }
 
         let dummy_actor = ClientId("dummy_actor".into());
         supervisor.add_actor(dummy_actor, &config.nats)?;

@@ -10,21 +10,15 @@ use std::convert::TryFrom;
 use std::thread::sleep;
 use std::time::Duration;
 
-pub struct SensorClient<S>
-where
-    S: Sensor,
-{
+pub struct SensorClient {
     id: ClientId,
-    sensor: S,
+    sensor: Box<dyn Sensor>,
     /// TODO: Make generic over PubSubClient
     client: NatsClient,
 }
 
-impl<S> SensorClient<S>
-where
-    S: Sensor,
-{
-    pub fn new(id: ClientId, sensor: S, config: &NatsConfig) -> Self {
+impl SensorClient {
+    pub fn new(id: ClientId, sensor: Box<dyn Sensor>, config: &NatsConfig) -> Self {
         let client = NatsClient::try_new(config).unwrap();
         SensorClient { id, sensor, client }
     }
@@ -54,10 +48,7 @@ impl TryFrom<Message> for SensorMsg {
     }
 }
 
-impl<S> PubSubClient for SensorClient<S>
-where
-    S: Sensor,
-{
+impl PubSubClient for SensorClient {
     fn client_loop(self) -> Result<(), PubSubError> {
         let supervisor = self.subscribe(&Subject(format!("command.sensor.{}", self.id)))?;
         let meas_sub = self.gen_meas_subject();

@@ -20,6 +20,12 @@ pub trait PubSubClient {
 #[derive(From, Serialize, Deserialize, Display, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ClientId(pub String);
 
+impl AsRef<str> for ClientId {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
 impl From<ClientId> for String {
     fn from(x: ClientId) -> Self {
         x.0

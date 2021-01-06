@@ -50,7 +50,9 @@ impl sensor::Sensor for Ds18b20 {
         self.id.clone()
     }
 }
-#[derive(Deserialize, Serialize, Debug)]
+
+// TODO: Fallible serde
+#[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct Ds18b20Address(String);
 
 impl Ds18b20Address {
@@ -69,6 +71,10 @@ impl Ds18b20Address {
             _ => return Err(sensor::Error::InvalidAddressLength(address.len())),
         }
         Ok(())
+    }
+
+    pub fn dummy() -> Self {
+        Ds18b20Address(String::from("28-dummy02230ff"))
     }
 }
 
