@@ -15,7 +15,7 @@ impl Controller {
         target: f32,
         offset_on: f32,
         offset_off: f32,
-    ) -> Result<Controller, control::Error> {
+    ) -> Result<Controller, control::ControllerError> {
         if offset_off >= 0.0 {
             if offset_on > offset_off {
                 Ok(Controller {
@@ -27,13 +27,13 @@ impl Controller {
                     offset_off,
                 })
             } else {
-                Err(control::Error::ParamError(format!(
+                Err(control::ControllerError::ParamError(format!(
                     "offset_on must be greater than the offset_off ({} !> {})",
                     offset_on, offset_off,
                 )))
             }
         } else {
-            Err(control::Error::ParamError(format!(
+            Err(control::ControllerError::ParamError(format!(
                 "offset_off must be non-negative ({} !>= 0.0)",
                 offset_off
             )))

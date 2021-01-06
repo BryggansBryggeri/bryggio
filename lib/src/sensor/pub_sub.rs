@@ -2,7 +2,7 @@ use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
 };
-use crate::sensor::{Error, Sensor};
+use crate::sensor::{Sensor, SensorError};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
@@ -13,7 +13,6 @@ use std::time::Duration;
 pub struct SensorClient {
     id: ClientId,
     sensor: Box<dyn Sensor>,
-    /// TODO: Make generic over PubSubClient
     client: NatsClient,
 }
 
@@ -32,7 +31,7 @@ impl SensorClient {
 pub struct SensorMsg {
     id: ClientId,
     pub(crate) meas: Option<f32>,
-    err: Option<Error>,
+    err: Option<SensorError>,
 }
 
 impl Into<PubSubMsg> for SensorMsg {
@@ -70,7 +69,7 @@ impl PubSubClient for SensorClient {
                 }
                 .into(),
             )?;
-            sleep(Duration::from_millis(500));
+            sleep(Duration::from_millis(2000));
         }
     }
 

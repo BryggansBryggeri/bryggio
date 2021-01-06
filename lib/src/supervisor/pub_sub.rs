@@ -62,7 +62,7 @@ impl PubSubClient for Supervisor {
                         Ok(state) => state,
                         Err(err) => Supervisor::handle_err(err),
                     },
-                    Err(err) => Supervisor::handle_err(err),
+                    Err(err) => Supervisor::handle_err(err.into()),
                 };
             }
         }

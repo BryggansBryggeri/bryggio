@@ -1,3 +1,4 @@
+use crate::actor::ActorConfig;
 use crate::logger::LogLevel;
 use crate::pub_sub::nats_client::NatsConfig;
 use crate::pub_sub::ClientId;
@@ -34,7 +35,7 @@ impl Default for General {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Hardware {
-    pub actors: Vec<Actor>,
+    pub actors: Vec<ActorConfig>,
     pub sensors: Vec<SensorConfig>,
 }
 
@@ -140,23 +141,44 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let _config: Config = Config::parse_toml(
+        let _config: Config = serde_json::from_str(
             r#"
-            [general]
-            brewery_name = "BRYGGANS BRYGGERI BÄRS BB"
-            log_level = "Debug"
-            [hardware]
-                actors = []
-                [[hardware.sensors]]
-                    id = "mash"
-                    type = "dummy"
-            [nats]
-            bin_path="/some/path/to/bin"
-            config="/some/path/to/config"
-            server="localhost"
-            user="jackonelli"
-            pass="very_secret"
-        "#,
+            {
+              "general": {
+                "brewery_name": "BRYGGANS BRYGGERI BÄRS BB",
+                "log_level": "Debug"
+              },
+              "hardware": {
+                "actors": [
+                  {
+                    "id": "mash",
+                    "type": {"simple_gpio": 0}
+                  },
+                  {
+                    "id": "boil",
+                    "type": {"simple_gpio": 1}
+                  }
+                ]
+              ,
+                "sensors": [
+                  {
+                    "id": "mash",
+                    "type": "dummy"
+                  },
+                  {
+                    "id": "boil",
+                    "type": {"dsb": "28-dummy0000000"}
+                  }
+                ]
+              },
+              "nats": {
+                "bin_path": "target/nats-server",
+                "config": "./nats-config.yaml",
+                "server": "localhost",
+                "user": "ababa",
+                "pass": "babab"
+              }
+            }"#,
         )
         .unwrap();
     }

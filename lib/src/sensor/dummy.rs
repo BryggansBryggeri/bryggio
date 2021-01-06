@@ -18,12 +18,12 @@ impl Sensor {
 }
 
 impl sensor::Sensor for Sensor {
-    fn get_measurement(&self) -> Result<f32, sensor::Error> {
+    fn get_measurement(&self) -> Result<f32, sensor::SensorError> {
         let true_measurement = self.prediction;
         let normal = match Normal::new(0.0, self.noise_level) {
             Ok(normal) => normal,
             // TODO: Hardcoded error string. Normal::Error cannot be converted to string
-            Err(_) => return Err(sensor::Error::InvalidParam(String::from(""))),
+            Err(_) => return Err(sensor::SensorError::InvalidParam(String::from(""))),
         };
         let measurement = true_measurement + normal.sample(&mut rand::thread_rng());
         Ok(measurement)

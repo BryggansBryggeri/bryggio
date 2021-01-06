@@ -1,13 +1,14 @@
+use crate::pub_sub::ClientId;
+use serde::Deserialize;
+use std::f32;
+use thiserror::Error;
+
 pub mod duty_cycle;
 pub mod hysteresis;
 pub mod manual;
 pub mod pid;
 pub mod pub_sub;
-
-use crate::pub_sub::ClientId;
-use serde::Deserialize;
-use std::error as std_error;
-use std::f32;
+pub use pub_sub::ControllerClient;
 
 pub trait Control: Send {
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32;
@@ -48,7 +49,7 @@ impl ControllerConfig {
         std::iter::once(&self.actor_id).chain(std::iter::once(&self.sensor_id))
     }
 
-    pub fn get_controller(&self, target: f32) -> Result<Box<dyn Control>, Error> {
+    pub fn get_controller(&self, target: f32) -> Result<Box<dyn Control>, ControllerError> {
         match self.type_ {
             ControllerType::Hysteresis {
                 offset_on,
@@ -63,31 +64,10 @@ impl ControllerConfig {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Error {
+#[derive(Error, Debug, Clone, PartialEq)]
+pub enum ControllerError {
+    #[error("Param. error: {0}")]
     ParamError(String),
-    ConversionError(String),
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Error::ParamError(param) => write!(f, "Invalid param: {}", param),
-            Error::ConversionError(type_string) => {
-                write!(f, "Unable to parse '{}' to ControllerType", type_string)
-            }
-        }
-    }
-}
-impl std_error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::ParamError(_) => "Invalid param",
-            Error::ConversionError(_) => "Conversion error",
-        }
-    }
-
-    fn cause(&self) -> Option<&dyn std_error::Error> {
-        None
-    }
+    #[error("Unknown type: {0}")]
+    Type(String),
 }

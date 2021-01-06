@@ -27,7 +27,7 @@ lazy_static! {
 }
 
 impl Ds18b20 {
-    pub fn try_new(id: &str, address: &str) -> Result<Ds18b20, sensor::Error> {
+    pub fn try_new(id: &str, address: &str) -> Result<Ds18b20, sensor::SensorError> {
         let address = Ds18b20Address::try_new(address)?;
         let id = String::from(id);
         Ok(Ds18b20 { id, address })
@@ -41,12 +41,12 @@ impl AsRef<str> for Ds18b20Address {
 }
 
 impl sensor::Sensor for Ds18b20 {
-    fn get_measurement(&self) -> Result<f32, sensor::Error> {
+    fn get_measurement(&self) -> Result<f32, sensor::SensorError> {
         let device_path = format!("/sys/bus/w1/devices/{}/w1_slave", self.address.0);
         let raw_read = match utils::read_file_to_string(&device_path) {
             Ok(raw_read) => raw_read,
             Err(err) => {
-                return Err(sensor::Error::FileReadError(err.to_string()));
+                return Err(sensor::SensorError::Read(err.to_string()));
             }
         };
         parse_temp_measurement(&raw_read)
@@ -62,19 +62,23 @@ impl sensor::Sensor for Ds18b20 {
 pub struct Ds18b20Address(String);
 
 impl Ds18b20Address {
-    pub fn try_new(address: &str) -> Result<Ds18b20Address, sensor::Error> {
+    pub fn try_new(address: &str) -> Result<Ds18b20Address, sensor::SensorError> {
         Ds18b20Address::verify(address)?;
         Ok(Ds18b20Address(String::from(address)))
     }
 
-    pub fn verify(address: &str) -> Result<(), sensor::Error> {
+    pub fn verify(address: &str) -> Result<(), sensor::SensorError> {
         match &address[0..2] {
             "28" => {}
-            _ => return Err(sensor::Error::InvalidAddressStart(String::from(address))),
+            _ => {
+                return Err(sensor::SensorError::InvalidAddressStart(String::from(
+                    address,
+                )))
+            }
         }
         match address.len() {
             15 => {}
-            _ => return Err(sensor::Error::InvalidAddressLength(address.len())),
+            _ => return Err(sensor::SensorError::InvalidAddressLength(address.len())),
         }
         Ok(())
     }
@@ -90,11 +94,11 @@ impl fmt::Display for Ds18b20Address {
     }
 }
 
-fn parse_temp_measurement(raw_read: &str) -> Result<f32, sensor::Error> {
+fn parse_temp_measurement(raw_read: &str) -> Result<f32, sensor::SensorError> {
     let mat = match TEMP_PATTERN.captures(raw_read) {
         Some(mat) => mat,
         None => {
-            return Err(sensor::Error::FileParseError(format!(
+            return Err(sensor::SensorError::Parse(format!(
                 "No match in string '{}'",
                 String::from(raw_read)
             )));
@@ -104,7 +108,7 @@ fn parse_temp_measurement(raw_read: &str) -> Result<f32, sensor::Error> {
         Some(mat) => mat.as_str(),
         None => {
             // Can this even happen? If match on whole regex above, then this must exist no?
-            return Err(sensor::Error::FileParseError(format!(
+            return Err(sensor::SensorError::Parse(format!(
                 "No valid temp match in string '{}'",
                 String::from(raw_read)
             )));
@@ -113,7 +117,7 @@ fn parse_temp_measurement(raw_read: &str) -> Result<f32, sensor::Error> {
     let value: f32 = match value_raw.parse() {
         Ok(value) => value,
         Err(err) => {
-            return Err(sensor::Error::FileParseError(format!(
+            return Err(sensor::SensorError::Parse(format!(
                 "Could not parse string '{}' to f32. Err: {}",
                 String::from(raw_read),
                 err.to_string()
@@ -123,12 +127,12 @@ fn parse_temp_measurement(raw_read: &str) -> Result<f32, sensor::Error> {
     Ok(value / 1000.0)
 }
 
-pub fn list_available() -> Result<Vec<Ds18b20Address>, sensor::Error> {
+pub fn list_available() -> Result<Vec<Ds18b20Address>, sensor::SensorError> {
     println!("Finding sensors");
     let device_path = path::Path::new(DS18_DIR);
     if !device_path.exists() {
         // TODO: Better error
-        return Err(sensor::Error::FileReadError(format!(
+        return Err(sensor::SensorError::Read(format!(
             "DSB path does not exist: '{}'",
             DS18_DIR
         )));
@@ -137,7 +141,7 @@ pub fn list_available() -> Result<Vec<Ds18b20Address>, sensor::Error> {
     let files = match fs::read_dir(device_path) {
         Ok(files) => files,
         Err(_error) => {
-            return Err(sensor::Error::FileReadError(format!(
+            return Err(sensor::SensorError::Read(format!(
                 "Unable to list DSB files {}.",
                 DS18_DIR
             )))

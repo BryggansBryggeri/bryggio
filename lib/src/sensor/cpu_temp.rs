@@ -1,4 +1,4 @@
-use crate::sensor::{Error, Sensor};
+use crate::sensor::{Sensor, SensorError};
 use crate::utils;
 
 #[derive(Debug)]
@@ -15,11 +15,11 @@ impl CpuTemp {
     /// Parse CPU temperature from file
     ///
     /// The value is given in millidegrees C, but parsed to C.
-    fn parse_temp_measurement(&self, raw_read: &str) -> Result<f32, Error> {
+    fn parse_temp_measurement(&self, raw_read: &str) -> Result<f32, SensorError> {
         let value: f32 = match raw_read.trim().parse() {
             Ok(value) => value,
             Err(err) => {
-                return Err(Error::FileParseError(format!(
+                return Err(SensorError::Parse(format!(
                     "Could not parse string '{}' to f32. Err: {}",
                     String::from(raw_read),
                     err.to_string()
@@ -31,12 +31,12 @@ impl CpuTemp {
 }
 
 impl Sensor for CpuTemp {
-    fn get_measurement(&self) -> Result<f32, Error> {
+    fn get_measurement(&self) -> Result<f32, SensorError> {
         let device_path = "/sys/class/thermal/thermal_zone0/temp";
         let raw_read = match utils::read_file_to_string(&device_path) {
             Ok(raw_read) => raw_read,
             Err(err) => {
-                return Err(Error::FileReadError(format!(
+                return Err(SensorError::Read(format!(
                     "'{}'. {}",
                     device_path,
                     err.to_string()
@@ -54,12 +54,13 @@ impl Sensor for CpuTemp {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use assert_approx_eq::assert_approx_eq;
 
     #[test]
     fn test_address_correct() {
         let temp_string = String::from("50000");
         let mock_sensor = CpuTemp::new("test");
-        assert_eq!(
+        assert_approx_eq!(
             mock_sensor.parse_temp_measurement(&temp_string).unwrap(),
             50.0
         );

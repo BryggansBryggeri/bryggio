@@ -58,6 +58,4 @@ pub enum PubSubError {
     Server(String),
     #[error("Message parsing erro: {0}r")]
     MessageParse(String),
-    #[error("Supervisor error: {0}")]
-    Supervisor(#[from] SupervisorError),
 }
