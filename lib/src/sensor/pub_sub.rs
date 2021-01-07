@@ -8,7 +8,20 @@ use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 use std::convert::TryFrom;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Ord, PartialOrd, PartialEq, Eq)]
+pub struct TimeStamp(pub(crate) u128);
+
+impl TimeStamp {
+    fn now() -> Self {
+        let start = SystemTime::now();
+        let since_the_epoch = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards");
+        TimeStamp(since_the_epoch.as_millis())
+    }
+}
 
 pub struct SensorClient {
     id: ClientId,
@@ -30,6 +43,7 @@ impl SensorClient {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SensorMsg {
     id: ClientId,
+    timestamp: TimeStamp,
     pub(crate) meas: Option<f32>,
     err: Option<SensorError>,
 }
@@ -60,10 +74,12 @@ impl PubSubClient for SensorClient {
                 Ok(meas) => (Some(meas), None),
                 Err(err) => (None, Some(err)),
             };
+            let timestamp = TimeStamp::now();
             self.publish(
                 &meas_sub,
                 &SensorMsg {
                     id: self.id.clone(),
+                    timestamp,
                     meas,
                     err,
                 }

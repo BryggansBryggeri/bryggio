@@ -50,12 +50,6 @@ impl Supervisor {
         Ok(supervisor)
     }
 
-    fn list_active_clients(&self) {
-        println!("Active clients:");
-        for cl in self.active_clients.keys() {
-            println!("{}", cl);
-        }
-    }
     fn process_command(&mut self, cmd: &SupervisorSubMsg) -> Result<ClientState, SupervisorError> {
         match cmd {
             SupervisorSubMsg::StartController { control_config } => {
@@ -77,24 +71,6 @@ impl Supervisor {
             SupervisorSubMsg::KillClient { client_id: _ } => Ok(ClientState::Active),
             SupervisorSubMsg::Stop => Ok(ClientState::Active),
         }
-    }
-
-    fn kill_client<T: DeserializeOwned>(&mut self, id: &ClientId) -> Result<T, SupervisorError> {
-        let handle = match self.active_clients.remove(id) {
-            Some(contr) => Ok(contr),
-            None => Err(SupervisorError::Missing(id.clone())),
-        }?;
-        let report = self.client.request(
-            &Subject(format!("{}.kill.{}", SUPERVISOR_SUBJECT, id)),
-            &PubSubMsg(String::new()),
-        )?;
-        match handle.join() {
-            Ok(_) => {}
-            Err(_) => {
-                return Err(SupervisorError::ThreadJoin(id.clone()));
-            }
-        };
-        Ok(decode_nats_data::<T>(&report.data)?)
     }
 
     fn start_controller(
@@ -137,6 +113,31 @@ impl Supervisor {
         )?)
     }
 
+    fn list_active_clients(&self) {
+        println!("Active clients:");
+        for cl in self.active_clients.keys() {
+            println!("{}", cl);
+        }
+    }
+
+    fn kill_client<T: DeserializeOwned>(&mut self, id: &ClientId) -> Result<T, SupervisorError> {
+        let handle = match self.active_clients.remove(id) {
+            Some(contr) => Ok(contr),
+            None => Err(SupervisorError::Missing(id.clone())),
+        }?;
+        let report = self.client.request(
+            &Subject(format!("{}.kill.{}", SUPERVISOR_SUBJECT, id)),
+            &PubSubMsg(String::new()),
+        )?;
+        match handle.join() {
+            Ok(_) => {}
+            Err(_) => {
+                return Err(SupervisorError::ThreadJoin(id.clone()));
+            }
+        };
+        Ok(decode_nats_data::<T>(&report.data)?)
+    }
+
     fn add_logger(&mut self, config: &config::Config) -> Result<(), SupervisorError> {
         let log = Log::new(&config.nats, config.general.log_level);
         let log_handle = thread::spawn(|| log.client_loop().map_err(|err| err.into()));
@@ -177,11 +178,12 @@ impl Supervisor {
     }
 
     fn add_client(&mut self, new_client: ClientId, handle: Handle) -> Result<(), SupervisorError> {
-        if self.active_clients.contains_key(&new_client) {
-            Err(SupervisorError::AlreadyActive(new_client))
-        } else {
-            self.active_clients.insert(new_client, handle);
-            Ok(())
+        match self.active_clients.get(&new_client) {
+            Some(_) => Err(SupervisorError::AlreadyActive(new_client)),
+            None => {
+                self.active_clients.insert(new_client, handle);
+                Ok(())
+            }
         }
     }
 
