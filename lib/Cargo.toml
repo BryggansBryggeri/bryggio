@@ -24,3 +24,4 @@ linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal
 
 [dev-dependencies]
 assert_approx_eq = "1.1.0"
+chrono = ">=0.4"

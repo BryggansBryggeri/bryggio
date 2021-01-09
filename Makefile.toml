@@ -8,7 +8,7 @@ args = ["doc", "--no-deps"]
 [tasks.rbpi-build]
 description = "Build all targets for RbPi (armv7-target)"
 command = "cargo"
-args = ["build", "--target=armv7-unknown-linux-gnueabihf"]
+args = ["build", "--release", "--target=armv7-unknown-linux-gnueabihf"]
 
 [tasks.build-nats]
 description = "Build nats-server"

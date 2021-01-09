@@ -146,7 +146,7 @@ mod tests {
             {
               "general": {
                 "brewery_name": "BRYGGANS BRYGGERI BÄRS BB",
-                "log_level": "Debug"
+                "log_level": "debug"
               },
               "hardware": {
                 "actors": [

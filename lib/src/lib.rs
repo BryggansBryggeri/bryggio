@@ -38,4 +38,5 @@ mod logger;
 pub mod pub_sub;
 pub mod sensor;
 pub mod supervisor;
+mod time;
 pub mod utils;

@@ -2,10 +2,45 @@ use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, PubSubClient,
     PubSubError, PubSubMsg, Subject,
 };
+use derive_more::{Display, From};
 use nats::Subscription;
 use serde::{Deserialize, Serialize};
-use std::thread::sleep;
-use std::time::Duration;
+use std::convert::TryFrom;
+
+pub fn debug<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
+    log(client, msg, sub_subject, LogLevel::Debug);
+}
+
+pub fn info<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
+    log(client, msg, sub_subject, LogLevel::Info);
+}
+
+pub fn warning<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
+    log(client, msg, sub_subject, LogLevel::Warning);
+}
+
+pub fn error<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
+    log(client, msg, sub_subject, LogLevel::Error);
+}
+
+fn log<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str, level: LogLevel) {
+    let msg: LogMsg = msg.into();
+    let subj = Subject(format!("{}.{}", level.main_subject(), sub_subject));
+
+    let msg = match serde_json::to_string(&msg) {
+        Ok(msg) => PubSubMsg(msg),
+        Err(err) => {
+            println!("Log error: {}", err.to_string());
+            return;
+        }
+    };
+    //.map_err(|err| PubSubError::MessageParse(err.to_string()))?,
+    match client.publish(&subj, &msg) {
+        Ok(_) => {}
+        Err(err) => println!("Log error: {}", err.to_string()),
+    };
+}
+
 pub struct Log {
     level: LogLevel,
     client: NatsClient,
@@ -17,31 +52,39 @@ impl Log {
         Log { level, client }
     }
 
+    pub fn log(&self, msg: &str, level: LogLevel) {
+        match level {
+            LogLevel::Debug => self.debug(msg),
+            LogLevel::Info => self.info(msg),
+            LogLevel::Warning => self.warning(msg),
+            LogLevel::Error => self.error(msg),
+        }
+    }
+
     pub fn debug(&self, msg: &str) {
-        if self.level >= LogLevel::Debug {
-            self.write(msg);
+        if self.level <= LogLevel::Debug {
+            self.write(msg, LogLevel::Debug);
         }
     }
 
-    pub fn _info(&self, msg: &str) {
-        if self.level >= LogLevel::Info {
-            self.write(msg);
+    pub fn info(&self, msg: &str) {
+        if self.level <= LogLevel::Info {
+            self.write(msg, LogLevel::Info);
         }
     }
 
-    pub fn _warning(&self, msg: &str) {
-        if self.level >= LogLevel::Warning {
-            self.write(msg);
+    pub fn warning(&self, msg: &str) {
+        if self.level <= LogLevel::Warning {
+            self.write(msg, LogLevel::Warning);
         }
     }
 
     pub fn error(&self, msg: &str) {
-        self.write(msg);
+        self.write(msg, LogLevel::Error);
     }
 
-    fn write(&self, msg: &str) {
-        // TODO: Generic writer
-        println!("{}", msg);
+    fn write(&self, msg: &str, level: LogLevel) {
+        println!("{}: {}", level, msg);
     }
 }
 
@@ -53,31 +96,17 @@ struct ExtComm {
 
 impl PubSubClient for Log {
     fn client_loop(self) -> Result<(), PubSubError> {
-        let sensor = Subject(format!("sensor.*.measurement"));
-        let sensor_sub = self.subscribe(&sensor)?;
-        let _control_sub = self.subscribe(&Subject(String::from("actor.*.set_signal")))?;
-        //let actor_sub = self.subscribe(&Subject(format!("actor.*.current_signal")))?;
-        let ui_sub = self.subscribe(&Subject(String::from("ext_comm.>")))?;
-
+        let log_sub = self.subscribe(&Subject(String::from("log.>")))?;
         loop {
-            //if let Some(msg) = control_sub.try_next() {
-            //    println!("LOG: Control {}", msg);
-            //}
-            if let Some(msg) = sensor_sub.try_next() {
-                println!("LOG: Sensor {}", msg);
-            }
-            //if let Some(msg) = actor_sub.try_next() {
-            //    println!("LOG: Actor {}", msg);
-            //}
-            if let Some(msg) = ui_sub.try_next() {
-                match decode_nats_data::<ExtComm>(&msg.data) {
-                    Ok(json) => {
-                        self.debug(&format!("{:?}", json));
-                    }
+            if let Some(msg) = log_sub.next() {
+                match LogLevel::from_msg_subject(&msg.subject) {
+                    Ok(log_level) => match decode_nats_data::<LogMsg>(&msg.data) {
+                        Ok(msg) => self.log(&msg.0, log_level),
+                        Err(err) => self.error(&err.to_string()),
+                    },
                     Err(err) => self.error(&err.to_string()),
                 };
             }
-            sleep(Duration::from_millis(10));
         }
     }
 
@@ -90,13 +119,56 @@ impl PubSubClient for Log {
     }
 }
 
-#[derive(Deserialize, Serialize, Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Deserialize, Serialize, Display, Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "lowercase")]
 pub enum LogLevel {
     Debug,
     Info,
     Warning,
     Error,
 }
+
+impl TryFrom<&str> for LogLevel {
+    type Error = PubSubError;
+    fn try_from(value: &str) -> Result<Self, PubSubError> {
+        match value {
+            "debug" => Ok(LogLevel::Debug),
+            "info" => Ok(LogLevel::Info),
+            "warning" => Ok(LogLevel::Warning),
+            "error" => Ok(LogLevel::Error),
+            _ => Err(PubSubError::MessageParse(format!(
+                "Not a log level: '{:?}'",
+                value
+            ))),
+        }
+    }
+}
+
+impl LogLevel {
+    fn from_msg_subject(subject: &str) -> Result<Self, PubSubError> {
+        let mut tmp = subject.split('.');
+        tmp.next();
+        let log_level = tmp.next().ok_or_else(|| {
+            PubSubError::MessageParse(String::from(
+                "No second-level sub subject (should not happen)",
+            ))
+        })?;
+        LogLevel::try_from(log_level)
+    }
+
+    fn main_subject(&self) -> Subject {
+        let str_ = match self {
+            LogLevel::Debug => "log.debug",
+            LogLevel::Info => "log.info",
+            LogLevel::Warning => "log.warning",
+            LogLevel::Error => "log.error",
+        };
+        Subject(String::from(str_))
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, From)]
+pub struct LogMsg(pub(crate) String);
 
 #[cfg(test)]
 mod tests {

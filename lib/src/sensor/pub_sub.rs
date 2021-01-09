@@ -1,27 +1,16 @@
+use crate::logger::{debug, LogMsg};
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::sensor::{Sensor, SensorError};
+use crate::time::TimeStamp;
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 use std::convert::TryFrom;
 use std::thread::sleep;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, Ord, PartialOrd, PartialEq, Eq)]
-pub struct TimeStamp(pub(crate) u128);
-
-impl TimeStamp {
-    fn now() -> Self {
-        let start = SystemTime::now();
-        let since_the_epoch = start
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards");
-        TimeStamp(since_the_epoch.as_millis())
-    }
-}
+use std::time::Duration;
 
 pub struct SensorClient {
     id: ClientId,
@@ -46,6 +35,12 @@ pub struct SensorMsg {
     timestamp: TimeStamp,
     pub(crate) meas: Option<f32>,
     err: Option<SensorError>,
+}
+
+impl SensorMsg {
+    pub fn subject(id: &ClientId) -> Subject {
+        Subject(format!("sensor.{}.measurement", id))
+    }
 }
 
 impl Into<PubSubMsg> for SensorMsg {
@@ -75,6 +70,11 @@ impl PubSubClient for SensorClient {
                 Err(err) => (None, Some(err)),
             };
             let timestamp = TimeStamp::now();
+            debug(
+                &self,
+                format!("msg from {}", self.id),
+                &format!("sensor.{}", self.id),
+            );
             self.publish(
                 &meas_sub,
                 &SensorMsg {

@@ -13,12 +13,10 @@ pub(crate) const SUPERVISOR_SUBJECT: &str = "supervisor";
 pub enum SupervisorSubMsg {
     #[serde(rename = "start_controller")]
     StartController { control_config: ControllerConfig },
-    #[serde(rename = "list_active_clients")]
-    ListActiveClients,
     #[serde(rename = "switch_controller")]
     SwitchController { control_config: ControllerConfig },
-    #[serde(rename = "set_controller_target")]
-    SetControllerTarget { id: ClientId, new_target: f32 },
+    #[serde(rename = "list_active_clients")]
+    ListActiveClients,
     #[serde(rename = "kill_client")]
     KillClient { client_id: ClientId },
     #[serde(rename = "stop")]
@@ -37,16 +35,18 @@ impl TryFrom<Message> for SupervisorSubMsg {
                 let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
                 Ok(SupervisorSubMsg::SwitchController { control_config })
             }
-            "command.set_controller_target" => {
-                let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
-                Ok(SupervisorSubMsg::SwitchController { control_config })
-            }
             "command.list_active_clients" => Ok(SupervisorSubMsg::ListActiveClients),
             _ => {
                 let msg: String = decode_nats_data(&msg.data)?;
                 Err(PubSubError::MessageParse(msg))
             }
         }
+    }
+}
+
+impl SupervisorSubMsg {
+    pub fn subject(id: &ClientId, cmd: &str) -> Subject {
+        Subject(format!("{}.{}.{}", SUPERVISOR_SUBJECT, cmd, id))
     }
 }
 

@@ -60,10 +60,6 @@ impl Supervisor {
                 self.switch_controller(control_config)?;
                 Ok(ClientState::Active)
             }
-            SupervisorSubMsg::SetControllerTarget { id, new_target } => {
-                self.set_controller_target(id, *new_target)?;
-                Ok(ClientState::Active)
-            }
             SupervisorSubMsg::ListActiveClients => {
                 self.list_active_clients();
                 Ok(ClientState::Active)
@@ -103,16 +99,6 @@ impl Supervisor {
         self.start_controller(config, target)
     }
 
-    fn set_controller_target(&self, id: &ClientId, new_target: f32) -> Result<(), SupervisorError> {
-        Ok(self.publish(
-            &Subject(format!(
-                "{}.set_controller_target.{}",
-                SUPERVISOR_SUBJECT, id
-            )),
-            &PubSubMsg(format!("{}", new_target)),
-        )?)
-    }
-
     fn list_active_clients(&self) {
         println!("Active clients:");
         for cl in self.active_clients.keys() {
@@ -126,7 +112,7 @@ impl Supervisor {
             None => Err(SupervisorError::Missing(id.clone())),
         }?;
         let report = self.client.request(
-            &Subject(format!("{}.kill.{}", SUPERVISOR_SUBJECT, id)),
+            &SupervisorSubMsg::subject(id, "kill"),
             &PubSubMsg(String::new()),
         )?;
         match handle.join() {

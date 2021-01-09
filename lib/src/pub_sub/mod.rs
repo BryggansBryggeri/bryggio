@@ -37,8 +37,15 @@ impl From<&str> for ClientId {
         String::from(x).into()
     }
 }
-#[derive(Debug)]
+#[derive(Display, Debug, Clone)]
 pub struct Subject(pub String);
+
+impl AsRef<str> for Subject {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
 #[derive(Debug)]
 pub struct PubSubMsg(pub String);
 
@@ -56,6 +63,6 @@ pub enum PubSubError {
     Client(String),
     #[error("Server error: {0}")]
     Server(String),
-    #[error("Message parsing erro: {0}r")]
+    #[error("Message parsing error: {0}")]
     MessageParse(String),
 }
