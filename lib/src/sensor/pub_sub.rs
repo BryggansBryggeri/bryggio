@@ -33,8 +33,7 @@ impl SensorClient {
 pub struct SensorMsg {
     id: ClientId,
     timestamp: TimeStamp,
-    pub(crate) meas: Option<f32>,
-    err: Option<SensorError>,
+    pub(crate) meas: Result<f32, SensorError>,
 }
 
 impl SensorMsg {
@@ -64,26 +63,20 @@ impl PubSubClient for SensorClient {
             for _msg in supervisor.try_iter() {
                 // Deal with supervisor command
             }
-            let (meas, err) = match self.sensor.get_measurement() {
-                Ok(meas) => (Some(meas), None),
-                Err(err) => (None, Some(err)),
-            };
+            let meas = self.sensor.get_measurement();
             let timestamp = TimeStamp::now();
             debug(
                 &self,
                 format!("msg from {}", self.id),
                 &format!("sensor.{}", self.id),
             );
-            self.publish(
-                &meas_sub,
-                &SensorMsg {
-                    id: self.id.clone(),
-                    timestamp,
-                    meas,
-                    err,
-                }
-                .into(),
-            )?;
+            let msg = SensorMsg {
+                id: self.id.clone(),
+                timestamp,
+                meas,
+            };
+            println!("{}", serde_json::to_string(&msg).unwrap());
+            self.publish(&meas_sub, &msg.into())?;
             sleep(Duration::from_millis(2000));
         }
     }

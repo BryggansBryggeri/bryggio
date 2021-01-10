@@ -83,7 +83,7 @@ impl PubSubClient for ControllerClient {
 
             if let Some(meas_msg) = sensor.next() {
                 if let Ok(msg) = SensorMsg::try_from(meas_msg) {
-                    self.controller.calculate_signal(msg.meas);
+                    self.controller.calculate_signal(msg.meas.ok());
                 }
                 let msg = ControllerPubMsg::SetSignal {
                     id: self.id.clone(),
