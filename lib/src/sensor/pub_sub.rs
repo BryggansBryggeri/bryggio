@@ -1,4 +1,4 @@
-use crate::logger::{debug, LogMsg};
+use crate::logger::debug;
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
@@ -52,8 +52,7 @@ impl Into<PubSubMsg> for SensorMsg {
 impl TryFrom<Message> for SensorMsg {
     type Error = PubSubError;
     fn try_from(msg: Message) -> Result<Self, Self::Error> {
-        let sensor_msg = decode_nats_data(&msg.data)?;
-        Ok(sensor_msg)
+        decode_nats_data(&msg.data)
     }
 }
 

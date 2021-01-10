@@ -1,5 +1,5 @@
 use crate::pub_sub::ClientId;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::f32;
 use thiserror::Error;
 
@@ -26,7 +26,7 @@ pub enum State {
 }
 
 #[non_exhaustive]
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum ControllerType {
     #[serde(rename = "hysteresis")]
@@ -41,7 +41,7 @@ pub struct ControllerConfig {
     pub(crate) actor_id: ClientId,
     pub(crate) sensor_id: ClientId,
     #[serde(rename = "type")]
-    type_: ControllerType,
+    pub(crate) type_: ControllerType,
 }
 
 impl ControllerConfig {

@@ -86,6 +86,7 @@ impl Supervisor {
             config.sensor_id.clone(),
             controller,
             &self.config.nats,
+            config.type_.clone(),
         );
         let control_handle =
             thread::spawn(|| controller_client.client_loop().map_err(|err| err.into()));

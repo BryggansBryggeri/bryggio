@@ -1,3 +1,4 @@
+use crate::control::ControllerType;
 use crate::control::{Control, State};
 use crate::logger::error;
 use crate::pub_sub::{
@@ -6,6 +7,7 @@ use crate::pub_sub::{
 };
 use crate::sensor::SensorMsg;
 use crate::supervisor::pub_sub::SupervisorSubMsg;
+use crate::time::TimeStamp;
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -16,6 +18,7 @@ pub struct ControllerClient {
     sensor_id: ClientId,
     controller: Box<dyn Control>,
     client: NatsClient,
+    type_: ControllerType,
 }
 
 impl ControllerClient {
@@ -25,6 +28,7 @@ impl ControllerClient {
         sensor_id: ClientId,
         controller: Box<dyn Control>,
         config: &NatsConfig,
+        type_: ControllerType,
     ) -> Self {
         let client = NatsClient::try_new(config).unwrap();
         ControllerClient {
@@ -33,6 +37,7 @@ impl ControllerClient {
             sensor_id,
             controller,
             client,
+            type_,
         }
     }
 }
@@ -45,6 +50,7 @@ impl PubSubClient for ControllerClient {
         let mut state = State::Active;
         while state == State::Active {
             if let Some(msg) = kill_cmd.try_next() {
+                // TODO: Proper Status PubMsg.
                 msg.respond(format!("{}", self.controller.get_target()))
                     .map_err(|err| {
                         PubSubError::Client(format!("could not respond: '{}'.", err.to_string()))
@@ -60,18 +66,31 @@ impl PubSubClient for ControllerClient {
                             self.controller.set_target(new_target)
                         }
                     },
-                    Err(err) => log_error(&self, &format!("{}", err.to_string())),
+                    Err(err) => log_error(&self, &err.to_string()),
                 };
             }
+
+            let status_update = ControllerPubMsg::Status {
+                id: self.id.clone(),
+                timestamp: TimeStamp::now(),
+                target: self.controller.get_target(),
+                type_: self.type_.clone(),
+            };
+            self.publish(
+                &status_update.subject(&self.id),
+                &status_update.clone().into(),
+            )?;
 
             if let Some(meas_msg) = sensor.next() {
                 if let Ok(msg) = SensorMsg::try_from(meas_msg) {
                     self.controller.calculate_signal(msg.meas);
                 }
-                self.publish(
-                    &ControllerPubMsg::subject(&self.actor_id),
-                    &ControllerPubMsg::SetSignal(self.controller.get_control_signal()).into(),
-                )?;
+                let msg = ControllerPubMsg::SetSignal {
+                    id: self.id.clone(),
+                    timestamp: TimeStamp::now(),
+                    signal: self.controller.get_control_signal(),
+                };
+                self.publish(&msg.subject(&self.actor_id), &msg.into())?;
             }
         }
         Ok(())
@@ -114,29 +133,43 @@ impl TryFrom<Message> for ControllerSubMsg {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ControllerPubMsg {
     #[serde(rename = "set_signal")]
-    SetSignal(f32),
-    #[serde(rename = "new_target")]
-    NewTarget(f32),
+    SetSignal {
+        id: ClientId,
+        timestamp: TimeStamp,
+        signal: f32,
+    },
+    #[serde(rename = "status")]
+    Status {
+        id: ClientId,
+        timestamp: TimeStamp,
+        target: f32,
+        type_: ControllerType,
+    },
 }
 
 impl ControllerPubMsg {
-    pub fn subject(id: &ClientId) -> Subject {
-        Subject(format!("actor.{}.set_signal", id))
+    pub fn subject(&self, msg_id: &ClientId) -> Subject {
+        match self {
+            ControllerPubMsg::SetSignal {
+                id,
+                timestamp,
+                signal,
+            } => Subject(format!("actor.{}.set_signal", msg_id)),
+            ControllerPubMsg::Status {
+                id,
+                timestamp,
+                target,
+                type_,
+            } => Subject(format!("controller.{}.status", id)),
+        }
     }
 }
 
 impl Into<PubSubMsg> for ControllerPubMsg {
     fn into(self) -> PubSubMsg {
-        match self {
-            ControllerPubMsg::SetSignal(signal) => {
-                PubSubMsg(serde_json::to_string(&signal).expect("Unexpected serialize error."))
-            }
-            ControllerPubMsg::NewTarget(target) => {
-                PubSubMsg(serde_json::to_string(&target).expect("Unexpected serialize error."))
-            }
-        }
+        PubSubMsg(serde_json::to_string(&self).expect("Pub sub serialization error"))
     }
 }
