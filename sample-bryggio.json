@@ -18,7 +18,7 @@
     "sensors": [
       {
         "id": "mash_temp",
-        "type": "dummy"
+        "type": {"dummy": 1000}
       },
       {
         "id": "boil_temp",

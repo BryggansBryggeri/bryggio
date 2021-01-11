@@ -20,7 +20,7 @@ pub trait Sensor: Send {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub enum SensorType {
     #[serde(rename = "dummy")]
-    Dummy,
+    Dummy(u64),
     #[serde(rename = "dsb")]
     Dsb(ds18b20::Ds18b20Address),
     #[serde(rename = "rbpi_cpu")]
@@ -37,8 +37,8 @@ pub struct SensorConfig {
 impl SensorConfig {
     pub fn get_sensor(&self) -> Result<Box<dyn Sensor>, SensorError> {
         match &self.type_ {
-            SensorType::Dummy => {
-                let sensor = dummy::Sensor::new(self.id.as_ref());
+            SensorType::Dummy(delay_in_ms) => {
+                let sensor = dummy::Sensor::new(self.id.as_ref(), *delay_in_ms);
                 Ok(Box::new(sensor))
             }
             SensorType::Dsb(addr) => {

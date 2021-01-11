@@ -63,6 +63,11 @@ impl Supervisor {
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::SwitchController { control_config } => {
+                info(
+                    self,
+                    format!("Switching controller to type: {:?}", control_config.type_),
+                    "supervisor",
+                );
                 self.switch_controller(control_config)?;
                 Ok(ClientState::Active)
             }

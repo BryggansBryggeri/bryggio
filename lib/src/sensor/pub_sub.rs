@@ -8,8 +8,6 @@ use crate::time::TimeStamp;
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-use std::thread::sleep;
-use std::time::Duration;
 
 pub struct SensorClient {
     id: ClientId,
@@ -75,7 +73,6 @@ impl PubSubClient for SensorClient {
                 meas,
             };
             self.publish(&meas_sub, &msg.into())?;
-            sleep(Duration::from_millis(2000));
         }
     }
 
