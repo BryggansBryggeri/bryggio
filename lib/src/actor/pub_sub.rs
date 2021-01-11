@@ -27,9 +27,9 @@ impl ActorClient {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SignalMsg {
-    id: ClientId,
-    timestamp: TimeStamp,
-    signal: f32,
+    pub(crate) id: ClientId,
+    pub(crate) timestamp: TimeStamp,
+    pub(crate) signal: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -54,7 +54,11 @@ pub enum ActorPubMsg {
 
 impl Into<PubSubMsg> for ActorPubMsg {
     fn into(self) -> PubSubMsg {
-        PubSubMsg(serde_json::to_string(&self).expect("Pub sub serialization error"))
+        match &self {
+            ActorPubMsg::CurrentSignal(signal_msg) => {
+                PubSubMsg(serde_json::to_string(&signal_msg).expect("Pub sub serialization error"))
+            }
+        }
     }
 }
 
@@ -64,21 +68,10 @@ impl PubSubClient for ActorClient {
         let mut state = ClientState::Active;
         while state == ClientState::Active {
             if let Some(contr_message) = sub.next() {
-                //println!("Actor msg: {}", &contr_message);
-                //println!(
-                //    "Ser same msg: {}",
-                //    serde_json::to_string(&ActorSubMsg::SetSignal(SignalMsg {
-                //        id: self.id.clone(),
-                //        timestamp: TimeStamp::now(),
-                //        signal: 2.0
-                //    }))
-                //    .unwrap()
-                //);
                 if let Ok(msg) = ActorSubMsg::try_from(contr_message) {
                     match msg {
                         ActorSubMsg::SetSignal(msg) => {
                             if let Ok(()) = self.actor.set_signal(msg.signal) {
-                                println!("publish");
                                 self.publish(
                                     &self.gen_signal_subject(),
                                     &ActorPubMsg::CurrentSignal(msg).into(),

@@ -17,7 +17,7 @@ impl<T: OutputPin + Send> Actor<T> {
 
 impl<T: OutputPin + Send> actor::Actor for Actor<T> {
     fn validate_signal(&self, signal: f32) -> Result<(), actor::ActorError> {
-        if signal > 0.0 {
+        if signal >= 0.0 {
             Ok(())
         } else {
             Err(actor::ActorError::InvalidSignal {

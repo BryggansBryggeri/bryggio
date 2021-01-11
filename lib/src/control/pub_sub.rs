@@ -1,3 +1,4 @@
+use crate::actor::pub_sub::SignalMsg;
 use crate::control::ControllerType;
 use crate::control::{Control, State};
 use crate::logger::{error, info};
@@ -97,11 +98,11 @@ impl PubSubClient for ControllerClient {
                 if let Ok(msg) = SensorMsg::try_from(meas_msg) {
                     self.controller.calculate_signal(msg.meas.ok());
                 }
-                let msg = ControllerPubMsg::SetSignal {
-                    id: self.id.clone(),
+                let msg = ControllerPubMsg::SetSignal(SignalMsg {
+                    id: self.actor_id.clone(),
                     timestamp: TimeStamp::now(),
                     signal: self.controller.get_control_signal(),
-                };
+                });
                 self.publish(&msg.subject(&self.actor_id), &msg.into())?;
             }
         }
@@ -156,11 +157,7 @@ impl TryFrom<Message> for ControllerSubMsg {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ControllerPubMsg {
     #[serde(rename = "set_signal")]
-    SetSignal {
-        id: ClientId,
-        timestamp: TimeStamp,
-        signal: f32,
-    },
+    SetSignal(SignalMsg),
     #[serde(rename = "status")]
     Status {
         id: ClientId,
@@ -174,11 +171,11 @@ pub enum ControllerPubMsg {
 impl ControllerPubMsg {
     pub fn subject(&self, msg_id: &ClientId) -> Subject {
         match self {
-            ControllerPubMsg::SetSignal {
+            ControllerPubMsg::SetSignal(SignalMsg {
                 id,
                 timestamp,
                 signal,
-            } => Subject(format!("actor.{}.set_signal", msg_id)),
+            }) => Subject(format!("actor.{}.set_signal", msg_id)),
             ControllerPubMsg::Status {
                 id,
                 timestamp,
