@@ -85,13 +85,21 @@ fn github_meta_data() -> (Version, Url) {
 }
 
 fn latest_nats_url() -> Url {
-    let response_raw = ureq::get(GITHUB_META_DATA).call().into_string().unwrap();
+    let response_raw = ureq::get(GITHUB_META_DATA)
+        .call()
+        .expect("ureq call failed")
+        .into_string()
+        .unwrap();
     let meta_data: NatsServerRelease = serde_json::from_str(&response_raw).unwrap();
     meta_data.url()
 }
 
 fn latest_nats_release() -> Version {
-    let response_raw = ureq::get(GITHUB_META_DATA).call().into_string().unwrap();
+    let response_raw = ureq::get(GITHUB_META_DATA)
+        .call()
+        .expect("ureq called failed.")
+        .into_string()
+        .unwrap();
     let meta_data: NatsServerRelease = serde_json::from_str(&response_raw).unwrap();
     let raw_string = GITHUB_VERSION_PATTERN
         .captures(&meta_data.tag_name)

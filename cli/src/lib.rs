@@ -15,7 +15,11 @@ where
     T: Serialize + DeserializeOwned,
 {
     println!("Sending request: '{}'.", request);
-    let response_raw = ureq::get(request.as_str()).call().into_string().unwrap();
+    let response_raw = ureq::get(request.as_str())
+        .call()
+        .expect("ureq called failed")
+        .into_string()
+        .unwrap();
     serde_json::from_str(&response_raw)
 }
 

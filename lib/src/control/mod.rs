@@ -6,7 +6,7 @@ use thiserror::Error;
 pub mod duty_cycle;
 pub mod hysteresis;
 pub mod manual;
-pub mod pid;
+// pub mod pid;
 pub mod pub_sub;
 pub use pub_sub::ControllerClient;
 

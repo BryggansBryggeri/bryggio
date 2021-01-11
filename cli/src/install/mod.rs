@@ -14,7 +14,10 @@ pub(crate) fn download_file<P: AsRef<Path>>(dest_path: P, source_url: &Url) {
     let mut file = fs::File::create(dest_path).expect("Could not create file");
     info!("Downloading NATS server from '{}'", source_url);
     io::copy(
-        &mut ureq::get(source_url.as_str()).call().into_reader(),
+        &mut ureq::get(source_url.as_str())
+            .call()
+            .expect("ureq called failed")
+            .into_reader(),
         &mut file,
     )
     .expect("Could not write to file");
