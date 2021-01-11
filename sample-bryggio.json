@@ -1,0 +1,36 @@
+{
+  "general": {
+    "brewery_name": "BRYGGANS BRYGGERI BÄRS BB",
+    "log_level": "info"
+  },
+  "hardware": {
+    "actors": [
+      {
+        "id": "mash_heater",
+        "type": {"simple_gpio": 0}
+      },
+      {
+        "id": "boil_heater",
+        "type": {"simple_gpio": 1}
+      }
+    ]
+  ,
+    "sensors": [
+      {
+        "id": "mash_temp",
+        "type": "dummy"
+      },
+      {
+        "id": "boil_temp",
+        "type": {"dsb": "28-dummy0000000"}
+      }
+    ]
+  },
+  "nats": {
+    "bin_path": "target/nats-server",
+    "config": "./nats-config.yaml",
+    "server": "localhost",
+    "user": "username",
+    "pass": "passwd"
+  }
+}

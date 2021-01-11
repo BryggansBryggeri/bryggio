@@ -10,8 +10,8 @@ The goal is to develop a stand-alone Pub-sub backend with which any client can c
 Having started our brewery career with first a horrible Python loop and then the much nicer [Craftbeer Pi](http://web.craftbeerpi.com/)
 we knew we always wanted to write our own brewery software.
 
-Although we are ever grateful for Craftbeer Pi, which has helped us brew a lot of beer,
-there were a few things we did not like with it:
+We are ever grateful for Craftbeer Pi, which has helped us brew a lot of beer,
+but there were a few things we did not like with it:
 
 - Reliability, sometimes sensors or plugins would stop working and a restart was the only fix.
 - There were a lot of versions in use at the same time.
@@ -40,39 +40,44 @@ Due to the inherent inertia in the objective (heating a lot of water), we can ha
 
 ## Installation
 
-  Before the first release we will not publish any binaries, see [Install from source](#install-from-source)
+Before the first release we will not publish any binaries, see [Install from source](#install-from-source)
 
-## Install from source
+### Install from source
 
- - Install rust, cargo and cargo-make from [here](https://www.rust-lang.org/tools/install).
-   Rust and cargo are provided by official distributions, while cargo-make can be installed with
-   ```
-   cargo install cargo-make
-   ```
+- Install rust, cargo and cargo-make from [here](https://www.rust-lang.org/tools/install).
+  Rust and cargo are provided by official distributions, while cargo-make can be installed with
 
- - Install and running `bryggio` and `nats-server` from source
-   The latest released version `nats-server` does not yet support web-sockets, so it needs to be built from the master branch.
-   This step obviously requires installation of golang, hopefully this feature will soon be on the stable release and a simple download will suffice.
-   Until then, the NATS server repo is included as a submodule in the BryggIO repo.
+  ```bash
+  cargo install cargo-make
+  ```
 
-    ```bash
-   # Pub sub version not yet merged.
-   git clone --branch=pub_sub --recurse-submodules git@github.com:BryggansBryggeri/bryggio.git bryggio
-   cd bryggio
-   cargo make --no-workspace build-nats
-   cargo run --bin bryggio-supervisor -- <path_to_bryggio_config_file>
-   ```
+- Install and running `bryggio` and `nats-server` from source.
+  The latest released version `nats-server` does not yet support web-sockets, so it needs to be built from the master branch.
+  This step obviously requires installation of [golang](https://golang.org/).
+  Hopefully this feature will [soon](https://nats.io/about/) be on the stable release and a simple download will suffice.
+  Until then, the NATS server [repo](https://github.com/nats-io/nats-server) is included as a submodule in the BryggIO repo.
 
- - Configuration is currently split into
-    - **`bryggio` config:** TOML file which specifies general settings, and importantly **the path to the `nats-server` binary and config file**.
-    - **`nats`** particular YAML config file for the `nats-server`.
+  ```bash
+  git clone --recurse-submodules git@github.com:BryggansBryggeri/bryggio.git bryggio
+  cd bryggio
+  cargo make --no-workspace build-nats
+  cargo run --bin bryggio-supervisor -- <path_to_bryggio_config_file>
+  ```
 
-   Check out the sample configs in this repo for usage.
+## Configuration
 
-   The supervisor, starts up a `nats-server` in a separate process and then runs a supervisor pub sub client which,
-   listening to special command subjects, starts and stops other clients like sensors, actors and controllers.
+- **BryggIO config:** JSON file which specifies general settings, and importantly **the path to the `nats-server` binary and corresponding config file**.
+  See `sample-bryggio.json` for an example.
+- **NATS config:** particular YAML config file for the `nats-server`.
+  See `sample-nats-config.yaml` for an example.
+  This will be integrated into the general BryggIO config.
 
-### Run on Rbpi
+Check out the sample configs in this repo for usage.
+
+The supervisor, starts up a `nats-server` in a separate process and then runs a supervisor pub sub client which,
+listening to special command subjects, starts and stops other clients like sensors, actors and controllers.
+
+## Run on Rbpi
 
 Build for rbpi needs
 
@@ -83,7 +88,8 @@ Build for rbpi needs
 cargo make rbpi-build
 ```
 
-Cross compile nats-server for rbpi
+Cross compile `nats-server` for rbpi
+
 ```bash
 git clone --branch=master https://github.com/nats-io/nats-server.git nats-server
 cd nats-server
@@ -92,7 +98,7 @@ env GOOS=linux GOARCH=arm GOARM=5 go build
 
 Move the resulting binary (`target/armv7-unknown-linux-gnueabihf/<build-mode>/bryggio-supervisor`) to the rbpi.
 
-Also needed: A `bryggio` TOML config file.
+Also needed: A BryggIO JSON config file.
 
 On the rbpi, currently the config files need to be in the same directory as the binary, then:
 
@@ -101,9 +107,11 @@ sudo ./bryggio-supervisor <path_to_bryggio_config_file>
 # E.g.:
 # sudo ./bryggio-supervisor sample-bryggio.toml
 ```
+
 `sudo` is required for gpio manipulation.
 
 ### Literature
+
 - Energy efficiency: (https://greenlab.di.uminho.pt/wp-content/uploads/2017/10/sleFinal.pdf)
 - (http://www.iiisci.org/journal/CV$/sci/pdfs/ZA191KB18.pdf)
 - (http://kchbi.chtf.stuba.sk/upload_new/file/Miro/Proc%21problemy%20odovzdane%20zadania/%C5%A0uhaj/Predictive%20modelling%20of%20brewing%20fermentation%20from%20knowledge-based%20to%20black-box%20models.pdf)
