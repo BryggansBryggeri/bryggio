@@ -1,6 +1,6 @@
 use crate::control::ControllerType;
 use crate::control::{Control, State};
-use crate::logger::error;
+use crate::logger::{error, info};
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
@@ -40,6 +40,21 @@ impl ControllerClient {
             type_,
         }
     }
+
+    fn status_update(&self) {
+        let status_update = ControllerPubMsg::Status {
+            id: self.id.clone(),
+            timestamp: TimeStamp::now(),
+            target: self.controller.get_target(),
+            type_: self.type_.clone(),
+        };
+        if let Err(err) = self.publish(&status_update.subject(&self.id), &status_update.into()) {
+            log_error(
+                &self,
+                &format!("Could not publish status update: {}", err.to_string()),
+            );
+        };
+    }
 }
 
 impl PubSubClient for ControllerClient {
@@ -48,9 +63,15 @@ impl PubSubClient for ControllerClient {
         let controller = self.subscribe(&ControllerSubMsg::subject(&self.id))?;
         let sensor = self.subscribe(&SensorMsg::subject(&self.sensor_id))?;
         let mut state = State::Active;
+        log_info(
+            &self,
+            &format!("starting contr. client: {}: {:?}", &self.id, &self.type_),
+        );
+        self.status_update();
         while state == State::Active {
             if let Some(msg) = kill_cmd.try_next() {
                 // TODO: Proper Status PubMsg.
+                log_info(&self, "killing contr. client");
                 msg.respond(format!("{}", self.controller.get_target()))
                     .map_err(|err| {
                         PubSubError::Client(format!("could not respond: '{}'.", err.to_string()))
@@ -70,16 +91,7 @@ impl PubSubClient for ControllerClient {
                 };
             }
 
-            let status_update = ControllerPubMsg::Status {
-                id: self.id.clone(),
-                timestamp: TimeStamp::now(),
-                target: self.controller.get_target(),
-                type_: self.type_.clone(),
-            };
-            self.publish(
-                &status_update.subject(&self.id),
-                &status_update.clone().into(),
-            )?;
+            self.status_update();
 
             if let Some(meas_msg) = sensor.next() {
                 if let Ok(msg) = SensorMsg::try_from(meas_msg) {
@@ -105,7 +117,15 @@ impl PubSubClient for ControllerClient {
     }
 }
 
-pub fn log_error(client: &ControllerClient, msg: &str) {
+fn log_info(client: &ControllerClient, msg: &str) {
+    info(
+        client,
+        String::from(msg),
+        &format!("controller.{}", &client.id),
+    );
+}
+
+fn log_error(client: &ControllerClient, msg: &str) {
     error(
         client,
         String::from(msg),
@@ -146,6 +166,7 @@ pub enum ControllerPubMsg {
         id: ClientId,
         timestamp: TimeStamp,
         target: f32,
+        #[serde(rename = "type")]
         type_: ControllerType,
     },
 }

@@ -6,6 +6,7 @@ use crate::hardware::dummy as hardware_impl;
 #[cfg(target_arch = "arm")]
 use crate::hardware::rbpi as hardware_impl;
 use crate::logger::Log;
+use crate::logger::{error, info};
 use crate::pub_sub::PubSubMsg;
 use crate::pub_sub::{
     nats_client::{decode_nats_data, NatsClient, NatsConfig},
@@ -47,6 +48,11 @@ impl Supervisor {
             supervisor.add_actor(actor_config, &config.nats)?;
         }
 
+        info(
+            &supervisor,
+            String::from("Starting supervisor"),
+            "supervisor",
+        );
         Ok(supervisor)
     }
 

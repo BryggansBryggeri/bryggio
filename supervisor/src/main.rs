@@ -28,7 +28,9 @@ fn main() -> Result<(), SupervisorError> {
             .into());
         }
     };
+    println!("Starting nats");
     let mut nats_server_child = run_nats_server(&config.nats)?;
+    println!("Starting supervisor");
     let supervisor = Supervisor::init_from_config(config)?;
     supervisor.client_loop()?;
     nats_server_child

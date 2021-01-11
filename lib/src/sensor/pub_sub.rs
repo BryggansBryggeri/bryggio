@@ -7,7 +7,6 @@ use crate::sensor::{Sensor, SensorError};
 use crate::time::TimeStamp;
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
-use serde_json::to_string;
 use std::convert::TryFrom;
 use std::thread::sleep;
 use std::time::Duration;
@@ -44,7 +43,7 @@ impl SensorMsg {
 
 impl Into<PubSubMsg> for SensorMsg {
     fn into(self) -> PubSubMsg {
-        PubSubMsg(to_string(&self).expect("Can always serialize"))
+        PubSubMsg(serde_json::to_string(&self).expect("Can always serialize"))
     }
 }
 
@@ -75,7 +74,6 @@ impl PubSubClient for SensorClient {
                 timestamp,
                 meas,
             };
-            println!("{}", serde_json::to_string(&msg).unwrap());
             self.publish(&meas_sub, &msg.into())?;
             sleep(Duration::from_millis(2000));
         }
