@@ -1,6 +1,8 @@
 use crate::actor::{ActorClient, ActorConfig, ActorError};
 use crate::config;
-use crate::control::{ControllerClient, ControllerConfig, ControllerError};
+use crate::control::{
+    pub_sub::ControllerPubMsg, ControllerClient, ControllerConfig, ControllerError,
+};
 #[cfg(target_arch = "x86_64")]
 use crate::hardware::dummy as hardware_impl;
 #[cfg(target_arch = "arm")]
@@ -14,6 +16,7 @@ use crate::pub_sub::{
 };
 use crate::sensor::{SensorClient, SensorConfig, SensorError};
 use crate::supervisor::pub_sub::{SupervisorPubMsg, SupervisorSubMsg};
+use crate::time::TimeStamp;
 use nats::Message;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -74,7 +77,7 @@ impl Supervisor {
                     format!("Switching controller to type: {:?}", control_config.type_),
                     "supervisor",
                 );
-                self.switch_controller(control_config)?;
+                self.switch_controller(control_config, full_msg)?;
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::ListActiveClients => {
@@ -119,10 +122,27 @@ impl Supervisor {
         }
     }
 
-    fn switch_controller(&mut self, config: ControllerConfig) -> Result<(), SupervisorError> {
+    fn switch_controller(
+        &mut self,
+        config: ControllerConfig,
+        msg: &Message,
+    ) -> Result<(), SupervisorError> {
         let contr_id = &config.controller_id;
         let target: f32 = self.kill_client(contr_id)?;
-        self.start_controller(config, target)
+        self.start_controller(config.clone(), target)?;
+        let status: PubSubMsg = ControllerPubMsg::Status {
+            id: contr_id.clone(),
+            timestamp: TimeStamp::now(),
+            target,
+            type_: config.type_,
+        }
+        .into();
+        Ok(msg
+            .respond(status.to_string())
+            .map_err(|err| PubSubError::Reply {
+                msg: msg.to_string(),
+                err: err.to_string(),
+            })?)
     }
 
     fn reply_active_clients(&self, msg: &Message) -> Result<(), PubSubError> {
