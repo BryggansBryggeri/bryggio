@@ -53,11 +53,7 @@ impl Supervisor {
             supervisor.add_actor(actor_config, &config.nats)?;
         }
 
-        info(
-            &supervisor,
-            String::from("Starting supervisor"),
-            "supervisor",
-        );
+        info(&supervisor, String::from("Supervisor ready"), "supervisor");
         Ok(supervisor)
     }
 
