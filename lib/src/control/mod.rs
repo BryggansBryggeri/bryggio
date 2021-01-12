@@ -45,6 +45,14 @@ pub struct ControllerConfig {
 }
 
 impl ControllerConfig {
+    pub fn dummy() -> Self {
+        ControllerConfig {
+            controller_id: ClientId("controller".into()),
+            actor_id: ClientId("mash_heater".into()),
+            sensor_id: ClientId("mash_temp".into()),
+            type_: ControllerType::Manual,
+        }
+    }
     pub fn client_ids(&self) -> impl Iterator<Item = &ClientId> {
         std::iter::once(&self.actor_id).chain(std::iter::once(&self.sensor_id))
     }

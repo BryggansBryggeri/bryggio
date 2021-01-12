@@ -32,7 +32,7 @@
 
 mod actor;
 pub mod config;
-mod control;
+pub mod control;
 mod hardware;
 mod logger;
 pub mod pub_sub;

@@ -8,7 +8,7 @@ use crate::hardware::dummy as hardware_impl;
 #[cfg(target_arch = "arm")]
 use crate::hardware::rbpi as hardware_impl;
 use crate::logger::Log;
-use crate::logger::{error, info};
+use crate::logger::{debug, error, info};
 use crate::pub_sub::PubSubMsg;
 use crate::pub_sub::{
     nats_client::{decode_nats_data, NatsClient, NatsConfig},
@@ -80,7 +80,6 @@ impl Supervisor {
                 self.reply_active_clients(&full_msg);
                 Ok(ClientState::Active)
             }
-            SupervisorSubMsg::KillClient { client_id: _ } => Ok(ClientState::Active),
             SupervisorSubMsg::Stop => Ok(ClientState::Active),
         }
     }
@@ -142,7 +141,7 @@ impl Supervisor {
     }
 
     fn reply_active_clients(&self, msg: &Message) -> Result<(), PubSubError> {
-        println!("active_clients");
+        debug(self, String::from("Listing active clients"), "supervisor");
         let clients: PubSubMsg =
             SupervisorPubMsg::ActiveClients((&self.active_clients).into()).into();
         msg.respond(clients.to_string())
@@ -158,10 +157,10 @@ impl Supervisor {
             Some(contr) => Ok(contr),
             None => Err(SupervisorError::Missing(id.clone())),
         }?;
-        let report = self.client.request(
-            &SupervisorSubMsg::subject(id, "kill"),
-            &PubSubMsg(String::new()),
-        )?;
+        let msg = SupervisorPubMsg::KillClient {
+            client_id: id.clone(),
+        };
+        let report = self.client.request(&msg.subject(), &msg.into())?;
         match handle.join() {
             Ok(_) => {}
             Err(_) => {
@@ -241,8 +240,8 @@ impl Supervisor {
         }
     }
 
-    fn handle_err(err: SupervisorError) -> ClientState {
-        println!("{}", err.to_string());
+    fn handle_err(&self, err: SupervisorError) -> ClientState {
+        error(self, err.to_string(), "supervisor");
         ClientState::Active
     }
 }
@@ -318,7 +317,7 @@ pub enum SupervisorError {
     Sensor(#[from] SensorError),
     #[error("Actor error")]
     Actor(#[from] ActorError),
-    #[error("Pubsub error")]
+    #[error("Pubsub error: {0}")]
     PubSub(#[from] PubSubError),
     #[error("Concurrency error: {0}")]
     Concurrency(String),

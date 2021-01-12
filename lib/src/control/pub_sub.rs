@@ -7,7 +7,7 @@ use crate::pub_sub::{
     PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::sensor::SensorMsg;
-use crate::supervisor::pub_sub::SupervisorSubMsg;
+use crate::supervisor::pub_sub::SupervisorPubMsg;
 use crate::time::TimeStamp;
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
@@ -60,7 +60,12 @@ impl ControllerClient {
 
 impl PubSubClient for ControllerClient {
     fn client_loop(mut self) -> Result<(), PubSubError> {
-        let kill_cmd = self.subscribe(&SupervisorSubMsg::subject(&self.id, "kill"))?;
+        let kill_cmd = self.subscribe(
+            &SupervisorPubMsg::KillClient {
+                client_id: self.id.clone(),
+            }
+            .subject(),
+        )?;
         let controller = self.subscribe(&ControllerSubMsg::subject(&self.id))?;
         let sensor = self.subscribe(&SensorMsg::subject(&self.sensor_id))?;
         let mut state = State::Active;

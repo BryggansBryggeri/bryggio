@@ -14,6 +14,9 @@ pub enum Opt {
     ///Automated raspberry pi setup.
     #[structopt(name = "rbpi-setup")]
     RbPiSetup(RbPiOpt),
+    ///Test script, switching controllers.
+    #[structopt(name = "test")]
+    Test(BreweryOpt),
 }
 
 impl Opt {
@@ -22,6 +25,7 @@ impl Opt {
             Self::Brewery(opt) => opt.common.verbose,
             Self::Install(target) => target.verbose(),
             Self::RbPiSetup(opt) => opt.common.verbose,
+            Self::Test(opt) => true,
         }
     }
 }
@@ -29,7 +33,7 @@ impl Opt {
 #[derive(Debug, StructOpt)]
 pub struct BreweryOpt {
     #[structopt(long)]
-    pub(crate) config: path::PathBuf,
+    pub config: path::PathBuf,
     #[structopt(long)]
     pub(crate) topic: String,
     #[structopt(long)]

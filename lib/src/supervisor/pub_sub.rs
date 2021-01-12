@@ -19,9 +19,9 @@ impl PubSubClient for Supervisor {
                 state = match SupervisorSubMsg::try_from(&msg) {
                     Ok(cmd) => match self.process_command(cmd, &msg) {
                         Ok(state) => state,
-                        Err(err) => Supervisor::handle_err(err),
+                        Err(err) => self.handle_err(err),
                     },
-                    Err(err) => Supervisor::handle_err(err.into()),
+                    Err(err) => self.handle_err(err.into()),
                 };
             }
         }
@@ -45,8 +45,6 @@ pub enum SupervisorSubMsg {
     SwitchController { control_config: ControllerConfig },
     #[serde(rename = "list_active_clients")]
     ListActiveClients,
-    #[serde(rename = "kill_client")]
-    KillClient { client_id: ClientId },
     #[serde(rename = "stop")]
     Stop,
 }
@@ -66,22 +64,50 @@ impl TryFrom<&Message> for SupervisorSubMsg {
             "command.list_active_clients" => Ok(SupervisorSubMsg::ListActiveClients),
             _ => {
                 let msg: String = decode_nats_data(&msg.data)?;
-                Err(PubSubError::MessageParse(msg))
+                Err(PubSubError::MessageParse(format!(
+                    "Could not parse '{}' to SupervisorSubMsg",
+                    msg
+                )))
             }
         }
     }
 }
 
 impl SupervisorSubMsg {
-    pub fn subject(id: &ClientId, cmd: &str) -> Subject {
-        Subject(format!("{}.{}.{}", SUPERVISOR_SUBJECT, cmd, id))
+    pub fn subject(&self) -> Subject {
+        match self {
+            SupervisorSubMsg::StartController { control_config } => {
+                Subject(String::from("command.start_controller"))
+            }
+            SupervisorSubMsg::SwitchController { control_config } => {
+                Subject(String::from("command.switch_controller"))
+            }
+            _ => panic!("No"),
+        }
     }
 }
 
+impl Into<PubSubMsg> for SupervisorSubMsg {
+    fn into(self) -> PubSubMsg {
+        match &self {
+            SupervisorSubMsg::StartController { control_config } => PubSubMsg(
+                serde_json::to_string(&control_config)
+                    .expect("SupervisorSubMsg serialization error"),
+            ),
+            SupervisorSubMsg::SwitchController { control_config } => PubSubMsg(
+                serde_json::to_string(&control_config)
+                    .expect("SupervisorSubMsg serialization error"),
+            ),
+            _ => todo!(),
+        }
+    }
+}
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum SupervisorPubMsg {
     #[serde(rename = "active_clients")]
     ActiveClients(ActiveClientsList),
+    #[serde(rename = "kill_client")]
+    KillClient { client_id: ClientId },
 }
 
 impl SupervisorPubMsg {
@@ -89,6 +115,9 @@ impl SupervisorPubMsg {
         match self {
             SupervisorPubMsg::ActiveClients(_) => {
                 Subject(String::from("supervisor.active_clients"))
+            }
+            SupervisorPubMsg::KillClient { client_id } => {
+                Subject(format!("supervisor.kill.{}", client_id))
             }
         }
     }
@@ -99,6 +128,9 @@ impl Into<PubSubMsg> for SupervisorPubMsg {
         match &self {
             SupervisorPubMsg::ActiveClients(clients) => PubSubMsg(
                 serde_json::to_string(&clients).expect("SupervisorPubMsg serialization error"),
+            ),
+            SupervisorPubMsg::KillClient { client_id } => PubSubMsg(
+                serde_json::to_string(&client_id).expect("SupervisorSubMsg serialization error"),
             ),
         }
     }
