@@ -35,7 +35,7 @@ pub enum ControllerType {
     Manual,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ControllerConfig {
     pub(crate) controller_id: ClientId,
     pub(crate) actor_id: ClientId,

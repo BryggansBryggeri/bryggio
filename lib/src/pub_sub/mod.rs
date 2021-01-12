@@ -1,6 +1,5 @@
 use derive_more::{Display, From};
 pub mod nats_client;
-use crate::supervisor::SupervisorError;
 use nats::Subscription;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -46,7 +45,7 @@ impl AsRef<str> for Subject {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Display)]
 pub struct PubSubMsg(pub String);
 
 #[derive(Error, Debug, Clone, PartialEq)]
@@ -55,6 +54,8 @@ pub enum PubSubError {
     Generic(String),
     #[error("Error subscribing to NATS server: {0}")]
     Subscription(String),
+    #[error("Error replying to: {msg}. {err}")]
+    Reply { msg: String, err: String },
     #[error("Error publishing to NATS server: {0}")]
     Publish(String),
     #[error("Config error: {0}")]

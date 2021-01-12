@@ -10,11 +10,13 @@ use crate::logger::{error, info};
 use crate::pub_sub::PubSubMsg;
 use crate::pub_sub::{
     nats_client::{decode_nats_data, NatsClient, NatsConfig},
-    ClientId, ClientState, PubSubClient, PubSubError, Subject,
+    ClientId, ClientState, PubSubClient, PubSubError,
 };
 use crate::sensor::{SensorClient, SensorConfig, SensorError};
-use crate::supervisor::pub_sub::{SupervisorSubMsg, SUPERVISOR_SUBJECT};
+use crate::supervisor::pub_sub::{SupervisorPubMsg, SupervisorSubMsg};
+use nats::Message;
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::thread;
 use thiserror::Error;
@@ -26,7 +28,7 @@ type Handle = thread::JoinHandle<Result<(), SupervisorError>>;
 pub struct Supervisor {
     client: NatsClient,
     config: config::Config,
-    active_clients: HashMap<ClientId, Handle>,
+    active_clients: ActiveClients,
 }
 
 impl Supervisor {
@@ -35,7 +37,7 @@ impl Supervisor {
         let mut supervisor = Supervisor {
             client,
             config: config.clone(),
-            active_clients: HashMap::new(),
+            active_clients: ActiveClients::new(),
         };
 
         supervisor.add_logger(&config)?;
@@ -56,10 +58,14 @@ impl Supervisor {
         Ok(supervisor)
     }
 
-    fn process_command(&mut self, cmd: &SupervisorSubMsg) -> Result<ClientState, SupervisorError> {
+    fn process_command(
+        &mut self,
+        cmd: SupervisorSubMsg,
+        full_msg: &Message,
+    ) -> Result<ClientState, SupervisorError> {
         match cmd {
             SupervisorSubMsg::StartController { control_config } => {
-                self.start_controller(&control_config, 0.0)?;
+                self.start_controller(control_config, 0.0)?;
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::SwitchController { control_config } => {
@@ -72,7 +78,7 @@ impl Supervisor {
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::ListActiveClients => {
-                self.list_active_clients();
+                self.reply_active_clients(&full_msg);
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::KillClient { client_id: _ } => Ok(ClientState::Active),
@@ -82,44 +88,57 @@ impl Supervisor {
 
     fn start_controller(
         &mut self,
-        config: &ControllerConfig,
+        contr_config: ControllerConfig,
         target: f32,
     ) -> Result<(), SupervisorError> {
-        config
+        contr_config
             .client_ids()
             .map(|id| self.client_is_active(id))
             .collect::<Result<Vec<_>, SupervisorError>>()?;
 
-        let controller = config.get_controller(target)?;
-        let controller_client = ControllerClient::new(
-            config.controller_id.clone(),
-            config.actor_id.clone(),
-            config.sensor_id.clone(),
-            controller,
-            &self.config.nats,
-            config.type_.clone(),
-        );
-        let control_handle =
-            thread::spawn(|| controller_client.client_loop().map_err(|err| err.into()));
-        Ok(self.add_client(config.controller_id.clone(), control_handle)?)
-    }
-
-    fn switch_controller(&mut self, config: &ControllerConfig) -> Result<(), SupervisorError> {
-        let contr_id = &config.controller_id;
-        let target: f32 = self.kill_client(contr_id)?;
-        println!("Keeping target: {}", target);
-        self.start_controller(config, target)
-    }
-
-    fn list_active_clients(&self) {
-        println!("Active clients:");
-        for cl in self.active_clients.keys() {
-            println!("{}", cl);
+        let id = &contr_config.controller_id;
+        match self.active_clients.controllers.get(id) {
+            Some(_) => Err(SupervisorError::AlreadyActive(id.clone())),
+            None => {
+                let controller_client = ControllerClient::new(
+                    id.clone(),
+                    contr_config.actor_id.clone(),
+                    contr_config.sensor_id.clone(),
+                    contr_config.get_controller(target)?,
+                    &self.config.nats,
+                    contr_config.type_.clone(),
+                );
+                let control_handle =
+                    thread::spawn(|| controller_client.client_loop().map_err(|err| err.into()));
+                self.active_clients.controllers.insert(
+                    contr_config.controller_id.clone(),
+                    (control_handle, contr_config),
+                );
+                Ok(())
+            }
         }
     }
 
+    fn switch_controller(&mut self, config: ControllerConfig) -> Result<(), SupervisorError> {
+        let contr_id = &config.controller_id;
+        let target: f32 = self.kill_client(contr_id)?;
+        self.start_controller(config, target)
+    }
+
+    fn reply_active_clients(&self, msg: &Message) -> Result<(), PubSubError> {
+        println!("active_clients");
+        let clients: PubSubMsg =
+            SupervisorPubMsg::ActiveClients((&self.active_clients).into()).into();
+        msg.respond(clients.to_string())
+            .map_err(|err| PubSubError::Reply {
+                msg: msg.to_string(),
+                err: err.to_string(),
+            })
+    }
+
     fn kill_client<T: DeserializeOwned>(&mut self, id: &ClientId) -> Result<T, SupervisorError> {
-        let handle = match self.active_clients.remove(id) {
+        // TODO: NOn-generic hack.
+        let (handle, _config) = match self.active_clients.controllers.remove(id) {
             Some(contr) => Ok(contr),
             None => Err(SupervisorError::Missing(id.clone())),
         }?;
@@ -139,7 +158,7 @@ impl Supervisor {
     fn add_logger(&mut self, config: &config::Config) -> Result<(), SupervisorError> {
         let log = Log::new(&config.nats, config.general.log_level);
         let log_handle = thread::spawn(|| log.client_loop().map_err(|err| err.into()));
-        self.add_client(ClientId("log".into()), log_handle)
+        self.add_misc_client(ClientId("log".into()), log_handle)
     }
 
     fn add_sensor(
@@ -147,13 +166,22 @@ impl Supervisor {
         sensor_config: SensorConfig,
         config: &NatsConfig,
     ) -> Result<(), SupervisorError> {
-        let sensor = SensorClient::new(
-            sensor_config.id.clone(),
-            sensor_config.get_sensor()?,
-            config,
-        );
-        let handle = thread::spawn(|| sensor.client_loop().map_err(|err| err.into()));
-        self.add_client(sensor_config.id, handle)
+        let id = &sensor_config.id;
+        match self.active_clients.sensors.get(id) {
+            Some(_) => Err(SupervisorError::AlreadyActive(id.clone())),
+            None => {
+                let sensor = SensorClient::new(
+                    sensor_config.id.clone(),
+                    sensor_config.get_sensor()?,
+                    config,
+                );
+                let handle = thread::spawn(|| sensor.client_loop().map_err(|err| err.into()));
+                self.active_clients
+                    .sensors
+                    .insert(id.clone(), (handle, sensor_config));
+                Ok(())
+            }
+        }
     }
 
     fn add_actor(
@@ -161,25 +189,37 @@ impl Supervisor {
         actor_config: ActorConfig,
         config: &NatsConfig,
     ) -> Result<(), SupervisorError> {
-        let actor = actor_config.get_actor()?;
-        let actor = ActorClient::new(actor_config.id.clone(), actor, config);
-        let handle = thread::spawn(|| actor.client_loop().map_err(|err| err.into()));
-        self.add_client(actor_config.id, handle)
+        let id = &actor_config.id;
+        match self.active_clients.actors.get(id) {
+            Some(_) => Err(SupervisorError::AlreadyActive(id.clone())),
+            None => {
+                let actor = ActorClient::new(id.clone(), actor_config.get_actor()?, config);
+                let handle = thread::spawn(|| actor.client_loop().map_err(|err| err.into()));
+                self.active_clients
+                    .actors
+                    .insert(id.clone(), (handle, actor_config));
+                Ok(())
+            }
+        }
     }
 
     fn client_is_active(&self, id: &ClientId) -> Result<(), SupervisorError> {
-        if self.active_clients.contains_key(id) {
+        if self.active_clients.contatins_id(id) {
             Ok(())
         } else {
             Err(SupervisorError::Missing(id.clone()))
         }
     }
 
-    fn add_client(&mut self, new_client: ClientId, handle: Handle) -> Result<(), SupervisorError> {
-        match self.active_clients.get(&new_client) {
+    fn add_misc_client(
+        &mut self,
+        new_client: ClientId,
+        handle: Handle,
+    ) -> Result<(), SupervisorError> {
+        match self.active_clients.misc.get(&new_client) {
             Some(_) => Err(SupervisorError::AlreadyActive(new_client)),
             None => {
-                self.active_clients.insert(new_client, handle);
+                self.active_clients.misc.insert(new_client, handle);
                 Ok(())
             }
         }
@@ -188,6 +228,63 @@ impl Supervisor {
     fn handle_err(err: SupervisorError) -> ClientState {
         println!("{}", err.to_string());
         ClientState::Active
+    }
+}
+
+#[derive(Debug)]
+struct ActiveClients {
+    sensors: HashMap<ClientId, (Handle, SensorConfig)>,
+    actors: HashMap<ClientId, (Handle, ActorConfig)>,
+    controllers: HashMap<ClientId, (Handle, ControllerConfig)>,
+    misc: HashMap<ClientId, Handle>,
+}
+
+impl ActiveClients {
+    fn new() -> Self {
+        ActiveClients {
+            sensors: HashMap::new(),
+            actors: HashMap::new(),
+            controllers: HashMap::new(),
+            misc: HashMap::new(),
+        }
+    }
+
+    fn contatins_id(&self, id: &ClientId) -> bool {
+        self.sensors.contains_key(id)
+            || self.actors.contains_key(id)
+            || self.controllers.contains_key(id)
+            || self.misc.contains_key(id)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ActiveClientsList {
+    sensors: Vec<(ClientId, SensorConfig)>,
+    actors: Vec<(ClientId, ActorConfig)>,
+    controllers: Vec<(ClientId, ControllerConfig)>,
+    misc: Vec<ClientId>,
+}
+
+impl From<&ActiveClients> for ActiveClientsList {
+    fn from(clients: &ActiveClients) -> Self {
+        ActiveClientsList {
+            sensors: clients
+                .sensors
+                .iter()
+                .map(|(id, (_, config))| (id.clone(), config.clone()))
+                .collect(),
+            actors: clients
+                .actors
+                .iter()
+                .map(|(id, (_, config))| (id.clone(), config.clone()))
+                .collect(),
+            controllers: clients
+                .controllers
+                .iter()
+                .map(|(id, (_, config))| (id.clone(), config.clone()))
+                .collect(),
+            misc: clients.misc.iter().map(|(id, _)| id).cloned().collect(),
+        }
     }
 }
 
