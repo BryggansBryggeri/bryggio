@@ -5,9 +5,12 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "bryggio-cli", about = "cli usage")]
 pub enum Opt {
-    ///Communicate with a `bryggio-server` instance.
-    #[structopt(name = "brewery")]
-    Brewery(BreweryOpt),
+    ///Publish a message on a subject.
+    #[structopt(name = "publish")]
+    Publish(PubSubOpt),
+    ///Request a reply on a subject.
+    #[structopt(name = "request")]
+    Request(PubSubOpt),
     ///Install bryggio software.
     #[structopt(name = "install")]
     Install(InstallTarget),
@@ -16,13 +19,14 @@ pub enum Opt {
     RbPiSetup(RbPiOpt),
     ///Test script, switching controllers.
     #[structopt(name = "test")]
-    Test(BreweryOpt),
+    Test(PubSubOpt),
 }
 
 impl Opt {
     pub fn verbose(&self) -> bool {
         match self {
-            Self::Brewery(opt) => opt.common.verbose,
+            Self::Publish(opt) => opt.common.verbose,
+            Self::Request(opt) => opt.common.verbose,
             Self::Install(target) => target.verbose(),
             Self::RbPiSetup(opt) => opt.common.verbose,
             Self::Test(_opt) => true,
@@ -31,7 +35,7 @@ impl Opt {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct BreweryOpt {
+pub struct PubSubOpt {
     #[structopt(long)]
     pub config: path::PathBuf,
     #[structopt(long)]
