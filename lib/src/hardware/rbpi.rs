@@ -1,4 +1,4 @@
-use gpio_cdev::{errors::Error, Chip, LineHandle, LineRequestFlags};
+use gpio_cdev::{errors::Error, Chip, LineRequestFlags};
 use linux_embedded_hal::CdevPin;
 
 pub fn get_gpio_pin(pin_number: u32, label: &str) -> Result<CdevPin, Error> {

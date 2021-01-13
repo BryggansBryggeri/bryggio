@@ -207,7 +207,7 @@ dependencies = [
  "derive_more",
  "embedded-hal 1.0.0-alpha.4",
  "embedded-hal-mock",
- "gpio-cdev 0.4.0",
+ "gpio-cdev",
  "lazy_static",
  "linux-embedded-hal",
  "nats",
@@ -539,17 +539,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gpio-cdev"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da59d440ef8c26208b3960ed58b71b896db7dfd6bb138622bba733b66d978c3a"
-dependencies = [
- "bitflags",
- "libc",
- "nix",
-]
-
-[[package]]
 name = "heck"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -660,7 +649,7 @@ source = "git+https://github.com/rust-embedded/linux-embedded-hal#e9076f86eeeb86
 dependencies = [
  "cast",
  "embedded-hal 1.0.0-alpha.4",
- "gpio-cdev 0.3.0",
+ "gpio-cdev",
  "i2cdev",
  "nb 1.0.0",
  "serial-core",

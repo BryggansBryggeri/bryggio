@@ -33,11 +33,11 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
         if signal > 0.0 {
             self.handle
                 .try_set_high()
-                .map_err(|err| ActorError::Generic(err.to_string()))
+                .map_err(|_err| ActorError::Generic(String::from("GPIO error when setting high")))
         } else {
             self.handle
                 .try_set_low()
-                .map_err(|err| ActorError::Generic(err.to_string()))
+                .map_err(|_err| ActorError::Generic(String::from("GPIO error when setting high")))
         }
     }
 }
