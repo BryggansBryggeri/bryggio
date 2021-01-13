@@ -1,26 +1,26 @@
-use crate::actor;
-use embedded_hal::digital::v2::OutputPin;
+use crate::actor::{Actor, ActorError};
+use embedded_hal::digital::OutputPin;
 
-pub struct Actor<T: OutputPin + Send> {
+pub struct SimpleGpioActor<T: OutputPin + Send> {
     pub id: String,
     handle: T,
 }
 
-impl<T: OutputPin + Send> Actor<T> {
-    pub fn try_new(id: &str, handle: T) -> Result<Actor<T>, actor::ActorError> {
-        Ok(Actor {
+impl<T: OutputPin + Send> SimpleGpioActor<T> {
+    pub fn try_new(id: &str, handle: T) -> Result<SimpleGpioActor<T>, ActorError> {
+        Ok(SimpleGpioActor {
             id: id.into(),
             handle,
         })
     }
 }
 
-impl<T: OutputPin + Send> actor::Actor for Actor<T> {
-    fn validate_signal(&self, signal: f32) -> Result<(), actor::ActorError> {
+impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
+    fn validate_signal(&self, signal: f32) -> Result<(), ActorError> {
         if signal >= 0.0 {
             Ok(())
         } else {
-            Err(actor::ActorError::InvalidSignal {
+            Err(ActorError::InvalidSignal {
                 signal,
                 lower_bound: 0.0,
                 upper_bound: 1.0,
@@ -28,16 +28,16 @@ impl<T: OutputPin + Send> actor::Actor for Actor<T> {
         }
     }
 
-    fn set_signal(&mut self, signal: f32) -> Result<(), actor::ActorError> {
+    fn set_signal(&mut self, signal: f32) -> Result<(), ActorError> {
         self.validate_signal(signal)?;
-        let outcome = if signal > 0.0 {
-            self.handle.set_high()
+        if signal > 0.0 {
+            self.handle
+                .try_set_high()
+                .map_err(|err| ActorError::Generic(err.to_string()))
         } else {
-            self.handle.set_low()
-        };
-        match outcome {
-            Ok(()) => Ok(()),
-            Err(_err) => Err(actor::ActorError::ActorError("TODO: GPIO error".into())),
+            self.handle
+                .try_set_low()
+                .map_err(|err| ActorError::Generic(err.to_string()))
         }
     }
 }

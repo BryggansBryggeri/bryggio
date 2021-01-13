@@ -33,7 +33,7 @@ impl ActorConfig {
         match &self.type_ {
             ActorType::SimpleGpio(pin_number) => {
                 let gpio_pin = hardware_impl::get_gpio_pin(*pin_number, &self.id.as_ref()).unwrap();
-                let actor = simple_gpio::Actor::try_new(self.id.as_ref(), gpio_pin)?;
+                let actor = simple_gpio::SimpleGpioActor::try_new(self.id.as_ref(), gpio_pin)?;
                 Ok(Box::new(actor))
             }
         }
@@ -49,7 +49,7 @@ pub enum ActorError {
         upper_bound: f32,
     },
     #[error("Generic: {0}")]
-    ActorError(String),
+    Generic(String),
 }
 
 impl From<ActorError> for PubSubError {

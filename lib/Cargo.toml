@@ -5,7 +5,7 @@ authors = ["Jakob Lindqvist <jakob.lindqvist.92@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-embedded-hal = { version = ">=0.2", features = ["unproven"] }
+embedded-hal = "=1.0.0-alpha.4"
 gpio-cdev = "*"
 embedded-hal-mock = "0.7.1"
 onewire = ">=0.3.13"
@@ -22,7 +22,8 @@ derive_more = ">=0.99"
 thiserror = "1.0.22"
 
 [target.'cfg(target_arch = "arm")'.dependencies]
-linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", rev="25bf2be", features=["gpio_cdev"]}
+linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", branch = "master", features=["gpio_cdev"]}
+# linux-embedded-hal = { version = "0.3", features = ["gpio_cdev"] }
 
 [dev-dependencies]
 assert_approx_eq = "1.1.0"

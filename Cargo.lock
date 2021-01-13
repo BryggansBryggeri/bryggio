@@ -205,7 +205,7 @@ dependencies = [
  "assert_approx_eq",
  "chrono",
  "derive_more",
- "embedded-hal",
+ "embedded-hal 1.0.0-alpha.4",
  "embedded-hal-mock",
  "gpio-cdev 0.4.0",
  "lazy_static",
@@ -412,12 +412,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "embedded-hal"
+version = "1.0.0-alpha.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2260cabeacf4bda1df1a8d54f67047a9aadf02fe14cfab07649f2cec6a4693b"
+dependencies = [
+ "nb 1.0.0",
+]
+
+[[package]]
 name = "embedded-hal-mock"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9eca2fb304dbaea79776ea2a0b1445e0de00b103854dbd956f406edcbf54a262"
 dependencies = [
- "embedded-hal",
+ "embedded-hal 0.2.4",
  "nb 0.1.3",
 ]
 
@@ -646,19 +655,18 @@ checksum = "c7d73b3f436185384286bd8098d17ec07c9a7d2388a6599f824d8502b529702a"
 
 [[package]]
 name = "linux-embedded-hal"
-version = "0.3.0"
-source = "git+https://github.com/rust-embedded/linux-embedded-hal?rev=25bf2be#25bf2be29a22c631ef72adf6c13b63cdad7e0249"
+version = "0.4.0-alpha.0"
+source = "git+https://github.com/rust-embedded/linux-embedded-hal#e9076f86eeeb86929f341bacd58ecd78643080cb"
 dependencies = [
  "cast",
- "embedded-hal",
+ "embedded-hal 1.0.0-alpha.4",
  "gpio-cdev 0.3.0",
  "i2cdev",
- "nb 0.1.3",
+ "nb 1.0.0",
  "serial-core",
  "serial-unix",
  "spidev",
  "sysfs_gpio",
- "void",
 ]
 
 [[package]]
@@ -803,7 +811,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73be67dc9e140c0963625510b4a09c07edf2c07c9dab53134d863e4d302c9ea1"
 dependencies = [
  "byteorder",
- "embedded-hal",
+ "embedded-hal 0.2.4",
 ]
 
 [[package]]
