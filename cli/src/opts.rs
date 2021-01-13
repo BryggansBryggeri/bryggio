@@ -25,7 +25,7 @@ impl Opt {
             Self::Brewery(opt) => opt.common.verbose,
             Self::Install(target) => target.verbose(),
             Self::RbPiSetup(opt) => opt.common.verbose,
-            Self::Test(opt) => true,
+            Self::Test(_opt) => true,
         }
     }
 }

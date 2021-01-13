@@ -7,7 +7,6 @@ use crate::supervisor::{ActiveClientsList, Supervisor};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-pub(crate) const SUPERVISOR_SUBJECT: &str = "supervisor";
 
 impl PubSubClient for Supervisor {
     fn client_loop(mut self) -> Result<(), PubSubError> {
@@ -76,10 +75,10 @@ impl TryFrom<&Message> for SupervisorSubMsg {
 impl SupervisorSubMsg {
     pub fn subject(&self) -> Subject {
         match self {
-            SupervisorSubMsg::StartController { control_config } => {
+            SupervisorSubMsg::StartController { control_config: _ } => {
                 Subject(String::from("command.start_controller"))
             }
-            SupervisorSubMsg::SwitchController { control_config } => {
+            SupervisorSubMsg::SwitchController { control_config: _ } => {
                 Subject(String::from("command.switch_controller"))
             }
             _ => panic!("No"),

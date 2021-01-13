@@ -15,7 +15,7 @@ pub fn info<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &
     log(client, msg, sub_subject, LogLevel::Info);
 }
 
-pub fn warning<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
+pub fn _warning<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
     log(client, msg, sub_subject, LogLevel::Warning);
 }
 

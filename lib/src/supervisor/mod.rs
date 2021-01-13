@@ -3,10 +3,6 @@ use crate::config;
 use crate::control::{
     pub_sub::ControllerPubMsg, ControllerClient, ControllerConfig, ControllerError,
 };
-#[cfg(target_arch = "x86_64")]
-use crate::hardware::dummy as hardware_impl;
-#[cfg(target_arch = "arm")]
-use crate::hardware::rbpi as hardware_impl;
 use crate::logger::Log;
 use crate::logger::{debug, error, info};
 use crate::pub_sub::PubSubMsg;
@@ -77,7 +73,13 @@ impl Supervisor {
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::ListActiveClients => {
-                self.reply_active_clients(&full_msg);
+                if let Err(err) = self.reply_active_clients(&full_msg) {
+                    error(
+                        self,
+                        format!("Failed replying with active clients. {}", err),
+                        "supervisor",
+                    );
+                };
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::Stop => Ok(ClientState::Active),

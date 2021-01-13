@@ -177,15 +177,15 @@ impl ControllerPubMsg {
     pub fn subject(&self, msg_id: &ClientId) -> Subject {
         match self {
             ControllerPubMsg::SetSignal(SignalMsg {
-                id,
-                timestamp,
-                signal,
+                id: _,
+                timestamp: _,
+                signal: _,
             }) => Subject(format!("actor.{}.set_signal", msg_id)),
             ControllerPubMsg::Status {
                 id,
-                timestamp,
-                target,
-                type_,
+                timestamp: _,
+                target: _,
+                type_: _,
             } => Subject(format!("controller.{}.status", id)),
         }
     }
