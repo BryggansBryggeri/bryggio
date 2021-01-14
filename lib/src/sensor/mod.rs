@@ -38,7 +38,7 @@ impl SensorConfig {
     pub fn get_sensor(&self) -> Result<Box<dyn Sensor>, SensorError> {
         match &self.type_ {
             SensorType::Dummy(delay_in_ms) => {
-                let sensor = dummy::Sensor::new(self.id.as_ref(), *delay_in_ms);
+                let sensor = dummy::DummySensor::new(self.id.as_ref(), *delay_in_ms);
                 Ok(Box::new(sensor))
             }
             SensorType::Dsb(addr) => {
