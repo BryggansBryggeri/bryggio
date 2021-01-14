@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs;
 use std::path;
+use std::thread::sleep;
+use std::time::Duration;
 
 const DS18_DIR: &str = "/sys/bus/w1/devices/";
 
@@ -43,13 +45,12 @@ impl AsRef<str> for Ds18b20Address {
 impl sensor::Sensor for Ds18b20 {
     fn get_measurement(&self) -> Result<f32, sensor::SensorError> {
         let device_path = format!("/sys/bus/w1/devices/{}/w1_slave", self.address.0);
-        let raw_read = match utils::read_file_to_string(&device_path) {
-            Ok(raw_read) => raw_read,
-            Err(err) => {
-                return Err(sensor::SensorError::Read(err.to_string()));
-            }
+        let meas = match utils::read_file_to_string(&device_path) {
+            Ok(raw_read) => parse_temp_measurement(&raw_read),
+            Err(err) => Err(sensor::SensorError::Read(err.to_string())),
         };
-        parse_temp_measurement(&raw_read)
+        sleep(Duration::from_millis(1000));
+        meas
     }
 
     fn get_id(&self) -> String {
