@@ -1,4 +1,5 @@
 use crate::actor::Actor;
+use crate::logger::{error, info};
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
     ClientState, PubSubClient, PubSubError, PubSubMsg, Subject,
@@ -36,8 +37,8 @@ pub struct SignalMsg {
 pub enum ActorSubMsg {
     #[serde(rename = "set_signal")]
     SetSignal(SignalMsg),
-    #[serde(rename = "stop")]
-    Stop,
+    // #[serde(rename = "stop")]
+    // Stop,
 }
 
 impl TryFrom<Message> for ActorSubMsg {
@@ -64,27 +65,43 @@ impl Into<PubSubMsg> for ActorPubMsg {
 
 impl PubSubClient for ActorClient {
     fn client_loop(mut self) -> Result<(), PubSubError> {
-        let sub = self.subscribe(&Subject(format!("actor.{}.set_signal", self.id)))?;
-        let mut state = ClientState::Active;
-        while state == ClientState::Active {
+        info(
+            &self,
+            format!("Starting actor with id '{}'", self.id),
+            &format!("actor.{}", self.id),
+        );
+        let sub = match self.subscribe(&Subject(format!("actor.{}.set_signal", self.id))) {
+            Ok(sub) => sub,
+            Err(err) => {
+                error(&self, err.to_string(), &format!("actor.{}", self.id));
+                return Err(err);
+            }
+        };
+        // let mut state = ClientState::Active;
+        loop {
             if let Some(contr_message) = sub.next() {
-                if let Ok(msg) = ActorSubMsg::try_from(contr_message) {
-                    match msg {
-                        ActorSubMsg::SetSignal(msg) => {
-                            if let Ok(()) = self.actor.set_signal(msg.signal) {
+                let res: Result<(), PubSubError> = match ActorSubMsg::try_from(contr_message) {
+                    Ok(msg) => match msg {
+                        ActorSubMsg::SetSignal(msg) => self
+                            .actor
+                            .set_signal(msg.signal)
+                            .map_err(|err| err.into())
+                            .and_then(|()| {
                                 self.publish(
                                     &self.gen_signal_subject(),
                                     &ActorPubMsg::CurrentSignal(msg).into(),
-                                )?;
-                            }
-                        }
-                        ActorSubMsg::Stop => state = ClientState::Inactive,
-                    }
+                                )
+                            }),
+                    },
+                    Err(err) => Err(err),
+                };
+                if let Err(err) = res {
+                    error(&self, err.to_string(), &format!("actor.{}", self.id));
                 }
             }
         }
         // TODO: Exit gracefully
-        Ok(())
+        // Ok(())
     }
 
     fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
