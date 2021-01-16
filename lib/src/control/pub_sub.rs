@@ -1,7 +1,7 @@
 use crate::actor::pub_sub::SignalMsg;
 use crate::control::ControllerType;
 use crate::control::{Control, State};
-use crate::logger::{error, info};
+use crate::logger::{debug, error, info};
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
@@ -90,6 +90,13 @@ impl PubSubClient for ControllerClient {
                 match ControllerSubMsg::try_from(msg) {
                     Ok(msg) => match msg {
                         ControllerSubMsg::SetTarget(new_target) => {
+                            log_debug(
+                                &self,
+                                &format!(
+                                    "Setting target '{}' for controller '{}'",
+                                    new_target, self.id
+                                ),
+                            );
                             self.controller.set_target(new_target)
                         }
                     },
@@ -121,6 +128,14 @@ impl PubSubClient for ControllerClient {
     fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
         self.client.publish(subject, msg)
     }
+}
+
+fn log_debug(client: &ControllerClient, msg: &str) {
+    debug(
+        client,
+        String::from(msg),
+        &format!("controller.{}", &client.id),
+    );
 }
 
 fn log_info(client: &ControllerClient, msg: &str) {
