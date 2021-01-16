@@ -3,7 +3,7 @@
 BRYGGANS BRYGGERI's very own brewery control software.
 
 Currently under heavy developement.
-The goal is to develop a stand-alone Pub-sub backend with which any client can communicate with and thereby control the brewery hardware.
+The goal is to develop a stand-alone pub-sub backend with which any client can communicate and thereby control the brewery hardware.
 
 ## Philosophy
 
@@ -45,13 +45,13 @@ Before the first release we will not publish any binaries, see [Install from sou
 ### Install from source
 
 - Install rust, cargo and cargo-make from [here](https://www.rust-lang.org/tools/install).
-  Rust and cargo are provided by official distributions, while cargo-make can be installed with
+  Rust and cargo are provided by official distributions, cargo-make can subsequently be installed with
 
   ```bash
   cargo install cargo-make
   ```
 
-- Install and running `bryggio` and `nats-server` from source.
+- Build targets `bryggio-supervisor`, `bryggio-cli` and `nats-server` from source.
   The latest released version `nats-server` does not yet support web-sockets, so it needs to be built from the master branch.
   This step obviously requires installation of [golang](https://golang.org/).
   Hopefully this feature will [soon](https://nats.io/about/) be on the stable release and a simple download will suffice.
@@ -60,7 +60,7 @@ Before the first release we will not publish any binaries, see [Install from sou
   ```bash
   git clone --recurse-submodules git@github.com:BryggansBryggeri/bryggio.git bryggio
   cd bryggio
-  cargo make --no-workspace build-nats
+  cargo make --no-workspace build
   cargo run --bin bryggio-supervisor -- <path_to_bryggio_config_file>
   ```
 
@@ -77,30 +77,40 @@ Check out the sample configs in this repo for usage.
 The supervisor, starts up a `nats-server` in a separate process and then runs a supervisor pub sub client which,
 listening to special command subjects, starts and stops other clients like sensors, actors and controllers.
 
-## Run on Rbpi
+## Run
 
-Build for rbpi needs
+There are two ways to run the supervisor:
 
-- arm-compatible rust toolchain installed
+```bash
+# This will recompile if there are code changes
+cargo run --bin bryggio-supervisor -- <path_to_bryggio_config_file>
+# ... while this will simply run the executable created in the build step.
+./target/bryggio-supervisor <path_to_bryggio_config_file>
+```
+
+## Build for and run on rbpi
+
+Build for rbpi needs an arm-compatible rust toolchain. Install with
+
+```bash
+rustup target add armv7-unknown-linux-gnueabihf
+```
+
+and build the required executables
 
 ```bash
 # In the bryggio repo root
 cargo make rbpi-build
 ```
 
-Cross compile `nats-server` for rbpi
+TODO: Add rbpi host and path as env. variables and make them available to the `cargo make rbpi-install` command.
 
-```bash
-git clone --branch=master https://github.com/nats-io/nats-server.git nats-server
-cd nats-server
-env GOOS=linux GOARCH=arm GOARM=5 go build
-```
+Move the resulting executables
+(`target/armv7-unknown-linux-gnueabihf/<build-mode>/bryggio-supervisor`) and
+(`target/rbpi-nats-server`)
+to the rbpi, as well as the config files listed in [Configuration](#configuration)
 
-Move the resulting binary (`target/armv7-unknown-linux-gnueabihf/<build-mode>/bryggio-supervisor`) to the rbpi.
-
-Also needed: A BryggIO JSON config file.
-
-On the rbpi, currently the config files need to be in the same directory as the binary, then:
+On the rbpi run:
 
 ```bash
 sudo ./bryggio-supervisor <path_to_bryggio_config_file>

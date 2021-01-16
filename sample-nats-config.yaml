@@ -1,4 +1,6 @@
+server_name: "bryggio-nats-server"
 listen: localhost:4222
+http_port: 8888
 
 authorization: {
     user: "jackonelli"

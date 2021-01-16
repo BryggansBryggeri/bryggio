@@ -5,6 +5,12 @@ description = "Generate bryggIO documentation."
 command = "cargo"
 args = ["doc", "--no-deps"]
 
+[tasks.build]
+description = "Build all targets: nats-server, bryggio-supervisor and bryggio-cli"
+dependencies = ["build-nats"]
+command = "cargo"
+args = ["build"]
+
 [tasks.build-nats]
 description = "Build nats-server"
 script = [
