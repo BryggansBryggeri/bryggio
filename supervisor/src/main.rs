@@ -1,39 +1,43 @@
 #![forbid(unsafe_code)]
-use bryggio_lib::config;
+use bryggio_lib::config::Config;
 use bryggio_lib::pub_sub::{nats_client::run_nats_server, PubSubClient, PubSubError};
 use bryggio_lib::supervisor::{Supervisor, SupervisorError};
-use std::env;
 use std::path::{Path, PathBuf};
+use structopt::StructOpt;
 
-fn config_file_from_args() -> Result<PathBuf, SupervisorError> {
-    let args: Vec<String> = env::args().collect();
-    match args.len() {
-        2 => Ok(Path::new(&args[1]).to_path_buf()),
-        _ => Err(SupervisorError::Cli(
-            "Usage: bryggio-supervisor <path_to_config_file>".into(),
-        )),
+fn config_file_from_args(config_file: &Path) -> Result<Config, SupervisorError> {
+    match Config::try_new(&config_file) {
+        Ok(config) => Ok(config),
+        Err(err) => Err(PubSubError::Configuration(format!(
+            "Invalid config file '{}'. Error: {}.",
+            config_file.to_string_lossy(),
+            err.to_string()
+        ))
+        .into()),
     }
 }
 
 fn main() -> Result<(), SupervisorError> {
-    let config_file = config_file_from_args()?;
-    let config = match config::Config::try_new(&config_file) {
-        Ok(config) => config,
-        Err(err) => {
-            return Err(PubSubError::Configuration(format!(
-                "Invalid config file '{}'. Error: {}.",
-                config_file.to_string_lossy(),
-                err.to_string()
-            ))
-            .into());
+    let opt = Opt::from_args();
+    match opt {
+        Opt::Run { config_file } => {
+            let config = config_file_from_args(config_file.as_path())?;
+            println!("Starting nats");
+            let mut nats_server_child = run_nats_server(&config.nats)?;
+            println!("Starting supervisor");
+            let supervisor = Supervisor::init_from_config(config)?;
+            supervisor.client_loop()?;
+            nats_server_child
+                .kill()
+                .map_err(|err| PubSubError::Server(err.to_string()).into())
         }
-    };
-    println!("Starting nats");
-    let mut nats_server_child = run_nats_server(&config.nats)?;
-    println!("Starting supervisor");
-    let supervisor = Supervisor::init_from_config(config)?;
-    supervisor.client_loop()?;
-    nats_server_child
-        .kill()
-        .map_err(|err| PubSubError::Server(err.to_string()).into())
+    }
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "bryggio-supervisor", about = "Supervisor client for BryggIO")]
+pub enum Opt {
+    ///Run supervisor
+    #[structopt(name = "run")]
+    Run { config_file: PathBuf },
 }

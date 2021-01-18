@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 bryggio-lib = { path = "../lib" }
+structopt = ">=0.3"
