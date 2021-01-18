@@ -17,7 +17,7 @@ fn run_subcommand(opt: Opt) {
             brewery::request(&opts);
         }
         Opt::Install(target) => match target {
-            InstallTarget::Server(opt) => install::server::install_server(&opt),
+            InstallTarget::Server(opt) => install::supervisor::install_server(&opt),
             InstallTarget::Cli(_opt) => info!("Installing `bryggio-cli`"),
         },
         Opt::RbPiSetup(opt) => {

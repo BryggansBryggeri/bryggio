@@ -6,10 +6,9 @@ use crate::install::nats;
 
 pub fn install_supervisor(opt: &ServerOpt) {
     //let nats_path: &Path = Path::new("/usr/local/bin/nats-server");
-    let nats_path: &Path = Path::new("nats-server.zip");
     info!("Installing `bryggio-supervisor`");
     setup_directory();
-    nats::download_server(nats_path, opt.update);
+    nats::download_server(opt.nats_path, opt.update);
     nats::generate_config();
     download_bryggio_binary();
     generate_config();
@@ -18,7 +17,17 @@ pub fn install_supervisor(opt: &ServerOpt) {
 }
 
 fn setup_directory() {}
-fn download_bryggio_binary() {
+pub(crate) fn download_supervisor(nats_path: &Path, update: bool) {
+    let (local_exists, local_version) = local_meta_data(nats_path);
+    if !update && local_exists {
+        info!("Keeping existing NATS server.");
+        return;
+    }
+    let (latest_nats_version, nats_url) = github_meta_data();
+    if should_download(local_exists, update, local_version, latest_nats_version) {}
+    install::download_file(&nats_path, &nats_url);
+}
+
     info!(
         "Downloading bryggio v{}",
         bryggio_lib::utils::get_bryggio_version()
