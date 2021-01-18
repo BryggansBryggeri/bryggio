@@ -59,7 +59,7 @@ pub enum InstallTarget {
 impl InstallTarget {
     fn verbose(&self) -> bool {
         match self {
-            Self::Server(opt) => opt.common.verbose,
+            Self::Supervisor(opt) => opt.common.verbose,
             Self::Cli(opt) => opt.common.verbose,
         }
     }
@@ -77,9 +77,9 @@ pub struct SupervisorOpt {
     common: Common,
     #[structopt(long)]
     pub update: bool,
-    #[structopt(default_value = Path::new("target/nats-server"), long)]
+    #[structopt(default_value = "target/nats-server", long)]
     pub nats_path: PathBuf,
-    #[structopt(default_value = Path::new("target/gh_supervisor"), long)]
+    #[structopt(default_value = "target/gh_supervisor", long)]
     pub supervisor_path: PathBuf,
 }
 

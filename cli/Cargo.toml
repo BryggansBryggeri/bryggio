@@ -10,7 +10,7 @@ edition = "2018"
 url = ">=2"
 # Can't use latest version of ureq b/c of ring conflict with rocket
 ureq = ">=0.8"
-structopt = "0.3.11"
+structopt = ">=0.3"
 # Quote is needed for failure-derive bug fix
 # https://users.rust-lang.org/t/failure-derive-compilation-error/39062
 quote = ">=1"

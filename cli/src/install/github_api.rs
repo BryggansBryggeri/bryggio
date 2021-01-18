@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use url::Url;
 
 #[derive(Deserialize)]
 pub(crate) struct ReleaseArchitecture {
@@ -15,25 +14,16 @@ pub(crate) struct Release {
 }
 
 impl Release {
-    pub(crate) fn url(&self, predicate: fn(&ReleaseArchitecture) -> bool) -> Url {
-        #[cfg(target_os = "linux")]
-        let os = "linux-amd64";
-        #[cfg(target_os = "macos")]
-        let os = "darwin-amd64";
-        #[cfg(target_os = "windows")]
-        let os = "windows-amd64";
-        #[cfg(target_arch = "x86_64")]
-        let arch = "amd64";
-        #[cfg(target_arch = "arm")]
-        let arch = "arm7";
-        self.assets
-            .iter()
-            .filter(|x| x.name.contains(os))
-            .filter(|x| x.name.contains(arch))
-            .filter(|x| predicate(x))
-            .map(|x| Url::parse(&x.url))
-            .last()
-            .unwrap()
-            .unwrap()
+    pub(crate) fn urls(&self) -> impl Iterator<Item = &ReleaseArchitecture> {
+        self.assets.iter()
     }
+}
+
+pub(crate) fn latest_github_release(url: &str) -> Release {
+    let response_raw = ureq::get(url)
+        .call()
+        .expect("ureq call failed")
+        .into_string()
+        .unwrap();
+    serde_json::from_str(&response_raw).unwrap()
 }
