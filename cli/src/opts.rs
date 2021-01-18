@@ -48,8 +48,8 @@ pub struct PubSubOpt {
 
 #[derive(Debug, StructOpt)]
 pub enum InstallTarget {
-    /// Install `bryggio-server`
-    #[structopt(name = "bryggio-server")]
+    /// Install `bryggio-supervisor`
+    #[structopt(name = "bryggio-supervisor")]
     Server(ServerOpt),
     /// Install `bryggio-cli`
     #[structopt(name = "bryggio-cli")]

@@ -1,10 +1,12 @@
+use lazy_static::lazy_static;
+use log::info;
 use std::fs;
 use std::io;
 use std::path::Path;
-mod nats;
-use log::info;
-pub mod server;
 use url::Url;
+mod github_api;
+mod nats;
+pub mod server;
 
 pub(crate) fn download_file<P: AsRef<Path>>(dest_path: P, source_url: &Url) {
     let dest_path = dest_path.as_ref();
@@ -21,4 +23,11 @@ pub(crate) fn download_file<P: AsRef<Path>>(dest_path: P, source_url: &Url) {
         &mut file,
     )
     .expect("Could not write to file");
+}
+
+lazy_static! {
+    static ref SEMVER_VERSION_PATTERN: regex::Regex = regex::Regex::new(
+        r"v([0-9].[0-9].[0-9])"
+    )
+    .unwrap(); // This unwrap is fine since it is a constant valid regex.
 }
