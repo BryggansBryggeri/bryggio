@@ -5,6 +5,8 @@ use crate::install::{
 use crate::opts::SupervisorOpt;
 use log::info;
 use semver::Version;
+use std::fs::create_dir;
+use std::os::unix::fs::symlink;
 use std::path::Path;
 use std::str;
 use url::Url;
@@ -12,34 +14,56 @@ use url::Url;
 use crate::install::nats;
 
 pub fn install_supervisor(opt: &SupervisorOpt) {
-    //let nats_path: &Path = Path::new("/usr/local/bin/nats-server");
+    // TODO: Tmp hack before I do proper tilde expansion
+    // let mut bryggio_root = dirs::home_dir().expect("Could not locate a home dir.");
+    // bryggio_root.push(opt.bryggio_root.as_path());
+    let bryggio_root = opt.bryggio_root.as_path();
     info!("Installing `bryggio-supervisor`");
-    setup_directory();
-    nats::download_server(opt.nats_path.as_path(), opt.update);
-    nats::generate_config();
-    let supervisor_path = opt.supervisor_path.as_path();
-    download_supervisor(&supervisor_path, opt.update);
-    make_executable(supervisor_path);
-    generate_config();
+    setup_directory(&bryggio_root);
+    nats::setup_nats_server(&bryggio_root.join(opt.nats_path.as_path()), opt.update);
+    setup_supervisor(
+        &bryggio_root.join(opt.supervisor_path.as_path()),
+        opt.update,
+    );
     enable_one_wire();
     setup_gpio_user();
 }
 
-fn setup_directory() {}
+fn setup_directory(bryggio_root: &Path) {
+    if !bryggio_root.exists() {
+        create_dir(bryggio_root).unwrap_or_else(|err| {
+            panic!(
+                "Could not create dir: '{}'. {}",
+                bryggio_root.to_string_lossy(),
+                err.to_string()
+            )
+        });
+    }
+}
 
-pub(crate) fn download_supervisor(supervisor_path: &Path, update: bool) {
+pub(crate) fn setup_supervisor(supervisor_path: &Path, update: bool) {
     let local_version = get_local_version(supervisor_path);
     if !update && local_version.is_some() {
         info!("Keeping existing bryggio-supervisor.");
         return;
     }
+
     let (latest_supervisor_version, supervisor_url) = github_meta_data();
     if should_download(update, local_version, latest_supervisor_version) {
         download_file(&supervisor_path, &supervisor_url);
+        make_executable(supervisor_path);
+        let link = Path::new("/usr/local/bin/bryggio-supervisor");
+        symlink(supervisor_path, link).unwrap_or_else(|err| {
+            panic!(
+                "Error symlinking '{} -> {}'. {}",
+                supervisor_path.to_string_lossy(),
+                link.to_string_lossy(),
+                err.to_string(),
+            )
+        });
     }
 }
 
-fn generate_config() {}
 fn enable_one_wire() {}
 fn setup_gpio_user() {}
 

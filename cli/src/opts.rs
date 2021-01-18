@@ -77,9 +77,12 @@ pub struct SupervisorOpt {
     common: Common,
     #[structopt(long)]
     pub update: bool,
-    #[structopt(default_value = "target/nats-server", long)]
+    // TODO: Fix tilde expansion
+    #[structopt(default_value = "bryggio", long)]
+    pub bryggio_root: PathBuf,
+    #[structopt(default_value = "nats-server", long)]
     pub nats_path: PathBuf,
-    #[structopt(default_value = "target/gh_supervisor", long)]
+    #[structopt(default_value = "bryggio-supervisor", long)]
     pub supervisor_path: PathBuf,
 }
 
