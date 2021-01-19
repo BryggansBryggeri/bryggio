@@ -42,7 +42,7 @@ Due to the inherent inertia in the objective (heating a lot of water), we can ha
 
 Before the first release we will not publish any binaries, see [Install from source](#install-from-source)
 
-### Install from source
+### Build from source
 
 - Install rust, cargo and cargo-make from [here](https://www.rust-lang.org/tools/install).
   Rust and cargo are provided by official distributions, cargo-make can subsequently be installed with
@@ -83,9 +83,9 @@ There are two ways to run the supervisor:
 
 ```bash
 # This will recompile if there are code changes
-cargo run --bin bryggio-supervisor -- <path_to_bryggio_config_file>
+cargo run --bin bryggio-supervisor -- run <path_to_bryggio_config_file>
 # ... while this will simply run the executable created in the build step.
-./target/bryggio-supervisor <path_to_bryggio_config_file>
+./target/<profile>/bryggio-supervisor run <path_to_bryggio_config_file>
 ```
 
 ## Build for and run on rbpi
