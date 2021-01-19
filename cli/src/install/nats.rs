@@ -45,7 +45,7 @@ fn github_meta_data() -> (Version, Url) {
         .unwrap()
         .unwrap();
     let version = semver_from_text_output(&latest.tag_name);
-    (version, url.clone().pop().unwrap())
+    (version, url)
 }
 
 const NATS_GITHUB_LATEST: &str = "https://api.github.com/repos/nats-io/nats-server/releases/latest";
