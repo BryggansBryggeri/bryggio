@@ -59,17 +59,20 @@ impl Supervisor {
         full_msg: &Message,
     ) -> Result<ClientState, SupervisorError> {
         match cmd {
-            SupervisorSubMsg::StartController { control_config } => {
-                self.start_controller(control_config, 0.0)?;
+            SupervisorSubMsg::StartController { contr_data } => {
+                self.start_controller(contr_data.config, contr_data.new_target)?;
                 Ok(ClientState::Active)
             }
-            SupervisorSubMsg::SwitchController { control_config } => {
+            SupervisorSubMsg::SwitchController { contr_data } => {
                 info(
                     self,
-                    format!("Switching controller to type: {:?}", control_config.type_),
+                    format!(
+                        "Switching controller to type: {:?}",
+                        contr_data.config.type_
+                    ),
                     "supervisor",
                 );
-                self.switch_controller(control_config, full_msg)?;
+                self.switch_controller(contr_data.config, contr_data.new_target, full_msg)?;
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::ListActiveClients => {
@@ -123,15 +126,16 @@ impl Supervisor {
     fn switch_controller(
         &mut self,
         config: ControllerConfig,
+        new_target: f32,
         msg: &Message,
     ) -> Result<(), SupervisorError> {
         let contr_id = &config.controller_id;
-        let target: f32 = self.kill_client(contr_id)?;
-        self.start_controller(config.clone(), target)?;
+        let _: f32 = self.kill_client(contr_id)?;
+        self.start_controller(config.clone(), new_target)?;
         let status: PubSubMsg = ControllerPubMsg::Status {
             id: contr_id.clone(),
             timestamp: TimeStamp::now(),
-            target,
+            target: new_target,
             type_: config.type_,
         }
         .into();
