@@ -64,14 +64,6 @@ impl Supervisor {
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::SwitchController { contr_data } => {
-                info(
-                    self,
-                    format!(
-                        "Switching controller to type: {:?}",
-                        contr_data.config.type_
-                    ),
-                    "supervisor",
-                );
                 self.switch_controller(contr_data.config, contr_data.new_target, full_msg)?;
                 Ok(ClientState::Active)
             }
@@ -129,6 +121,14 @@ impl Supervisor {
         new_target: f32,
         msg: &Message,
     ) -> Result<(), SupervisorError> {
+        info(
+            self,
+            format!(
+                "Switching controller to type: {:?} with target {}",
+                config.type_, new_target,
+            ),
+            "supervisor",
+        );
         let contr_id = &config.controller_id;
         let _: f32 = self.kill_client(contr_id)?;
         self.start_controller(config.clone(), new_target)?;
