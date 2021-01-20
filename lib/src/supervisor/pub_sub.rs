@@ -39,13 +39,25 @@ impl PubSubClient for Supervisor {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum SupervisorSubMsg {
     #[serde(rename = "start_controller")]
-    StartController { control_config: ControllerConfig },
+    StartController { contr_data: NewContrData },
     #[serde(rename = "switch_controller")]
-    SwitchController { control_config: ControllerConfig },
+    SwitchController { contr_data: NewContrData },
     #[serde(rename = "list_active_clients")]
     ListActiveClients,
     #[serde(rename = "stop")]
     Stop,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NewContrData {
+    pub(crate) config: ControllerConfig,
+    pub(crate) new_target: f32,
+}
+
+impl NewContrData {
+    pub fn new(config: ControllerConfig, new_target: f32) -> Self {
+        NewContrData { config, new_target }
+    }
 }
 
 impl TryFrom<&Message> for SupervisorSubMsg {
@@ -53,12 +65,12 @@ impl TryFrom<&Message> for SupervisorSubMsg {
     fn try_from(msg: &Message) -> Result<Self, PubSubError> {
         match msg.subject.as_ref() {
             "command.start_controller" => {
-                let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
-                Ok(SupervisorSubMsg::StartController { control_config })
+                let contr_data: NewContrData = decode_nats_data(&msg.data)?;
+                Ok(SupervisorSubMsg::StartController { contr_data })
             }
             "command.switch_controller" => {
-                let control_config: ControllerConfig = decode_nats_data(&msg.data)?;
-                Ok(SupervisorSubMsg::SwitchController { control_config })
+                let contr_data: NewContrData = decode_nats_data(&msg.data)?;
+                Ok(SupervisorSubMsg::SwitchController { contr_data })
             }
             "command.list_active_clients" => Ok(SupervisorSubMsg::ListActiveClients),
             _ => {
@@ -75,10 +87,10 @@ impl TryFrom<&Message> for SupervisorSubMsg {
 impl SupervisorSubMsg {
     pub fn subject(&self) -> Subject {
         match self {
-            SupervisorSubMsg::StartController { control_config: _ } => {
+            SupervisorSubMsg::StartController { contr_data: _ } => {
                 Subject(String::from("command.start_controller"))
             }
-            SupervisorSubMsg::SwitchController { control_config: _ } => {
+            SupervisorSubMsg::SwitchController { contr_data: _ } => {
                 Subject(String::from("command.switch_controller"))
             }
             _ => panic!("No"),
@@ -89,13 +101,11 @@ impl SupervisorSubMsg {
 impl Into<PubSubMsg> for SupervisorSubMsg {
     fn into(self) -> PubSubMsg {
         match &self {
-            SupervisorSubMsg::StartController { control_config } => PubSubMsg(
-                serde_json::to_string(&control_config)
-                    .expect("SupervisorSubMsg serialization error"),
+            SupervisorSubMsg::StartController { contr_data } => PubSubMsg(
+                serde_json::to_string(&contr_data).expect("SupervisorSubMsg serialization error"),
             ),
-            SupervisorSubMsg::SwitchController { control_config } => PubSubMsg(
-                serde_json::to_string(&control_config)
-                    .expect("SupervisorSubMsg serialization error"),
+            SupervisorSubMsg::SwitchController { contr_data } => PubSubMsg(
+                serde_json::to_string(&contr_data).expect("SupervisorSubMsg serialization error"),
             ),
             _ => todo!(),
         }
