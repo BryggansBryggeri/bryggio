@@ -62,11 +62,11 @@ impl PubSubClient for SensorClient {
             }
             let meas = self.sensor.get_measurement();
             let timestamp = TimeStamp::now();
-            debug(
-                &self,
-                format!("msg from {}", self.id),
-                &format!("sensor.{}", self.id),
-            );
+            //debug(
+            //    &self,
+            //    format!("msg from {}", self.id),
+            //    &format!("sensor.{}", self.id),
+            //);
             let msg = SensorMsg {
                 id: self.id.clone(),
                 timestamp,
