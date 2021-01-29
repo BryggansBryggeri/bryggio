@@ -13,7 +13,7 @@ pub trait Sensor: Send {
     // TODO: it's nice to have this return a common sensor error,
     // but this might snowball when more sensors are added.
     // This should be more generic
-    fn get_measurement(&self) -> Result<f32, SensorError>;
+    fn get_measurement(&mut self) -> Result<f32, SensorError>;
     fn get_id(&self) -> String;
 }
 

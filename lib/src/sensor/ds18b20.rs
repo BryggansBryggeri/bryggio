@@ -43,7 +43,7 @@ impl AsRef<str> for Ds18b20Address {
 }
 
 impl Sensor for Ds18b20 {
-    fn get_measurement(&self) -> Result<f32, SensorError> {
+    fn get_measurement(&mut self) -> Result<f32, SensorError> {
         let device_path = format!("/sys/bus/w1/devices/{}/w1_slave", self.address.0);
         let meas = match utils::read_file_to_string(&device_path) {
             Ok(raw_read) => parse_temp_measurement(&raw_read),

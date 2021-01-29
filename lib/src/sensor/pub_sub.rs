@@ -53,7 +53,7 @@ impl TryFrom<Message> for SensorMsg {
 }
 
 impl PubSubClient for SensorClient {
-    fn client_loop(self) -> Result<(), PubSubError> {
+    fn client_loop(mut self) -> Result<(), PubSubError> {
         let supervisor = self.subscribe(&Subject(format!("command.sensor.{}", self.id)))?;
         let meas_sub = self.meas_subject();
         loop {
