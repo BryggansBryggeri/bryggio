@@ -1,10 +1,10 @@
 use crate::opts::PubSubOpt;
-use bryggio_lib::config::Config;
 use bryggio_lib::pub_sub::nats_client::NatsClient;
 use bryggio_lib::pub_sub::{PubSubMsg, Subject};
+use bryggio_lib::supervisor::config::SupervisorConfig;
 
 fn get_client(opt: &PubSubOpt) -> NatsClient {
-    let config = Config::try_new(&opt.config).unwrap_or_else(|err| {
+    let config = SupervisorConfig::try_new(&opt.config).unwrap_or_else(|err| {
         panic!(
             "Error parsing config '{}': {}",
             opt.config.to_string_lossy(),

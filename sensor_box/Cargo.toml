@@ -1,0 +1,11 @@
+[package]
+name = "bryggio-sensor-box"
+version = "0.2.0"
+authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+bryggio-lib = { path = "../lib" }
+serde = {version = ">=1.0", features = ["derive"]}
+serde_json = ">=1.0"
+structopt = ">=0.3"

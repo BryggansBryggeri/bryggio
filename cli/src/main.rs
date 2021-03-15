@@ -2,9 +2,9 @@
 use bryggio_cli::opts::{InstallTarget, Opt};
 use bryggio_cli::{brewery, install, rbpi};
 use bryggio_lib::{
-    config::Config,
     control::ControllerConfig,
     pub_sub::nats_client::NatsClient,
+    supervisor::config::SupervisorConfig,
     supervisor::pub_sub::{NewContrData, SupervisorSubMsg},
 };
 use log::info;
@@ -26,7 +26,7 @@ fn run_subcommand(opt: Opt) {
             rbpi::setup(&opt);
         }
         Opt::Test(opt) => {
-            let config = Config::try_new(&opt.config).unwrap_or_else(|err| {
+            let config = SupervisorConfig::try_new(&opt.config).unwrap_or_else(|err| {
                 panic!(
                     "Error parsing config '{}': {}",
                     opt.config.to_string_lossy(),

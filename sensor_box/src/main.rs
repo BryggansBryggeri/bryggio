@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
-use bryggio_lib::pub_sub::{nats_client::run_nats_server, PubSubClient, PubSubError};
-use bryggio_lib::supervisor::{config::SupervisorConfig, Supervisor, SupervisorError};
+use bryggio_lib::pub_sub::{PubSubClient, PubSubError};
+use bryggio_lib::supervisor::config::SupervisorConfig;
+use bryggio_lib::supervisor::{Supervisor, SupervisorError};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
@@ -22,19 +23,16 @@ fn main() -> Result<(), SupervisorError> {
         Opt::Run { config_file } => {
             let config = config_file_from_args(config_file.as_path())?;
             println!("Starting nats");
-            let mut nats_server_child = run_nats_server(&config.nats)?;
             println!("Starting supervisor");
             let supervisor = Supervisor::init_from_config(config)?;
             supervisor.client_loop()?;
-            nats_server_child
-                .kill()
-                .map_err(|err| PubSubError::Server(err.to_string()).into())
         }
     }
+    Ok(())
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "bryggio-supervisor", about = "Supervisor client for BryggIO")]
+#[structopt(name = "bryggio-sensor-box", about = "Sensor box client for BryggIO")]
 pub enum Opt {
     ///Run supervisor
     #[structopt(name = "run")]

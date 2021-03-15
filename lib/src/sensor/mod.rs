@@ -31,7 +31,7 @@ pub enum SensorType {
 pub struct SensorConfig {
     pub id: ClientId,
     #[serde(rename = "type")]
-    pub(crate) type_: SensorType,
+    pub type_: SensorType,
 }
 
 impl SensorConfig {

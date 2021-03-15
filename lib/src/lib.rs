@@ -31,7 +31,6 @@
 #![cfg_attr(feature = "clippy", warn(wrong_pub_self_convention))]
 
 mod actor;
-pub mod config;
 pub mod control;
 mod hardware;
 mod logger;

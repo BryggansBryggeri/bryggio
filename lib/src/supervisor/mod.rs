@@ -1,5 +1,5 @@
+pub mod config;
 use crate::actor::{ActorClient, ActorConfig, ActorError};
-use crate::config;
 use crate::control::{
     pub_sub::ControllerPubMsg, ControllerClient, ControllerConfig, ControllerError,
 };
@@ -26,12 +26,14 @@ type Handle = thread::JoinHandle<Result<(), SupervisorError>>;
 
 pub struct Supervisor {
     client: NatsClient,
-    config: config::Config,
+    config: config::SupervisorConfig,
     active_clients: ActiveClients,
 }
 
 impl Supervisor {
-    pub fn init_from_config(config: config::Config) -> Result<Supervisor, SupervisorError> {
+    pub fn init_from_config(
+        config: config::SupervisorConfig,
+    ) -> Result<Supervisor, SupervisorError> {
         let client = NatsClient::try_new(&config.nats).unwrap();
         let mut supervisor = Supervisor {
             client,
@@ -177,7 +179,7 @@ impl Supervisor {
         Ok(decode_nats_data::<T>(&report.data)?)
     }
 
-    fn add_logger(&mut self, config: &config::Config) -> Result<(), SupervisorError> {
+    fn add_logger(&mut self, config: &config::SupervisorConfig) -> Result<(), SupervisorError> {
         let log = Log::new(&config.nats, config.general.log_level);
         let log_handle = thread::spawn(|| log.client_loop().map_err(|err| err.into()));
         self.add_misc_client(ClientId("log".into()), log_handle)

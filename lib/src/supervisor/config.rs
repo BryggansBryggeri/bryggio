@@ -11,7 +11,7 @@ use std::io::Read;
 use std::path::Path;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Config {
+pub struct SupervisorConfig {
     pub general: General,
     pub hardware: Hardware,
     pub nats: NatsConfig,
@@ -39,23 +39,9 @@ pub struct Hardware {
     pub sensors: Vec<SensorConfig>,
 }
 
-// TODO: Implement Deserialize for OneWireAddress
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Sensor {
-    pub id: String,
-    pub address: String,
-    pub offset: Option<f32>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Actor {
-    pub id: String,
-    pub gpio_pin: u32,
-}
-
-impl Config {
-    pub fn dummy() -> Config {
-        Config {
+impl SupervisorConfig {
+    pub fn dummy() -> SupervisorConfig {
+        SupervisorConfig {
             general: General::default(),
             nats: NatsConfig::dummy(),
             hardware: Hardware {
@@ -73,7 +59,7 @@ impl Config {
         serde_json::to_string_pretty(self).unwrap()
     }
 
-    pub fn try_new(config_file: &Path) -> Result<Config, Error> {
+    pub fn try_new(config_file: &Path) -> Result<SupervisorConfig, Error> {
         let mut f = match fs::File::open(config_file) {
             Ok(f) => f,
             Err(err) => return Err(Error::IO(format!("Error opening file, {}", err))),
@@ -85,10 +71,10 @@ impl Config {
         };
         let conf_presumptive =
             serde_json::from_str(&config_string).map_err(|err| Error::Parse(err.to_string()))?;
-        Config::validate(conf_presumptive)
+        SupervisorConfig::validate(conf_presumptive)
     }
 
-    fn validate(pres: Config) -> Result<Config, Error> {
+    fn validate(pres: SupervisorConfig) -> Result<SupervisorConfig, Error> {
         if !pres.nats.bin_path.as_path().exists() {
             return Err(Error::Config(format!(
                 "NATS server bin '{}' missing",
@@ -141,7 +127,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let _config: Config = serde_json::from_str(
+        let _config: SupervisorConfig = serde_json::from_str(
             r#"
             {
               "general": {
