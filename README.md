@@ -58,7 +58,7 @@ Before the first release we will not publish any binaries, see [Install from sou
   Until then, the NATS server [repo](https://github.com/nats-io/nats-server) is included as a submodule in the BryggIO repo.
 
   ```bash
-  git clone --recurse-submodules git@github.com:BryggansBryggeri/bryggio.git bryggio
+  git clone git@github.com:BryggansBryggeri/bryggio.git bryggio
   cd bryggio
   cargo make --no-workspace build
   cargo run --bin bryggio-supervisor -- <path_to_bryggio_config_file>

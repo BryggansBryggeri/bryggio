@@ -4,38 +4,20 @@ command = "cargo"
 args = ["doc", "--no-deps"]
 
 [tasks.build]
-description = "Build all targets: nats-server, bryggio-supervisor and bryggio-cli"
-dependencies = ["build-nats"]
+description = "Build targets: bryggio-supervisor and bryggio-cli"
 command = "cargo"
 args = ["build"]
 
-[tasks.build-nats]
-description = "Build nats-server"
-script = [
-  "cd deps/nats-server/",
-  "go build -o ../../target/nats-server",
-  "cd ../.."
-]
-
 [tasks.rbpi-build]
 description = "Build all targets for RbPi (armv7-target)"
-dependencies = ["rbpi-build-nats"]
 command = "cargo"
 args = ["build", "--target=armv7-unknown-linux-gnueabihf"]
-
-[tasks.rbpi-build-nats]
-description = "Build nats-server"
-script = [
-  "cd deps/nats-server/",
-  "env GOOS=linux GOARCH=arm GOARM=5 go build -o ../../target/rbpi-nats-server",
-  "cd ../.."
-]
 
 [tasks.rbpi-install-supervisor]
 description = "scp supervisor to RbPi (armv7-target)"
 dependencies = ["rbpi-build"]
 script = [
-  "scp target/armv7-unknown-linux-gnueabihf/debug/bryggio-supervisor target/rbpi-nats-server pi_louron:~/bryggio",
+  "scp target/armv7-unknown-linux-gnueabihf/debug/bryggio-supervisor pi_louron:~/bryggio",
 ]
 
 [tasks.rbpi-install-cli]
