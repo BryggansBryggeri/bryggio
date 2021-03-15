@@ -36,11 +36,10 @@ fn extract_server(zip_path: &Path) {
             nats_server_name = file_name;
         }
     }
-    println!("FILE: {:?}", nats_server_name);
     let mut extracted_file = archive.by_name(nats_server_name.to_str().unwrap()).unwrap();
     let mut outfile = fs::File::create(&zip_path.with_file_name("nats-server")).unwrap();
-    println!("OUT: {:?}", outfile);
     io::copy(&mut extracted_file, &mut outfile).unwrap();
+    fs::remove_file(zip_path).expect("Could not remove zip archive");
 }
 
 fn github_meta_data() -> (Version, Url) {
