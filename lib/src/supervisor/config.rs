@@ -133,42 +133,43 @@ mod tests {
     fn test_parse() {
         let _config: SupervisorConfig = serde_json::from_str(
             r#"
-            {
-              "general": {
-                "brewery_name": "BRYGGANS BRYGGERI BÄRS BB",
-                "log_level": "debug"
-              },
-              "hardware": {
-                "actors": [
-                  {
-                    "id": "mash",
-                    "type": {"simple_gpio": 0}
+                {
+                  "general": {
+                    "brewery_name": "BRYGGANS BRYGGERI BÄRS BB",
+                    "log_level": "info"
                   },
-                  {
-                    "id": "boil",
-                    "type": {"simple_gpio": 1}
-                  }
-                ]
-              ,
-                "sensors": [
-                  {
-                    "id": "mash",
-                    "type": "dummy"
+                  "hardware": {
+                    "actors": [
+                      {
+                        "id": "mash_heater",
+                        "type": {"simple_gpio": 0}
+                      },
+                      {
+                        "id": "boil_heater",
+                        "type": {"simple_gpio": 1}
+                      }
+                    ]
+                  ,
+                    "sensors": [
+                      {
+                        "id": "mash",
+                        "type": {"dummy": 1000}
+                      },
+                      {
+                        "id": "boil",
+                        "type": {"dsb": "28-dummy0000000"}
+                      }
+                    ]
                   },
-                  {
-                    "id": "boil",
-                    "type": {"dsb": "28-dummy0000000"}
+                  "nats_bin_path": "target/nats-server",
+                  "nats_config": "./nats-config.yaml",
+                  "nats": {
+                    "server": "localhost",
+                    "user": "username",
+                    "pass": "passwd"
                   }
-                ]
-              },
-              "nats": {
-                "bin_path": "target/nats-server",
-                "config": "./nats-config.yaml",
-                "server": "localhost",
-                "user": "ababa",
-                "pass": "babab"
-              }
-            }"#,
+                }
+            "#,
         )
         .unwrap();
     }

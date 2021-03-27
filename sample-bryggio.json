@@ -17,18 +17,18 @@
   ,
     "sensors": [
       {
-        "id": "mash_temp",
+        "id": "mash",
         "type": {"dummy": 1000}
       },
       {
-        "id": "boil_temp",
+        "id": "boil",
         "type": {"dsb": "28-dummy0000000"}
       }
     ]
   },
+  "nats_bin_path": "target/nats-server",
+  "nats_config": "./nats-config.yaml",
   "nats": {
-    "bin_path": "target/nats-server",
-    "config": "./nats-config.yaml",
     "server": "localhost",
     "user": "username",
     "pass": "passwd"
