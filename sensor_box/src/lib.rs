@@ -19,7 +19,6 @@ mod pub_sub;
 
 pub struct SensorBox {
     client: NatsClient,
-    config: SensorBoxConfig,
     active_clients: ActiveClients,
 }
 
@@ -28,7 +27,6 @@ impl SensorBox {
         let client = NatsClient::try_new(&config.nats).unwrap();
         let mut sensor_box = SensorBox {
             client,
-            config: config.clone(),
             active_clients: ActiveClients::new(),
         };
 
