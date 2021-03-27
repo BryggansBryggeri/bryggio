@@ -33,7 +33,7 @@
 mod actor;
 pub mod control;
 mod hardware;
-mod logger;
+pub mod logger;
 pub mod pub_sub;
 pub mod sensor;
 pub mod supervisor;
