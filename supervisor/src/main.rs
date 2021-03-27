@@ -22,7 +22,8 @@ fn main() -> Result<(), SupervisorError> {
         Opt::Run { config_file } => {
             let config = config_file_from_args(config_file.as_path())?;
             println!("Starting nats");
-            let mut nats_server_child = run_nats_server(&config.nats)?;
+            let mut nats_server_child =
+                run_nats_server(&config.nats_bin_path, &config.nats_config)?;
             println!("Starting supervisor");
             let supervisor = Supervisor::init_from_config(config)?;
             supervisor.client_loop()?;

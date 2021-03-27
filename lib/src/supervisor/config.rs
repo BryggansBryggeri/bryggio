@@ -5,16 +5,18 @@ use crate::pub_sub::ClientId;
 use crate::sensor::ds18b20::Ds18b20Address;
 use crate::sensor::{SensorConfig, SensorType};
 use serde::{Deserialize, Serialize};
-use std::error as std_error;
 use std::fs;
 use std::io::Read;
 use std::path::Path;
+use std::{error as std_error, path::PathBuf};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SupervisorConfig {
     pub general: General,
     pub hardware: Hardware,
     pub nats: NatsConfig,
+    pub nats_bin_path: PathBuf,
+    pub nats_config: PathBuf,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -44,6 +46,8 @@ impl SupervisorConfig {
         SupervisorConfig {
             general: General::default(),
             nats: NatsConfig::dummy(),
+            nats_bin_path: PathBuf::new(),
+            nats_config: PathBuf::new(),
             hardware: Hardware {
                 sensors: vec![SensorConfig {
                     id: ClientId("dummy".into()),
@@ -75,16 +79,16 @@ impl SupervisorConfig {
     }
 
     fn validate(pres: SupervisorConfig) -> Result<SupervisorConfig, Error> {
-        if !pres.nats.bin_path.as_path().exists() {
+        if !pres.nats_bin_path.as_path().exists() {
             return Err(Error::Config(format!(
                 "NATS server bin '{}' missing",
-                pres.nats.bin_path.as_path().to_string_lossy()
+                pres.nats_bin_path.as_path().to_string_lossy()
             )));
         };
-        if !pres.nats.config.as_path().exists() {
+        if !pres.nats_config.as_path().exists() {
             return Err(Error::Config(format!(
                 "NATS config '{}' missing",
-                pres.nats.config.as_path().to_string_lossy()
+                pres.nats_config.as_path().to_string_lossy()
             )));
         };
         Ok(pres)
