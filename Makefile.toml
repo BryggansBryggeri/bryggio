@@ -1,5 +1,5 @@
 [tasks.docs]
-description = "Generate bryggIO documentation."
+description = "Generate BryggIO documentation."
 command = "cargo"
 args = ["doc", "--no-deps"]
 
@@ -9,9 +9,16 @@ command = "cargo"
 args = ["build"]
 
 [tasks.rbpi-build]
+env = { "CC_armv7_unknown_linux_musleabihf"= "arm-linux-gnueabihf-gcc" }
 description = "Build all targets for RbPi (armv7-target)"
 command = "cargo"
-args = ["build", "--target=armv7-unknown-linux-gnueabihf"]
+args = ["build", "--target=armv7-unknown-linux-musleabihf"]
+
+[tasks.rbpi-check]
+env = { "CC_armv7_unknown_linux_musleabihf"= "arm-linux-gnueabihf-gcc" }
+description = "Check all targets for RbPi (armv7-target)"
+command = "cargo"
+args = ["check", "--target=armv7-unknown-linux-musleabihf"]
 
 [tasks.rbpi-install-supervisor]
 description = "scp supervisor to RbPi (armv7-target)"
@@ -27,15 +34,6 @@ script = [
   "scp target/armv7-unknown-linux-gnueabihf/debug/bryggio-cli pi_louron:~/bryggio",
 ]
 
-[tasks.rbpi-install-config]
-description = "Copy config files to RbPi"
-script = [
-  "scp bryggio.json nats-config.yaml pi_louron:~/bryggio",
-]
-
 [tasks.rbpi-install]
 description = "Copy all targets and config to RbPi (armv7-target)"
-dependencies = ["rbpi-install-supervisor", "rbpi-install-cli", "rbpi-install-config"]
-
-# Nice intro to cargo-make
-# https://medium.com/@sagiegurari/automating-your-rust-workflows-with-cargo-make-part-5-final-predefined-tasks-ci-support-and-4594812e57da
+dependencies = ["rbpi-install-supervisor", "rbpi-install-cli"]

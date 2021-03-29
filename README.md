@@ -93,10 +93,17 @@ cargo run --bin bryggio-supervisor -- run <path_to_bryggio_config_file>
 Build for rbpi needs an arm-compatible rust toolchain. Install with
 
 ```bash
-rustup target add armv7-unknown-linux-gnueabihf
+rustup target add armv7-unknown-linux-musleabihf
 ```
 
-and build the required executables
+and add the target to `~/.cargo/config`
+
+```
+[target.armv7-unknown-linux-musleabihf]
+linker = "arm-linux-gnueabihf-gcc-7"
+```
+
+Build the required executables
 
 ```bash
 # In the bryggio repo root
