@@ -11,6 +11,7 @@ pub struct Controller {
 
 impl Controller {
     pub fn new(
+        target: f32,
         kp: f32,
         ki: f32,
         kd: f32,
@@ -21,7 +22,8 @@ impl Controller {
         let p_limit = p_limit.unwrap_or(100.0);
         let i_limit = i_limit.unwrap_or(100.0);
         let d_limit = d_limit.unwrap_or(100.0);
-        let pid = ext_pid::Pid::new(kp, ki, kd, p_limit, i_limit, d_limit, 0.0);
+        let output_limit = 100.0;
+        let pid = ext_pid::Pid::new(kp, ki, kd, p_limit, i_limit, d_limit, output_limit, target);
         Controller {
             target: 0.0,
             current_signal: 0.0,
@@ -33,11 +35,13 @@ impl Controller {
 
 impl control::Control for Controller {
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {
-        if let Some(measurement) = measurement {
+        let new_signal = if let Some(measurement) = measurement {
             self.pid.next_control_output(measurement).output
         } else {
             self.current_signal
-        }
+        };
+        self.current_signal = new_signal;
+        new_signal
     }
 
     fn get_state(&self) -> control::State {
@@ -54,6 +58,7 @@ impl control::Control for Controller {
 
     fn set_target(&mut self, new_target: f32) {
         self.target = new_target;
+        self.pid.setpoint = new_target;
     }
 
     fn get_target(&self) -> f32 {

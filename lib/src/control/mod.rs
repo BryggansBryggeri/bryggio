@@ -6,7 +6,7 @@ use thiserror::Error;
 pub mod duty_cycle;
 pub mod hysteresis;
 pub mod manual;
-// pub mod pid;
+pub mod pid;
 pub mod pub_sub;
 pub use pub_sub::ControllerClient;
 
@@ -31,6 +31,8 @@ pub enum State {
 pub enum ControllerType {
     #[serde(rename = "hysteresis")]
     Hysteresis { offset_on: f32, offset_off: f32 },
+    #[serde(rename = "pid")]
+    Pid { kp: f32, ki: f32, kd: f32 },
     #[serde(rename = "manual")]
     Manual,
 }
@@ -64,6 +66,10 @@ impl ControllerConfig {
                 offset_off,
             } => {
                 let control = hysteresis::Controller::try_new(target, offset_on, offset_off)?;
+                Ok(Box::new(control))
+            }
+            ControllerType::Pid { kp, ki, kd } => {
+                let control = pid::Controller::new(target, kp, ki, kd, None, None, None);
                 Ok(Box::new(control))
             }
             ControllerType::Manual { .. } => Ok(Box::new(manual::Controller::new(target))),
