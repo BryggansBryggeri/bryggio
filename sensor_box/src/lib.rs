@@ -158,8 +158,6 @@ type Handle = thread::JoinHandle<Result<(), SensorBoxError>>;
 
 #[derive(Error, Debug)]
 pub enum SensorBoxError {
-    #[error("This should be its own error: {0}")]
-    Cli(String),
     #[error("Io: '{0}'")]
     Io(#[from] std::io::Error),
     #[error("'{0}' is not an active client")]
