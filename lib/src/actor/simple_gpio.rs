@@ -1,4 +1,7 @@
-use crate::actor::{Actor, ActorError};
+use crate::{
+    actor::{Actor, ActorError},
+    hardware::HardwareError,
+};
 use embedded_hal::digital::OutputPin;
 
 pub struct SimpleGpioActor<T: OutputPin + Send> {
@@ -16,7 +19,8 @@ impl<T: OutputPin + Send> SimpleGpioActor<T> {
 }
 
 impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
-    fn validate_signal(&self, signal: f32) -> Result<(), ActorError> {
+    type Signal = f32;
+    fn validate_signal(&self, signal: Self::Signal) -> Result<(), ActorError> {
         if signal >= 0.0 {
             Ok(())
         } else {
@@ -28,16 +32,20 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
         }
     }
 
-    fn set_signal(&mut self, signal: f32) -> Result<(), ActorError> {
+    fn set_signal(&mut self, signal: Self::Signal) -> Result<(), ActorError> {
         self.validate_signal(signal)?;
         if signal > 0.0 {
-            self.handle
-                .try_set_high()
-                .map_err(|_err| ActorError::Generic(String::from("GPIO error when setting high")))
+            self.handle.try_set_high().map_err(|_err| {
+                ActorError::Hardware(HardwareError::GenericGpio(String::from(
+                    "Failed setting high",
+                )))
+            })
         } else {
-            self.handle
-                .try_set_low()
-                .map_err(|_err| ActorError::Generic(String::from("GPIO error when setting high")))
+            self.handle.try_set_low().map_err(|_err| {
+                ActorError::Hardware(HardwareError::GenericGpio(String::from(
+                    "Failed setting low",
+                )))
+            })
         }
     }
 }

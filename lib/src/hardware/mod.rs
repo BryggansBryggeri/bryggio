@@ -8,6 +8,8 @@ use gpio_cdev::errors::Error as CdevError;
 
 #[derive(Error, Debug)]
 pub enum HardwareError {
-    #[error("Gpio error {0}")]
+    #[error("GPIO error {0}")]
     Gpio(#[from] CdevError),
+    #[error("Generic GPIO error {0}")]
+    GenericGpio(String),
 }

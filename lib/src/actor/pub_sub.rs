@@ -10,13 +10,13 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 pub struct ActorClient {
     id: ClientId,
-    actor: Box<dyn Actor>,
+    actor: Box<dyn Actor<Signal = f32>>,
     /// TODO: Make generic over PubSubClient
     client: NatsClient,
 }
 
 impl ActorClient {
-    pub fn new(id: ClientId, actor: Box<dyn Actor>, config: &NatsConfig) -> Self {
+    pub fn new(id: ClientId, actor: Box<dyn Actor<Signal = f32>>, config: &NatsConfig) -> Self {
         let client = NatsClient::try_new(config).unwrap();
         ActorClient { id, actor, client }
     }

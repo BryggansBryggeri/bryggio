@@ -9,12 +9,13 @@ use thiserror::Error;
 
 pub mod pub_sub;
 pub mod simple_gpio;
-// pub mod xor_gpio;
+pub mod xor_gpio;
 pub use pub_sub::ActorClient;
 
 pub trait Actor: Send {
-    fn validate_signal(&self, signal: f32) -> Result<(), ActorError>;
-    fn set_signal(&mut self, signal: f32) -> Result<(), ActorError>;
+    type Signal;
+    fn validate_signal(&self, signal: Self::Signal) -> Result<(), ActorError>;
+    fn set_signal(&mut self, signal: Self::Signal) -> Result<(), ActorError>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
@@ -31,7 +32,7 @@ pub struct ActorConfig {
 }
 
 impl ActorConfig {
-    pub fn get_actor(&self) -> Result<Box<dyn Actor>, ActorError> {
+    pub fn get_actor(&self) -> Result<Box<dyn Actor<Signal = f32>>, ActorError> {
         match &self.type_ {
             ActorType::SimpleGpio(pin_number) => {
                 let gpio_pin = hardware_impl::get_gpio_pin(*pin_number, &self.id.as_ref())
