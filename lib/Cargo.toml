@@ -20,6 +20,7 @@ pid = ">=2.1"
 nats = ">=0.7"
 derive_more = ">=0.99"
 thiserror = ">=1.0"
+itertools = ">=0.10"
 
 [target.'cfg(target_arch = "arm")'.dependencies]
 linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", branch = "master", features=["gpio_cdev"]}

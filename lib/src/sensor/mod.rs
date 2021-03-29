@@ -24,7 +24,7 @@ pub enum SensorType {
     #[serde(rename = "dsb")]
     Dsb(ds18b20::Ds18b20Address),
     #[serde(rename = "rbpi_cpu")]
-    RbpiCPU,
+    RbpiCpu,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -45,7 +45,7 @@ impl SensorConfig {
                 let sensor = ds18b20::Ds18b20::try_new(self.id.as_ref(), addr.as_ref())?;
                 Ok(Box::new(sensor))
             }
-            SensorType::RbpiCPU => {
+            SensorType::RbpiCpu => {
                 let sensor = cpu_temp::CpuTemp::new(self.id.as_ref());
                 Ok(Box::new(sensor))
             }

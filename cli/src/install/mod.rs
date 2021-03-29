@@ -99,15 +99,17 @@ pub(crate) fn semver_from_text_output<S: AsRef<str>>(output: &S) -> Version {
 
 // TODO: Better logging of all possible outcomes.
 fn should_download(update: bool, local_version: Option<Version>, latest_version: Version) -> bool {
-    if local_version.is_none() {
+    if let Some(local_version) = local_version {
+        info!("Keeping existing version");
+        if update && latest_version > local_version {
+            info!("Newer version released ({}), downloading", latest_version);
+            true
+        } else {
+            false
+        }
+    } else {
         info!("No local version found, downloading");
         true
-    } else if update && latest_version > local_version.unwrap() {
-        info!("Newer version released ({}), downloading", latest_version);
-        true
-    } else {
-        info!("Keeping existing version");
-        false
     }
 }
 

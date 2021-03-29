@@ -4,11 +4,13 @@ use crate::pub_sub::nats_client::NatsConfig;
 use crate::pub_sub::ClientId;
 use crate::sensor::ds18b20::Ds18b20Address;
 use crate::sensor::{SensorConfig, SensorType};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Read;
 use std::path::Path;
-use std::{error as std_error, path::PathBuf};
+use std::path::PathBuf;
+use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SupervisorConfig {
@@ -41,6 +43,18 @@ pub struct Hardware {
     pub sensors: Vec<SensorConfig>,
 }
 
+impl Hardware {
+    pub fn validate(&self) -> bool {
+        let unique_count = self
+            .sensors
+            .iter()
+            .map(|x| &x.id)
+            .chain(self.actors.iter().map(|x| &x.id))
+            .unique()
+            .count();
+        unique_count == self.sensors.len() + self.actors.len()
+    }
+}
 impl SupervisorConfig {
     pub fn dummy() -> SupervisorConfig {
         SupervisorConfig {
@@ -63,30 +77,35 @@ impl SupervisorConfig {
         serde_json::to_string_pretty(self).unwrap()
     }
 
-    pub fn try_new(config_file: &Path) -> Result<SupervisorConfig, Error> {
+    pub fn try_new(config_file: &Path) -> Result<SupervisorConfig, SupervisorConfigError> {
         let mut f = match fs::File::open(config_file) {
             Ok(f) => f,
-            Err(err) => return Err(Error::IO(format!("Error opening file, {}", err))),
+            Err(err) => return Err(SupervisorConfigError::Io(err)),
         };
         let mut config_string = String::new();
         match f.read_to_string(&mut config_string) {
             Ok(_) => {}
-            Err(err) => return Err(Error::IO(format!("Error reading file to string, {}", err))),
+            Err(err) => return Err(SupervisorConfigError::Io(err)),
         };
-        let conf_presumptive =
-            serde_json::from_str(&config_string).map_err(|err| Error::Parse(err.to_string()))?;
+        let conf_presumptive = serde_json::from_str(&config_string)
+            .map_err(|err| SupervisorConfigError::Parse(err.to_string()))?;
         SupervisorConfig::validate(conf_presumptive)
     }
 
-    fn validate(pres: SupervisorConfig) -> Result<SupervisorConfig, Error> {
+    fn validate(pres: SupervisorConfig) -> Result<SupervisorConfig, SupervisorConfigError> {
+        if !pres.hardware.validate() {
+            return Err(SupervisorConfigError::Config(String::from(
+                "Non-unique client IDs",
+            )));
+        }
         if !pres.nats_bin_path.as_path().exists() {
-            return Err(Error::Config(format!(
+            return Err(SupervisorConfigError::Config(format!(
                 "NATS server bin '{}' missing",
                 pres.nats_bin_path.as_path().to_string_lossy()
             )));
         };
         if !pres.nats_config.as_path().exists() {
-            return Err(Error::Config(format!(
+            return Err(SupervisorConfigError::Config(format!(
                 "NATS config '{}' missing",
                 pres.nats_config.as_path().to_string_lossy()
             )));
@@ -95,34 +114,14 @@ impl SupervisorConfig {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Error {
-    IO(String),
-    Parse(String),
+#[derive(Error, Debug)]
+pub enum SupervisorConfigError {
+    #[error("'{0}' is not an active client")]
+    Io(#[from] std::io::Error),
+    #[error("Config error: {0}")]
     Config(String),
-}
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Error::IO(err) => write!(f, "IO error: {}", err),
-            Error::Parse(err) => write!(f, "Parse error: {}", err),
-            Error::Config(err) => write!(f, "Config error: {}", err),
-        }
-    }
-}
-impl std_error::Error for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::IO(_) => "IO error",
-            Error::Parse(_) => "Parse error",
-            Error::Config(_) => "Config error",
-        }
-    }
-
-    fn cause(&self) -> Option<&dyn std_error::Error> {
-        None
-    }
+    #[error("Parse error: {0}")]
+    Parse(String),
 }
 
 #[cfg(test)]

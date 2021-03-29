@@ -1,15 +1,11 @@
-use crate::pub_sub::{SensorBoxPubMsg, SensorBoxSubMsg};
-use bryggio_lib::pub_sub::PubSubMsg;
+use crate::pub_sub::SensorBoxSubMsg;
 use bryggio_lib::pub_sub::{
-    nats_client::{decode_nats_data, NatsClient, NatsConfig},
+    nats_client::{NatsClient, NatsConfig},
     ClientId, ClientState, PubSubClient, PubSubError,
 };
 use bryggio_lib::sensor::ds18b20::Ds18b20Address;
 use bryggio_lib::sensor::{SensorClient, SensorConfig, SensorError, SensorType};
-use bryggio_lib::{
-    logger::{debug, error, info},
-    supervisor::config::{General, Hardware},
-};
+use bryggio_lib::{logger::error, supervisor::config::Hardware};
 use nats::Message;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -73,16 +69,8 @@ impl SensorBox {
         }
     }
 
-    fn client_is_active(&self, id: &ClientId) -> Result<(), SensorBoxError> {
-        if self.active_clients.contatins_id(id) {
-            Ok(())
-        } else {
-            Err(SensorBoxError::Missing(id.clone()))
-        }
-    }
-
     fn handle_err(&self, err: SensorBoxError) -> ClientState {
-        error(self, err.to_string(), "supervisor");
+        error(self, err.to_string(), "sensor_box");
         ClientState::Active
     }
 }
@@ -126,7 +114,13 @@ impl SensorBoxConfig {
     }
 
     fn validate(pres: SensorBoxConfig) -> Result<SensorBoxConfig, SensorBoxError> {
-        Ok(pres)
+        if pres.hardware.validate() {
+            Ok(pres)
+        } else {
+            Err(SensorBoxError::Config(String::from(
+                "Non-unique client IDs",
+            )))
+        }
     }
 }
 
@@ -140,10 +134,6 @@ impl ActiveClients {
         ActiveClients {
             sensors: HashMap::new(),
         }
-    }
-
-    fn contatins_id(&self, id: &ClientId) -> bool {
-        self.sensors.contains_key(id)
     }
 }
 
@@ -170,7 +160,7 @@ type Handle = thread::JoinHandle<Result<(), SensorBoxError>>;
 pub enum SensorBoxError {
     #[error("This should be its own error: {0}")]
     Cli(String),
-    #[error("'{0}' is not an active client")]
+    #[error("Io: '{0}'")]
     Io(#[from] std::io::Error),
     #[error("'{0}' is not an active client")]
     Missing(ClientId),

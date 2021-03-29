@@ -229,7 +229,7 @@ impl Supervisor {
     }
 
     fn client_is_active(&self, id: &ClientId) -> Result<(), SupervisorError> {
-        if self.active_clients.contatins_id(id) {
+        if self.active_clients.contains_id(id) {
             Ok(())
         } else {
             Err(SupervisorError::Missing(id.clone()))
@@ -274,7 +274,7 @@ impl ActiveClients {
         }
     }
 
-    fn contatins_id(&self, id: &ClientId) -> bool {
+    fn contains_id(&self, id: &ClientId) -> bool {
         self.sensors.contains_key(id)
             || self.actors.contains_key(id)
             || self.controllers.contains_key(id)
