@@ -9,7 +9,7 @@ use thiserror::Error;
 
 pub mod pub_sub;
 pub mod simple_gpio;
-pub mod xor_gpio;
+// pub mod xor_gpio;
 pub use pub_sub::ActorClient;
 
 pub trait Actor: Send {

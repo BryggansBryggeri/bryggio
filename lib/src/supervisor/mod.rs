@@ -89,10 +89,11 @@ impl Supervisor {
         contr_config: ControllerConfig,
         target: f32,
     ) -> Result<(), SupervisorError> {
-        contr_config
-            .client_ids()
-            .map(|id| self.client_is_active(id))
-            .collect::<Result<Vec<_>, SupervisorError>>()?;
+        // TODO: Disabled checks pga SensorBox
+        // contr_config
+        //     .client_ids()
+        //     .map(|id| self.client_is_active(id))
+        //     .collect::<Result<Vec<_>, SupervisorError>>()?;
 
         let id = &contr_config.controller_id;
         match self.active_clients.controllers.get(id) {
