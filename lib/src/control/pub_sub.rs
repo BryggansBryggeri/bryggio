@@ -206,8 +206,8 @@ impl ControllerPubMsg {
     }
 }
 
-impl Into<PubSubMsg> for ControllerPubMsg {
-    fn into(self) -> PubSubMsg {
-        PubSubMsg(serde_json::to_string(&self).expect("Pub sub serialization error"))
+impl From<ControllerPubMsg> for PubSubMsg {
+    fn from(msg: ControllerPubMsg) -> PubSubMsg {
+        PubSubMsg(serde_json::to_string(&msg).expect("Pub sub serialization error"))
     }
 }

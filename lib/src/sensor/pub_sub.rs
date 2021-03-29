@@ -1,4 +1,3 @@
-use crate::logger::debug;
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
@@ -39,9 +38,9 @@ impl SensorMsg {
     }
 }
 
-impl Into<PubSubMsg> for SensorMsg {
-    fn into(self) -> PubSubMsg {
-        PubSubMsg(serde_json::to_string(&self).expect("Can always serialize"))
+impl From<SensorMsg> for PubSubMsg {
+    fn from(msg: SensorMsg) -> PubSubMsg {
+        PubSubMsg(serde_json::to_string(&msg).expect("Can always serialize"))
     }
 }
 

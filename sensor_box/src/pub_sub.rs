@@ -61,17 +61,19 @@ impl TryFrom<&Message> for SensorBoxSubMsg {
 
 impl SensorBoxSubMsg {
     pub fn subject(&self) -> Subject {
-        match self {
-            _ => panic!("No"),
-        }
+        todo!()
+        // match self {
+        //     _ => panic!("No"),
+        // }
     }
 }
 
-impl Into<PubSubMsg> for SensorBoxSubMsg {
-    fn into(self) -> PubSubMsg {
-        match &self {
-            _ => todo!(),
-        }
+impl From<SensorBoxSubMsg> for PubSubMsg {
+    fn from(_msg: SensorBoxSubMsg) -> PubSubMsg {
+        todo!()
+        // match &msg {
+        //     _ => todo!(),
+        // }
     }
 }
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -83,7 +85,7 @@ pub enum SensorBoxPubMsg {
 }
 
 impl SensorBoxPubMsg {
-    pub(crate) fn subject(&self) -> Subject {
+    pub fn subject(&self) -> Subject {
         match self {
             SensorBoxPubMsg::ActiveClients(_) => Subject(String::from("sensor_box.active_clients")),
             SensorBoxPubMsg::KillClient { client_id } => {
@@ -93,9 +95,9 @@ impl SensorBoxPubMsg {
     }
 }
 
-impl Into<PubSubMsg> for SensorBoxPubMsg {
-    fn into(self) -> PubSubMsg {
-        match &self {
+impl From<SensorBoxPubMsg> for PubSubMsg {
+    fn from(msg: SensorBoxPubMsg) -> PubSubMsg {
+        match &msg {
             SensorBoxPubMsg::ActiveClients(clients) => PubSubMsg(
                 serde_json::to_string(&clients).expect("SupervisorPubMsg serialization error"),
             ),

@@ -53,9 +53,9 @@ pub enum ActorPubMsg {
     CurrentSignal(SignalMsg),
 }
 
-impl Into<PubSubMsg> for ActorPubMsg {
-    fn into(self) -> PubSubMsg {
-        match &self {
+impl From<ActorPubMsg> for PubSubMsg {
+    fn from(msg: ActorPubMsg) -> PubSubMsg {
+        match &msg {
             ActorPubMsg::CurrentSignal(signal_msg) => {
                 PubSubMsg(serde_json::to_string(&signal_msg).expect("Pub sub serialization error"))
             }
