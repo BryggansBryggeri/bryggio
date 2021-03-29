@@ -9,7 +9,7 @@ use std::convert::TryFrom;
 
 impl PubSubClient for SensorBox {
     fn client_loop(mut self) -> Result<(), PubSubError> {
-        let subject = Subject("command.>".into());
+        let subject = Subject("sensor_box.>".into());
         let sub = self.subscribe(&subject)?;
         let mut state = ClientState::Active;
         while state == ClientState::Active {
@@ -47,7 +47,7 @@ impl TryFrom<&Message> for SensorBoxSubMsg {
     type Error = PubSubError;
     fn try_from(msg: &Message) -> Result<Self, PubSubError> {
         match msg.subject.as_ref() {
-            "command.list_active_clients" => Ok(SensorBoxSubMsg::ListActiveClients),
+            "sensor_box.list_active_clients" => Ok(SensorBoxSubMsg::ListActiveClients),
             _ => {
                 let msg: String = decode_nats_data(&msg.data)?;
                 Err(PubSubError::MessageParse(format!(
@@ -85,9 +85,9 @@ pub enum SensorBoxPubMsg {
 impl SensorBoxPubMsg {
     pub(crate) fn subject(&self) -> Subject {
         match self {
-            SensorBoxPubMsg::ActiveClients(_) => Subject(String::from("supervisor.active_clients")),
+            SensorBoxPubMsg::ActiveClients(_) => Subject(String::from("sensor_box.active_clients")),
             SensorBoxPubMsg::KillClient { client_id } => {
-                Subject(format!("supervisor.kill.{}", client_id))
+                Subject(format!("sensor_box.kill.{}", client_id))
             }
         }
     }

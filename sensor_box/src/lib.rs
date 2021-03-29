@@ -1,5 +1,4 @@
 use crate::pub_sub::{SensorBoxPubMsg, SensorBoxSubMsg};
-use bryggio_lib::logger::{debug, error, info};
 use bryggio_lib::pub_sub::PubSubMsg;
 use bryggio_lib::pub_sub::{
     nats_client::{decode_nats_data, NatsClient, NatsConfig},
@@ -7,6 +6,10 @@ use bryggio_lib::pub_sub::{
 };
 use bryggio_lib::sensor::ds18b20::Ds18b20Address;
 use bryggio_lib::sensor::{SensorClient, SensorConfig, SensorError, SensorType};
+use bryggio_lib::{
+    logger::{debug, error, info},
+    supervisor::config::{General, Hardware},
+};
 use nats::Message;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -30,7 +33,7 @@ impl SensorBox {
             active_clients: ActiveClients::new(),
         };
 
-        for sensor_config in config.sensors {
+        for sensor_config in config.hardware.sensors {
             sensor_box.add_sensor(sensor_config, &config.nats)?;
         }
         Ok(sensor_box)
@@ -86,17 +89,20 @@ impl SensorBox {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SensorBoxConfig {
-    pub sensors: Vec<SensorConfig>,
+    pub hardware: Hardware,
     pub nats: NatsConfig,
 }
 
 impl SensorBoxConfig {
     pub fn dummy() -> SensorBoxConfig {
         SensorBoxConfig {
-            sensors: vec![SensorConfig {
-                id: ClientId("dummy".into()),
-                type_: SensorType::Dsb(Ds18b20Address::dummy()),
-            }],
+            hardware: Hardware {
+                sensors: vec![SensorConfig {
+                    id: ClientId("dummy".into()),
+                    type_: SensorType::Dsb(Ds18b20Address::dummy()),
+                }],
+                actors: Vec::new(),
+            },
             nats: NatsConfig::dummy(),
         }
     }
@@ -191,10 +197,6 @@ mod tests {
         let _config: SensorBoxConfig = serde_json::from_str(
             r#"
             {
-              "general": {
-                "brewery_name": "BRYGGANS BRYGGERI BÄRS BB",
-                "log_level": "debug"
-              },
               "hardware": {
                 "actors": [
                   {
@@ -210,7 +212,7 @@ mod tests {
                 "sensors": [
                   {
                     "id": "mash",
-                    "type": "dummy"
+                    "type": {"dummy": 0}
                   },
                   {
                     "id": "boil",
@@ -219,8 +221,6 @@ mod tests {
                 ]
               },
               "nats": {
-                "bin_path": "target/nats-server",
-                "config": "./nats-config.yaml",
                 "server": "localhost",
                 "user": "ababa",
                 "pass": "babab"
