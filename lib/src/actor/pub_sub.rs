@@ -2,7 +2,7 @@ use crate::actor::Actor;
 use crate::logger::{error, info};
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
-    ClientState, PubSubClient, PubSubError, PubSubMsg, Subject,
+    PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::time::TimeStamp;
 use nats::{Message, Subscription};
