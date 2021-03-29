@@ -89,10 +89,11 @@ impl Supervisor {
         contr_config: ControllerConfig,
         target: f32,
     ) -> Result<(), SupervisorError> {
-        contr_config
-            .client_ids()
-            .map(|id| self.client_is_active(id))
-            .collect::<Result<Vec<_>, SupervisorError>>()?;
+        // TODO: Disabled checks pga SensorBox
+        // contr_config
+        //     .client_ids()
+        //     .map(|id| self.client_is_active(id))
+        //     .collect::<Result<Vec<_>, SupervisorError>>()?;
 
         let id = &contr_config.controller_id;
         match self.active_clients.controllers.get(id) {
@@ -228,7 +229,7 @@ impl Supervisor {
     }
 
     fn client_is_active(&self, id: &ClientId) -> Result<(), SupervisorError> {
-        if self.active_clients.contatins_id(id) {
+        if self.active_clients.contains_id(id) {
             Ok(())
         } else {
             Err(SupervisorError::Missing(id.clone()))
@@ -273,7 +274,7 @@ impl ActiveClients {
         }
     }
 
-    fn contatins_id(&self, id: &ClientId) -> bool {
+    fn contains_id(&self, id: &ClientId) -> bool {
         self.sensors.contains_key(id)
             || self.actors.contains_key(id)
             || self.controllers.contains_key(id)

@@ -98,9 +98,9 @@ impl SupervisorSubMsg {
     }
 }
 
-impl Into<PubSubMsg> for SupervisorSubMsg {
-    fn into(self) -> PubSubMsg {
-        match &self {
+impl From<SupervisorSubMsg> for PubSubMsg {
+    fn from(msg: SupervisorSubMsg) -> PubSubMsg {
+        match &msg {
             SupervisorSubMsg::StartController { contr_data } => PubSubMsg(
                 serde_json::to_string(&contr_data).expect("SupervisorSubMsg serialization error"),
             ),
@@ -132,9 +132,9 @@ impl SupervisorPubMsg {
     }
 }
 
-impl Into<PubSubMsg> for SupervisorPubMsg {
-    fn into(self) -> PubSubMsg {
-        match &self {
+impl From<SupervisorPubMsg> for PubSubMsg {
+    fn from(msg: SupervisorPubMsg) -> PubSubMsg {
+        match &msg {
             SupervisorPubMsg::ActiveClients(clients) => PubSubMsg(
                 serde_json::to_string(&clients).expect("SupervisorPubMsg serialization error"),
             ),

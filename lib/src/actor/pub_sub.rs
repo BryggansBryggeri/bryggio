@@ -2,7 +2,7 @@ use crate::actor::Actor;
 use crate::logger::{error, info};
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
-    ClientState, PubSubClient, PubSubError, PubSubMsg, Subject,
+    PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::time::TimeStamp;
 use nats::{Message, Subscription};
@@ -10,13 +10,13 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 pub struct ActorClient {
     id: ClientId,
-    actor: Box<dyn Actor>,
+    actor: Box<dyn Actor<Signal = f32>>,
     /// TODO: Make generic over PubSubClient
     client: NatsClient,
 }
 
 impl ActorClient {
-    pub fn new(id: ClientId, actor: Box<dyn Actor>, config: &NatsConfig) -> Self {
+    pub fn new(id: ClientId, actor: Box<dyn Actor<Signal = f32>>, config: &NatsConfig) -> Self {
         let client = NatsClient::try_new(config).unwrap();
         ActorClient { id, actor, client }
     }
@@ -53,9 +53,9 @@ pub enum ActorPubMsg {
     CurrentSignal(SignalMsg),
 }
 
-impl Into<PubSubMsg> for ActorPubMsg {
-    fn into(self) -> PubSubMsg {
-        match &self {
+impl From<ActorPubMsg> for PubSubMsg {
+    fn from(msg: ActorPubMsg) -> PubSubMsg {
+        match &msg {
             ActorPubMsg::CurrentSignal(signal_msg) => {
                 PubSubMsg(serde_json::to_string(&signal_msg).expect("Pub sub serialization error"))
             }

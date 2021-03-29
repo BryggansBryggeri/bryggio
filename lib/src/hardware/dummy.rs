@@ -1,8 +1,9 @@
+use crate::hardware::HardwareError;
 use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 use embedded_hal::digital::{InputPin, OutputPin};
-use gpio_cdev::errors;
+use gpio_cdev::errors::Error as CdevError;
 
-pub fn get_gpio_pin(pin_number: u32, label: &str) -> Result<GpioPin, errors::Error> {
+pub fn get_gpio_pin(pin_number: u32, label: &str) -> Result<GpioPin, HardwareError> {
     Ok(GpioPin::new(pin_number, label))
 }
 
@@ -23,7 +24,7 @@ impl GpioPin {
 }
 
 impl InputPin for GpioPin {
-    type Error = gpio_cdev::errors::Error;
+    type Error = CdevError;
 
     fn try_is_high(&self) -> Result<bool, Self::Error> {
         Ok(self.state.into())
@@ -37,7 +38,7 @@ impl InputPin for GpioPin {
 
 impl OutputPin for GpioPin {
     //TODO: better error
-    type Error = gpio_cdev::errors::Error;
+    type Error = CdevError;
 
     fn try_set_low(&mut self) -> Result<(), Self::Error> {
         self.state = GpioState::Low;
@@ -68,14 +69,14 @@ impl From<GpioState> for bool {
 pub struct Delay {}
 
 impl DelayMs<u16> for Delay {
-    type Error = gpio_cdev::errors::Error;
+    type Error = CdevError;
     fn try_delay_ms(&mut self, _ms: u16) -> Result<(), Self::Error> {
         Ok(())
     }
 }
 
 impl DelayUs<u16> for Delay {
-    type Error = gpio_cdev::errors::Error;
+    type Error = CdevError;
     fn try_delay_us(&mut self, _ms: u16) -> Result<(), Self::Error> {
         Ok(())
     }

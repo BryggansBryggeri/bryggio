@@ -2,17 +2,20 @@
 use crate::hardware::dummy as hardware_impl;
 #[cfg(target_arch = "arm")]
 use crate::hardware::rbpi as hardware_impl;
+use crate::hardware::HardwareError;
 use crate::pub_sub::{ClientId, PubSubError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub mod pub_sub;
 pub mod simple_gpio;
+// pub mod xor_gpio;
 pub use pub_sub::ActorClient;
 
 pub trait Actor: Send {
-    fn validate_signal(&self, signal: f32) -> Result<(), ActorError>;
-    fn set_signal(&mut self, signal: f32) -> Result<(), ActorError>;
+    type Signal;
+    fn validate_signal(&self, signal: Self::Signal) -> Result<(), ActorError>;
+    fn set_signal(&mut self, signal: Self::Signal) -> Result<(), ActorError>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
@@ -29,10 +32,11 @@ pub struct ActorConfig {
 }
 
 impl ActorConfig {
-    pub fn get_actor(&self) -> Result<Box<dyn Actor>, ActorError> {
+    pub fn get_actor(&self) -> Result<Box<dyn Actor<Signal = f32>>, ActorError> {
         match &self.type_ {
             ActorType::SimpleGpio(pin_number) => {
-                let gpio_pin = hardware_impl::get_gpio_pin(*pin_number, &self.id.as_ref()).unwrap();
+                let gpio_pin = hardware_impl::get_gpio_pin(*pin_number, &self.id.as_ref())
+                    .map_err(HardwareError::from)?;
                 let actor = simple_gpio::SimpleGpioActor::try_new(self.id.as_ref(), gpio_pin)?;
                 Ok(Box::new(actor))
             }
@@ -40,7 +44,7 @@ impl ActorConfig {
     }
 }
 
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug)]
 pub enum ActorError {
     #[error("Invalid signal: {signal}, must be in ({lower_bound}, {upper_bound})")]
     InvalidSignal {
@@ -50,6 +54,8 @@ pub enum ActorError {
     },
     #[error("Generic: {0}")]
     Generic(String),
+    #[error("Hardware: {0}")]
+    Hardware(#[from] HardwareError),
 }
 
 impl From<ActorError> for PubSubError {
