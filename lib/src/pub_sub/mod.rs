@@ -2,7 +2,7 @@ use std::str::Utf8Error;
 
 use derive_more::{Display, From};
 pub mod nats_client;
-use nats::Subscription;
+use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -38,6 +38,7 @@ impl From<&str> for ClientId {
         String::from(x).into()
     }
 }
+
 #[derive(Display, Debug, Clone, PartialEq)]
 pub struct Subject(pub String);
 
@@ -47,15 +48,26 @@ impl AsRef<str> for Subject {
     }
 }
 
+impl From<&str> for Subject {
+    fn from(x: &str) -> Self {
+        Subject(String::from(x))
+    }
+}
+
 #[derive(Debug, Display)]
 pub struct PubSubMsg(pub String);
 
 #[derive(Error, Debug)]
 pub enum PubSubError {
-    #[error("Error subscribing to NATS server: {0}")]
+    #[error("Failed subscribing to NATS server: {0}")]
     Subscription(String),
-    #[error("Error replying to: {msg}. {err}")]
-    Reply { msg: String, err: String },
+    #[error("Error replying to: {msg}. {source}")]
+    Reply {
+        msg: Message,
+        source: std::io::Error,
+    },
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
     #[error("Error publishing to NATS server: {0}")]
     Publish(String),
     #[error("Config error: {0}")]

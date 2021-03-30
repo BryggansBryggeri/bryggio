@@ -1,14 +1,12 @@
-pub mod config;
+use self::config::SupervisorConfigError;
 use crate::actor::{ActorClient, ActorConfig, ActorError};
 use crate::control::{
     pub_sub::ControllerPubMsg, ControllerClient, ControllerConfig, ControllerError,
 };
-use crate::logger::Log;
-use crate::logger::{debug, error, info};
-use crate::pub_sub::PubSubMsg;
+use crate::logger::{debug, error, info, Log};
 use crate::pub_sub::{
     nats_client::{decode_nats_data, NatsClient, NatsConfig},
-    ClientId, ClientState, PubSubClient, PubSubError,
+    ClientId, ClientState, PubSubClient, PubSubError, PubSubMsg,
 };
 use crate::sensor::{SensorClient, SensorConfig, SensorError};
 use crate::supervisor::pub_sub::{SupervisorPubMsg, SupervisorSubMsg};
@@ -20,6 +18,7 @@ use std::collections::HashMap;
 use std::thread;
 use thiserror::Error;
 
+pub mod config;
 pub mod pub_sub;
 
 type Handle = thread::JoinHandle<Result<(), SupervisorError>>;
@@ -71,7 +70,9 @@ impl Supervisor {
             }
             SupervisorSubMsg::ListActiveClients => {
                 if let Err(err) = self.reply_active_clients(&full_msg) {
-                    full_msg.respond(format!("Error replying with active clients. {}", err))?;
+                    full_msg
+                        .respond(format!("Error replying with active clients. {}", err))
+                        .map_err(PubSubError::from)?;
                     error(
                         self,
                         format!("Failed replying with active clients. {}", err),
@@ -145,8 +146,8 @@ impl Supervisor {
         Ok(msg
             .respond(status.to_string())
             .map_err(|err| PubSubError::Reply {
-                msg: msg.to_string(),
-                err: err.to_string(),
+                msg: msg.clone(),
+                source: err,
             })?)
     }
 
@@ -156,8 +157,8 @@ impl Supervisor {
             SupervisorPubMsg::ActiveClients((&self.active_clients).into()).into();
         msg.respond(clients.to_string())
             .map_err(|err| PubSubError::Reply {
-                msg: msg.to_string(),
-                err: err.to_string(),
+                msg: msg.clone(),
+                source: err,
             })
     }
 
@@ -315,10 +316,8 @@ impl From<&ActiveClients> for ActiveClientsList {
 
 #[derive(Error, Debug)]
 pub enum SupervisorError {
-    #[error("This should be its own error: {0}")]
-    Cli(String),
-    #[error("'{0}' is not an active client")]
-    Io(#[from] std::io::Error),
+    #[error("Config error: {0}")]
+    Config(#[from] SupervisorConfigError),
     #[error("'{0}' is not an active client")]
     Missing(ClientId),
     #[error("'{0}' is already an active client")]
@@ -331,8 +330,6 @@ pub enum SupervisorError {
     Actor(#[from] ActorError),
     #[error("Pubsub error: {0}")]
     PubSub(#[from] PubSubError),
-    #[error("Concurrency error: {0}")]
-    Concurrency(String),
     #[error("Could not join thread with client id {0}")]
     ThreadJoin(ClientId),
 }
