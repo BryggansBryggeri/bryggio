@@ -36,7 +36,9 @@ impl Controller {
 impl control::Control for Controller {
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {
         let new_signal = if let Some(measurement) = measurement {
-            self.pid.next_control_output(measurement).output
+            let pid_output = self.pid.next_control_output(measurement).output;
+            // Map PID output \in [-output_limit, output_limit] --> [0, 1]
+            (pid_output + self.pid.output_limit) / (2.0 * self.pid.output_limit)
         } else {
             self.current_signal
         };
