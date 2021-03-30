@@ -12,6 +12,7 @@ pub mod supervisor;
 use std::fs::File;
 use std::os::unix::fs::PermissionsExt;
 use std::str;
+use thiserror::Error;
 
 pub(crate) fn download_file<P: AsRef<Path>>(dest_path: P, source_url: &Url) {
     let dest_path = dest_path.as_ref();
@@ -51,7 +52,7 @@ pub(crate) fn make_executable<P: AsRef<Path>>(file_path: P) {
 
 fn get_local_version(path: &Path) -> Option<Version> {
     if path.exists() {
-        let version = semver_from_executable(path);
+        let version = semver_from_executable(path).ok()?;
         info!(
             "Found existing {} v{}.",
             path.file_name().unwrap().to_string_lossy(),
@@ -63,7 +64,7 @@ fn get_local_version(path: &Path) -> Option<Version> {
     }
 }
 
-fn semver_from_executable(path: &Path) -> Version {
+fn semver_from_executable(path: &Path) -> Result<Version, InstallError> {
     let output: Vec<u8> = Command::new(path)
         .arg("--version")
         .output()
@@ -78,23 +79,17 @@ fn semver_from_executable(path: &Path) -> Version {
     semver_from_text_output(&str::from_utf8(&output).unwrap())
 }
 
-pub(crate) fn semver_from_text_output<S: AsRef<str>>(output: &S) -> Version {
+pub(crate) fn semver_from_text_output<S: AsRef<str>>(output: &S) -> Result<Version, InstallError> {
     let output = output.as_ref();
     Version::parse(
         SEMVER_VERSION_PATTERN
             .captures(output.as_ref())
-            .unwrap_or_else(|| panic!("No semver pattern in output: '{}'", output))
+            .ok_or_else(|| InstallError::SemVer(output.to_string()))?
             .get(1)
             .unwrap()
             .as_str(),
     )
-    .unwrap_or_else(|err| {
-        panic!(
-            "Failed to parse '{}' as Version. {}",
-            output,
-            err.to_string()
-        )
-    })
+    .map_err(|_err| InstallError::SemVer(output.to_string()))
 }
 
 // TODO: Better logging of all possible outcomes.
@@ -126,3 +121,15 @@ lazy_static! {
 // Group: rx
 // Other: rx
 const EXECUTABLE_PERMISSIONS: u32 = 0o0755;
+
+#[derive(Error, Debug)]
+pub enum InstallError {
+    #[error("Failed to parse semver version from '{0}'.")]
+    SemVer(String),
+    #[error("Permission denied: {0}")]
+    PermissionDenied(String),
+    #[error("Permission denied: {0}")]
+    OsError(#[from] std::io::Error),
+    #[error("Invalid path: {0}")]
+    InvalidPath(String),
+}

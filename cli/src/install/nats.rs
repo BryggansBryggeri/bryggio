@@ -9,20 +9,23 @@ use std::io;
 use std::path::{Path, PathBuf};
 use url::Url;
 
-pub(crate) fn setup_nats_server(nats_path: &Path, update: bool) {
+use super::InstallError;
+
+pub(crate) fn setup_nats_server(nats_path: &Path, update: bool) -> Result<(), InstallError> {
     println!("nats path: {}", nats_path.to_string_lossy());
     let local_version = get_local_version(nats_path);
     if !update && local_version.is_some() {
         info!("Keeping existing NATS server.");
-        return;
+        return Ok(());
     }
-    let (latest_nats_version, nats_url) = github_meta_data();
+    let (latest_nats_version, nats_url) = github_meta_data()?;
     if should_download(update, local_version, latest_nats_version) {
         let zip_path = nats_path.with_extension("zip");
         download_file(&zip_path, &nats_url);
         extract_server(&zip_path);
         make_executable(nats_path);
     }
+    Ok(())
 }
 
 fn extract_server(zip_path: &Path) {
@@ -42,7 +45,7 @@ fn extract_server(zip_path: &Path) {
     fs::remove_file(zip_path).expect("Could not remove zip archive");
 }
 
-fn github_meta_data() -> (Version, Url) {
+fn github_meta_data() -> Result<(Version, Url), InstallError> {
     let latest = latest_github_release(NATS_GITHUB_LATEST);
 
     #[cfg(target_os = "linux")]
@@ -65,8 +68,8 @@ fn github_meta_data() -> (Version, Url) {
         .last()
         .unwrap()
         .unwrap();
-    let version = semver_from_text_output(&latest.tag_name);
-    (version, url)
+    let version = semver_from_text_output(&latest.tag_name)?;
+    Ok((version, url))
 }
 
 const NATS_GITHUB_LATEST: &str = "https://api.github.com/repos/nats-io/nats-server/releases/latest";

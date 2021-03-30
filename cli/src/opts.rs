@@ -17,9 +17,6 @@ pub enum Opt {
     ///Automated raspberry pi setup.
     #[structopt(name = "rbpi-setup")]
     RbPiSetup(RbPiOpt),
-    ///Test script, switching controllers.
-    #[structopt(name = "test")]
-    Test(PubSubOpt),
 }
 
 impl Opt {
@@ -29,7 +26,6 @@ impl Opt {
             Self::Request(opt) => opt.common.verbose,
             Self::Install(target) => target.verbose(),
             Self::RbPiSetup(opt) => opt.common.verbose,
-            Self::Test(_opt) => true,
         }
     }
 }
@@ -77,8 +73,7 @@ pub struct SupervisorOpt {
     common: Common,
     #[structopt(long)]
     pub update: bool,
-    // TODO: Fix tilde expansion
-    #[structopt(default_value = "bryggio", long)]
+    #[structopt(default_value = "~/bryggio", long)]
     pub bryggio_root: PathBuf,
     #[structopt(default_value = "nats-server", long)]
     pub nats_path: PathBuf,
