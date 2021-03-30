@@ -81,7 +81,7 @@ pub enum SensorBoxPubMsg {
 impl SensorBoxPubMsg {
     pub fn subject(&self) -> Subject {
         match self {
-            SensorBoxPubMsg::ActiveClients(_) => Subject(String::from("sensor_box.active_clients")),
+            SensorBoxPubMsg::ActiveClients(_) => Subject::from("sensor_box.active_clients"),
             SensorBoxPubMsg::KillClient { client_id } => {
                 Subject(format!("sensor_box.kill.{}", client_id))
             }

@@ -166,12 +166,10 @@ pub enum SensorBoxError {
     AlreadyActive(ClientId),
     #[error("Sensor error")]
     Sensor(#[from] SensorError),
-    #[error("Pubsub error: {0}")]
+    #[error("Pub-sub error: {0}")]
     PubSub(#[from] PubSubError),
     #[error("Config error: {0}")]
     Config(String),
-    #[error("Concurrency error: {0}")]
-    Concurrency(String),
     #[error("Could not join thread with client id {0}")]
     ThreadJoin(ClientId),
 }
