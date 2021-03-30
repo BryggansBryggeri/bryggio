@@ -149,7 +149,7 @@ impl LogLevel {
         tmp.next();
         let log_level = tmp
             .next()
-            .ok_or_else(|| MessageParseError::InvalidSubject(Subject(String::from(subject))))?;
+            .ok_or_else(|| MessageParseError::InvalidSubject(Subject::from(subject)))?;
         LogLevel::try_from(log_level)
     }
 

@@ -86,10 +86,10 @@ impl SupervisorSubMsg {
     pub fn subject(&self) -> Subject {
         match self {
             SupervisorSubMsg::StartController { contr_data: _ } => {
-                Subject(String::from("command.start_controller"))
+                Subject::from("command.start_controller")
             }
             SupervisorSubMsg::SwitchController { contr_data: _ } => {
-                Subject(String::from("command.switch_controller"))
+                Subject::from("command.switch_controller")
             }
             _ => panic!("No"),
         }
