@@ -1,8 +1,8 @@
-use crate::logger::error;
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
 };
+use crate::{logger::error, pub_sub::MessageParseError};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -38,7 +38,7 @@ pub enum BuzzerSubMsg {
 }
 
 impl TryFrom<Message> for BuzzerSubMsg {
-    type Error = PubSubError;
+    type Error = MessageParseError;
     fn try_from(msg: Message) -> Result<Self, Self::Error> {
         decode_nats_data(&msg.data)
     }
@@ -66,7 +66,7 @@ impl PubSubClient for BuzzerClient {
                             res.map_err(PubSubError::from)
                         }
                     },
-                    Err(err) => Err(err),
+                    Err(err) => Err(err).map_err(PubSubError::from),
                 };
                 if let Err(err) = res {
                     error(&self, err.to_string(), &format!("actor.{}", self.id));

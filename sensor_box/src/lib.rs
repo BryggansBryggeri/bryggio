@@ -23,7 +23,7 @@ pub struct SensorBox {
 
 impl SensorBox {
     pub fn init_from_config(config: SensorBoxConfig) -> Result<SensorBox, SensorBoxError> {
-        let client = NatsClient::try_new(&config.nats).unwrap();
+        let client = NatsClient::try_new(&config.nats)?;
         let mut sensor_box = SensorBox {
             client,
             active_clients: ActiveClients::new(),

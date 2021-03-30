@@ -177,7 +177,7 @@ impl Supervisor {
                 return Err(SupervisorError::ThreadJoin(id.clone()));
             }
         };
-        Ok(decode_nats_data::<T>(&report.data)?)
+        Ok(decode_nats_data::<T>(&report.data).map_err(PubSubError::from)?)
     }
 
     fn add_logger(&mut self, config: &config::SupervisorConfig) -> Result<(), SupervisorError> {

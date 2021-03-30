@@ -7,6 +7,8 @@ use std::thread::sleep;
 use std::time::Duration;
 use std::{any::type_name, path::Path};
 
+use super::MessageParseError;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NatsConfig {
     server: String,
@@ -24,21 +26,11 @@ impl NatsConfig {
     }
 }
 
-pub fn decode_nats_data<T: DeserializeOwned>(data: &[u8]) -> Result<T, PubSubError> {
-    let json_string = from_utf8(&data).map_err(|err| {
-        PubSubError::MessageParse(format!(
-            "Invalid UTF-8: '{:?}', '{}'",
-            data,
-            err.to_string()
-        ))
-    })?;
+pub fn decode_nats_data<T: DeserializeOwned>(data: &[u8]) -> Result<T, MessageParseError> {
+    let json_string =
+        from_utf8(&data).map_err(|err| MessageParseError::InvalidUtf8(data.to_vec(), err))?;
     serde_json::from_str(json_string).map_err(|err| {
-        PubSubError::MessageParse(format!(
-            "Could not parse '{}' as '{}'. Err: '{}'",
-            json_string,
-            type_name::<T>(),
-            err.to_string()
-        ))
+        MessageParseError::Deserialization(String::from(json_string), type_name::<T>(), err)
     })
 }
 
@@ -50,7 +42,7 @@ impl NatsClient {
         let opts = Options::with_user_pass(&config.user, &config.pass);
         match opts.connect(&config.server) {
             Ok(nc) => Ok(NatsClient(nc)),
-            Err(err) => Err(PubSubError::Generic(err.to_string())),
+            Err(err) => Err(PubSubError::Server(err.to_string())),
         }
     }
     pub fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {

@@ -1,3 +1,5 @@
+use std::str::Utf8Error;
+
 use derive_more::{Display, From};
 pub mod nats_client;
 use nats::Subscription;
@@ -36,7 +38,7 @@ impl From<&str> for ClientId {
         String::from(x).into()
     }
 }
-#[derive(Display, Debug, Clone)]
+#[derive(Display, Debug, Clone, PartialEq)]
 pub struct Subject(pub String);
 
 impl AsRef<str> for Subject {
@@ -48,10 +50,8 @@ impl AsRef<str> for Subject {
 #[derive(Debug, Display)]
 pub struct PubSubMsg(pub String);
 
-#[derive(Error, Debug, Clone, PartialEq)]
+#[derive(Error, Debug)]
 pub enum PubSubError {
-    #[error("Could you be more specific? {0}")]
-    Generic(String),
     #[error("Error subscribing to NATS server: {0}")]
     Subscription(String),
     #[error("Error replying to: {msg}. {err}")]
@@ -64,6 +64,16 @@ pub enum PubSubError {
     Client(String),
     #[error("Server error: {0}")]
     Server(String),
-    #[error("Message parsing error: {0}")]
-    MessageParse(String),
+    #[error("Message parsing failed: {0}")]
+    MessageParse(#[from] MessageParseError),
+}
+
+#[derive(Error, Debug)]
+pub enum MessageParseError {
+    #[error("Invalid UTF-8: {1}")]
+    InvalidUtf8(Vec<u8>, Utf8Error),
+    #[error("Faild parsing {0} as {1}")]
+    Deserialization(String, &'static str, serde_json::Error),
+    #[error("Invalid subject {0}")]
+    InvalidSubject(Subject),
 }

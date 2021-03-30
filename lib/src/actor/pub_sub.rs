@@ -1,10 +1,10 @@
-use crate::actor::Actor;
 use crate::logger::{error, info};
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::time::TimeStamp;
+use crate::{actor::Actor, pub_sub::MessageParseError};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -42,7 +42,7 @@ pub enum ActorSubMsg {
 }
 
 impl TryFrom<Message> for ActorSubMsg {
-    type Error = PubSubError;
+    type Error = MessageParseError;
     fn try_from(msg: Message) -> Result<Self, Self::Error> {
         decode_nats_data(&msg.data)
     }
@@ -93,7 +93,7 @@ impl PubSubClient for ActorClient {
                                 )
                             }),
                     },
-                    Err(err) => Err(err),
+                    Err(err) => Err(err).map_err(PubSubError::from),
                 };
                 if let Err(err) = res {
                     error(&self, err.to_string(), &format!("actor.{}", self.id));

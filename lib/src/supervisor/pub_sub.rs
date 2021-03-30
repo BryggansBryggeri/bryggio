@@ -1,12 +1,14 @@
-use crate::control::ControllerConfig;
 use crate::pub_sub::PubSubMsg;
 use crate::pub_sub::{
     nats_client::decode_nats_data, ClientId, ClientState, PubSubClient, PubSubError, Subject,
 };
 use crate::supervisor::{ActiveClientsList, Supervisor};
+use crate::{control::ControllerConfig, pub_sub::MessageParseError};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+
+use super::SupervisorError;
 
 impl PubSubClient for Supervisor {
     fn client_loop(mut self) -> Result<(), PubSubError> {
@@ -20,7 +22,7 @@ impl PubSubClient for Supervisor {
                         Ok(state) => state,
                         Err(err) => self.handle_err(err),
                     },
-                    Err(err) => self.handle_err(err.into()),
+                    Err(err) => self.handle_err(SupervisorError::from(PubSubError::from(err))),
                 };
             }
         }
@@ -61,8 +63,8 @@ impl NewContrData {
 }
 
 impl TryFrom<&Message> for SupervisorSubMsg {
-    type Error = PubSubError;
-    fn try_from(msg: &Message) -> Result<Self, PubSubError> {
+    type Error = MessageParseError;
+    fn try_from(msg: &Message) -> Result<Self, MessageParseError> {
         match msg.subject.as_ref() {
             "command.start_controller" => {
                 let contr_data: NewContrData = decode_nats_data(&msg.data)?;
@@ -73,13 +75,9 @@ impl TryFrom<&Message> for SupervisorSubMsg {
                 Ok(SupervisorSubMsg::SwitchController { contr_data })
             }
             "command.list_active_clients" => Ok(SupervisorSubMsg::ListActiveClients),
-            _ => {
-                let msg: String = decode_nats_data(&msg.data)?;
-                Err(PubSubError::MessageParse(format!(
-                    "Could not parse '{}' to SupervisorSubMsg",
-                    msg
-                )))
-            }
+            _ => Err(MessageParseError::InvalidSubject(Subject(
+                msg.subject.clone(),
+            ))),
         }
     }
 }

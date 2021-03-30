@@ -1,6 +1,6 @@
 use crate::pub_sub::{
-    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, PubSubClient,
-    PubSubError, PubSubMsg, Subject,
+    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig,
+    MessageParseError, PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use derive_more::{Display, From};
 use nats::Subscription;
@@ -129,30 +129,27 @@ pub enum LogLevel {
 }
 
 impl TryFrom<&str> for LogLevel {
-    type Error = PubSubError;
-    fn try_from(value: &str) -> Result<Self, PubSubError> {
+    type Error = MessageParseError;
+    fn try_from(value: &str) -> Result<Self, MessageParseError> {
         match value {
             "debug" => Ok(LogLevel::Debug),
             "info" => Ok(LogLevel::Info),
             "warning" => Ok(LogLevel::Warning),
             "error" => Ok(LogLevel::Error),
-            _ => Err(PubSubError::MessageParse(format!(
-                "Not a log level: '{:?}'",
-                value
-            ))),
+            _ => Err(MessageParseError::InvalidSubject(Subject(String::from(
+                value,
+            )))),
         }
     }
 }
 
 impl LogLevel {
-    fn from_msg_subject(subject: &str) -> Result<Self, PubSubError> {
+    fn from_msg_subject(subject: &str) -> Result<Self, MessageParseError> {
         let mut tmp = subject.split('.');
         tmp.next();
-        let log_level = tmp.next().ok_or_else(|| {
-            PubSubError::MessageParse(String::from(
-                "No second-level sub subject (should not happen)",
-            ))
-        })?;
+        let log_level = tmp
+            .next()
+            .ok_or_else(|| MessageParseError::InvalidSubject(Subject(String::from(subject))))?;
         LogLevel::try_from(log_level)
     }
 

@@ -1,8 +1,6 @@
 use crate::{ActiveClientsList, SensorBox};
-use bryggio_lib::pub_sub::PubSubMsg;
-use bryggio_lib::pub_sub::{
-    nats_client::decode_nats_data, ClientId, ClientState, PubSubClient, PubSubError, Subject,
-};
+use bryggio_lib::pub_sub::{ClientId, ClientState, PubSubClient, PubSubError, Subject};
+use bryggio_lib::pub_sub::{MessageParseError, PubSubMsg};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -19,7 +17,7 @@ impl PubSubClient for SensorBox {
                         Ok(state) => state,
                         Err(err) => self.handle_err(err),
                     },
-                    Err(err) => self.handle_err(err.into()),
+                    Err(err) => self.handle_err(PubSubError::from(err).into()),
                 };
             }
         }
@@ -44,17 +42,13 @@ pub enum SensorBoxSubMsg {
 }
 
 impl TryFrom<&Message> for SensorBoxSubMsg {
-    type Error = PubSubError;
-    fn try_from(msg: &Message) -> Result<Self, PubSubError> {
+    type Error = MessageParseError;
+    fn try_from(msg: &Message) -> Result<Self, MessageParseError> {
         match msg.subject.as_ref() {
             "sensor_box.list_active_clients" => Ok(SensorBoxSubMsg::ListActiveClients),
-            _ => {
-                let msg: String = decode_nats_data(&msg.data)?;
-                Err(PubSubError::MessageParse(format!(
-                    "Could not parse '{}' to SupervisorSubMsg",
-                    msg
-                )))
-            }
+            _ => Err(MessageParseError::InvalidSubject(Subject(
+                msg.subject.clone(),
+            ))),
         }
     }
 }

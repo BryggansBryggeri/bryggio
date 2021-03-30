@@ -1,6 +1,6 @@
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
-    PubSubClient, PubSubError, PubSubMsg, Subject,
+    MessageParseError, PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::sensor::{Sensor, SensorError};
 use crate::time::TimeStamp;
@@ -45,7 +45,7 @@ impl From<SensorMsg> for PubSubMsg {
 }
 
 impl TryFrom<Message> for SensorMsg {
-    type Error = PubSubError;
+    type Error = MessageParseError;
     fn try_from(msg: Message) -> Result<Self, Self::Error> {
         decode_nats_data(&msg.data)
     }
