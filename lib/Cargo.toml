@@ -6,9 +6,8 @@ edition = "2018"
 
 [dependencies]
 embedded-hal = "=1.0.0-alpha.4"
-gpio-cdev = "0.3.0" # 0.4.0 gives error. Won't update until it's gotten more stable.
+gpio-cdev = "0.4.0" # 0.4.0 gives error. Won't update until it's gotten more stable.
 embedded-hal-mock = "0.7.1"
-onewire = ">=0.3.13"
 rand = ">=0.7"
 rand_distr = ">=0.2.1"
 toml = ">=0.5"
@@ -16,7 +15,7 @@ serde = {version = ">=1.0", features = ["derive"]}
 serde_json = ">=1.0"
 regex = ">=1.0"
 lazy_static = ">=1.0"
-pid = ">=2.1"
+pid = ">=3"
 nats = ">=0.7"
 derive_more = ">=0.99"
 thiserror = ">=1.0"
