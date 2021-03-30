@@ -4,19 +4,13 @@ use bryggio_lib::supervisor::{config::SupervisorConfig, Supervisor, SupervisorEr
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
-fn config_file_from_args(config_file: &Path) -> Result<SupervisorConfig, SupervisorError> {
-    match SupervisorConfig::try_new(&config_file) {
-        Ok(config) => Ok(config),
-        Err(err) => Err(PubSubError::Configuration(format!(
-            "Invalid config file '{}'. Error: {}.",
-            config_file.to_string_lossy(),
-            err.to_string()
-        ))
-        .into()),
+fn main() {
+    if let Err(err) = run_supervisor() {
+        println!("{}", err)
     }
 }
 
-fn main() -> Result<(), SupervisorError> {
+fn run_supervisor() -> Result<(), SupervisorError> {
     let opt = Opt::from_args();
     match opt {
         Opt::Run { config_file } => {
@@ -31,6 +25,18 @@ fn main() -> Result<(), SupervisorError> {
                 .kill()
                 .map_err(|err| PubSubError::Server(err.to_string()).into())
         }
+    }
+}
+
+fn config_file_from_args(config_file: &Path) -> Result<SupervisorConfig, SupervisorError> {
+    match SupervisorConfig::try_new(&config_file) {
+        Ok(config) => Ok(config),
+        Err(err) => Err(PubSubError::Configuration(format!(
+            "Invalid config file '{}'. Error: {}.",
+            config_file.to_string_lossy(),
+            err.to_string()
+        ))
+        .into()),
     }
 }
 

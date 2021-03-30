@@ -34,7 +34,7 @@ impl Supervisor {
     pub fn init_from_config(
         config: config::SupervisorConfig,
     ) -> Result<Supervisor, SupervisorError> {
-        let client = NatsClient::try_new(&config.nats).unwrap();
+        let client = NatsClient::try_new(&config.nats)?;
         let mut supervisor = Supervisor {
             client,
             config: config.clone(),

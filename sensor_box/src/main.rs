@@ -4,19 +4,13 @@ use bryggio_sensor_box::{SensorBox, SensorBoxConfig, SensorBoxError};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
-fn config_file_from_args(config_file: &Path) -> Result<SensorBoxConfig, SensorBoxError> {
-    match SensorBoxConfig::try_new(&config_file) {
-        Ok(config) => Ok(config),
-        Err(err) => Err(PubSubError::Configuration(format!(
-            "Invalid config file '{}'. Error: {}.",
-            config_file.to_string_lossy(),
-            err.to_string()
-        ))
-        .into()),
+fn main() {
+    if let Err(err) = run_sensor_box() {
+        println!("{}", err)
     }
 }
 
-fn main() -> Result<(), SensorBoxError> {
+fn run_sensor_box() -> Result<(), SensorBoxError> {
     let opt = Opt::from_args();
     match opt {
         Opt::Run { config_file } => {
@@ -27,6 +21,18 @@ fn main() -> Result<(), SensorBoxError> {
         }
     }
     Ok(())
+}
+
+fn config_file_from_args(config_file: &Path) -> Result<SensorBoxConfig, SensorBoxError> {
+    match SensorBoxConfig::try_new(&config_file) {
+        Ok(config) => Ok(config),
+        Err(err) => Err(PubSubError::Configuration(format!(
+            "Invalid config file '{}'. Error: {}.",
+            config_file.to_string_lossy(),
+            err.to_string()
+        ))
+        .into()),
+    }
 }
 
 #[derive(Debug, StructOpt)]
