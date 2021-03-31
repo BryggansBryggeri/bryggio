@@ -13,3 +13,18 @@ pub enum HardwareError {
     #[error("Generic GPIO error {0}")]
     GenericGpio(String),
 }
+
+#[derive(Clone, Copy, PartialEq)]
+pub enum GpioState {
+    Low,
+    High,
+}
+
+impl From<GpioState> for bool {
+    fn from(state: GpioState) -> Self {
+        match state {
+            GpioState::High => true,
+            GpioState::Low => false,
+        }
+    }
+}

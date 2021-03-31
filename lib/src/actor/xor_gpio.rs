@@ -3,7 +3,7 @@ use super::{simple_gpio::SimpleGpioActor, ActorError, ActorSignal};
 use crate::hardware::dummy as hardware_impl;
 #[cfg(target_arch = "arm")]
 use crate::hardware::rbpi as hardware_impl;
-use crate::{actor::Actor, hardware::dummy::GpioState};
+use crate::{actor::Actor, hardware::GpioState};
 
 pub struct XorActor {
     gpio_one: SimpleGpioActor<hardware_impl::GpioPin>,

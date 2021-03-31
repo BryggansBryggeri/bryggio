@@ -1,6 +1,6 @@
 use crate::{
     actor::{Actor, ActorError},
-    hardware::{dummy::GpioState, HardwareError},
+    hardware::{GpioState, HardwareError},
 };
 use embedded_hal::digital::OutputPin;
 
