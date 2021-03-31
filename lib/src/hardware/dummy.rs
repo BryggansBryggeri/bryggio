@@ -51,8 +51,8 @@ impl OutputPin for GpioPin {
     }
 }
 
-#[derive(Clone, Copy)]
-enum GpioState {
+#[derive(Clone, Copy, PartialEq)]
+pub enum GpioState {
     Low,
     High,
 }

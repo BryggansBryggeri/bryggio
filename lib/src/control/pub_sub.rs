@@ -1,4 +1,5 @@
 use crate::actor::pub_sub::SignalMsg;
+use crate::actor::ActorSignal;
 use crate::control::ControllerType;
 use crate::control::{Control, State};
 use crate::logger::{debug, error, info};
@@ -111,9 +112,11 @@ impl PubSubClient for ControllerClient {
                     self.controller.calculate_signal(msg.meas.ok());
                 }
                 let msg = ControllerPubMsg::SetSignal(SignalMsg {
-                    id: self.actor_id.clone(),
                     timestamp: TimeStamp::now(),
-                    signal: self.controller.get_control_signal(),
+                    signal: ActorSignal::new(
+                        self.actor_id.clone(),
+                        self.controller.get_control_signal(),
+                    ),
                 });
                 self.publish(&msg.subject(&self.actor_id), &msg.into())?;
             }
@@ -192,7 +195,6 @@ impl ControllerPubMsg {
     pub fn subject(&self, msg_id: &ClientId) -> Subject {
         match self {
             ControllerPubMsg::SetSignal(SignalMsg {
-                id: _,
                 timestamp: _,
                 signal: _,
             }) => Subject(format!("actor.{}.set_signal", msg_id)),

@@ -8,15 +8,17 @@ use crate::{actor::Actor, pub_sub::MessageParseError};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+
+use super::ActorSignal;
 pub struct ActorClient {
     id: ClientId,
-    actor: Box<dyn Actor<Signal = f32>>,
+    actor: Box<dyn Actor>,
     /// TODO: Make generic over PubSubClient
     client: NatsClient,
 }
 
 impl ActorClient {
-    pub fn new(id: ClientId, actor: Box<dyn Actor<Signal = f32>>, config: &NatsConfig) -> Self {
+    pub fn new(id: ClientId, actor: Box<dyn Actor>, config: &NatsConfig) -> Self {
         let client = NatsClient::try_new(config).unwrap();
         ActorClient { id, actor, client }
     }
@@ -28,9 +30,8 @@ impl ActorClient {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SignalMsg {
-    pub(crate) id: ClientId,
     pub(crate) timestamp: TimeStamp,
-    pub(crate) signal: f32,
+    pub(crate) signal: ActorSignal,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -84,7 +85,7 @@ impl PubSubClient for ActorClient {
                     Ok(msg) => match msg {
                         ActorSubMsg::SetSignal(msg) => self
                             .actor
-                            .set_signal(msg.signal)
+                            .set_signal(&msg.signal)
                             .map_err(|err| err.into())
                             .and_then(|()| {
                                 self.publish(

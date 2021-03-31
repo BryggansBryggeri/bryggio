@@ -1,4 +1,4 @@
-use crate::actor::{simple_gpio::SimpleGpioActor, Actor, ActorError};
+use crate::actor::{simple_gpio::SimpleGpioActor, Actor, ActorError, ActorSignal};
 #[cfg(target_arch = "x86_64")]
 use crate::hardware::dummy as hardware_impl;
 #[cfg(target_arch = "arm")]
@@ -28,15 +28,19 @@ impl Buzzer {
 
     pub fn constant(&mut self) -> Result<(), BuzzerError> {
         self.stop()?;
-        Ok(self.constant.set_signal(1.0)?)
+        let signal = ActorSignal::new(self.constant.id.clone(), 1.0);
+        Ok(self.constant.set_signal(&signal)?)
     }
     pub fn pulse(&mut self) -> Result<(), BuzzerError> {
         self.stop()?;
-        Ok(self.pulse.set_signal(1.0)?)
+        let signal = ActorSignal::new(self.pulse.id.clone(), 1.0);
+        Ok(self.pulse.set_signal(&signal)?)
     }
     pub fn stop(&mut self) -> Result<(), BuzzerError> {
-        self.constant.set_signal(0.0)?;
-        Ok(self.pulse.set_signal(0.0)?)
+        let signal = ActorSignal::new(self.constant.id.clone(), 1.0);
+        self.constant.set_signal(&signal)?;
+        let signal = ActorSignal::new(self.pulse.id.clone(), 1.0);
+        Ok(self.pulse.set_signal(&signal)?)
     }
 }
 
