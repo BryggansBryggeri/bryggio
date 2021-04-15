@@ -9,10 +9,10 @@ command = "cargo"
 args = ["build"]
 
 [tasks.rbpi-build]
-env = { "CC_armv7_unknown_linux_musleabihf" = "arm-linux-gnueabihf-gcc" }
+# env = { "CC_armv7_unknown_linux_musleabihf" = "arm-linux-gnueabihf-gcc" }
 description = "Build all targets for RbPi (armv7-target)"
 command = "cargo"
-args = ["build", "--target=armv7-unknown-linux-musleabihf"]
+args = ["build", "--target=armv7-unknown-linux-gnueabihf"]
 
 [tasks.rbpi-check]
 env = { "CC_armv7_unknown_linux_musleabihf" = "arm-linux-gnueabihf-gcc" }

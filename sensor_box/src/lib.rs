@@ -1,4 +1,5 @@
 use crate::pub_sub::SensorBoxSubMsg;
+use bryggio_lib::actor::{ActorClient, ActorConfig};
 use bryggio_lib::pub_sub::{
     nats_client::{NatsClient, NatsConfig},
     ClientId, ClientState, PubSubClient, PubSubError,
@@ -32,6 +33,9 @@ impl SensorBox {
         for sensor_config in config.hardware.sensors {
             sensor_box.add_sensor(sensor_config, &config.nats)?;
         }
+        for actor_config in config.hardware.actors {
+            sensor_box.add_actor(actor_config, &config.nats)?;
+        }
         Ok(sensor_box)
     }
 
@@ -64,6 +68,25 @@ impl SensorBox {
                 self.active_clients
                     .sensors
                     .insert(id.clone(), (handle, sensor_config));
+                Ok(())
+            }
+        }
+    }
+
+    fn add_actor(
+        &mut self,
+        actor_config: ActorConfig,
+        config: &NatsConfig,
+    ) -> Result<(), SensorBoxError> {
+        let id = &actor_config.id;
+        match self.active_clients.actors.get(id) {
+            Some(_) => Err(SensorBoxError::AlreadyActive(id.clone())),
+            None => {
+                let actor = ActorClient::new(id.clone(), actor_config.get_actor()?, config);
+                let handle = thread::spawn(|| actor.client_loop().map_err(|err| err.into()));
+                self.active_clients
+                    .actors
+                    .insert(id.clone(), (handle, actor_config));
                 Ok(())
             }
         }
@@ -127,12 +150,14 @@ impl SensorBoxConfig {
 #[derive(Debug)]
 struct ActiveClients {
     sensors: HashMap<ClientId, (Handle, SensorConfig)>,
+    actors: HashMap<ClientId, (Handle, SensorConfig)>,
 }
 
 impl ActiveClients {
     fn new() -> Self {
         ActiveClients {
             sensors: HashMap::new(),
+            actors: HashMap::new(),
         }
     }
 }
