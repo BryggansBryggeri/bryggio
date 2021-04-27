@@ -1,7 +1,10 @@
+use derive_more::{Add, Display, Sub};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, Ord, PartialOrd, PartialEq, Eq)]
+#[derive(
+    Copy, Clone, Debug, Add, Sub, Display, Deserialize, Serialize, Ord, PartialOrd, PartialEq, Eq,
+)]
 pub struct TimeStamp(pub(crate) u128);
 
 impl TimeStamp {

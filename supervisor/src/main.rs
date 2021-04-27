@@ -4,13 +4,14 @@ use bryggio_lib::supervisor::{config::SupervisorConfig, Supervisor, SupervisorEr
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-fn main() {
-    if let Err(err) = run_supervisor() {
+#[tokio::main]
+async fn main() {
+    if let Err(err) = run_supervisor().await {
         println!("{}", err)
     }
 }
 
-fn run_supervisor() -> Result<(), SupervisorError> {
+async fn run_supervisor() -> Result<(), SupervisorError> {
     let opt = Opt::from_args();
     match opt {
         Opt::Run { config_file } => {

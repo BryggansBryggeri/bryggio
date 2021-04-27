@@ -1,3 +1,4 @@
+use crate::actor::ActorError;
 use crate::logger::{error, info};
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
@@ -5,6 +6,7 @@ use crate::pub_sub::{
 };
 use crate::time::TimeStamp;
 use crate::{actor::Actor, pub_sub::MessageParseError};
+// use nats::{Message, Subscription};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -71,7 +73,8 @@ impl PubSubClient for ActorClient {
             format!("Starting actor with id '{}'", self.id),
             &format!("actor.{}", self.id),
         );
-        let sub = match self.subscribe(&Subject(format!("actor.{}.set_signal", self.id))) {
+        let sub_set_signal = match self.subscribe(&Subject(format!("actor.{}.set_signal", self.id)))
+        {
             Ok(sub) => sub,
             Err(err) => {
                 error(&self, err.to_string(), &format!("actor.{}", self.id));
@@ -80,19 +83,25 @@ impl PubSubClient for ActorClient {
         };
         // let mut state = ClientState::Active;
         loop {
-            if let Some(contr_message) = sub.next() {
+            if let Some(contr_message) = sub_set_signal.next() {
                 let res: Result<(), PubSubError> = match ActorSubMsg::try_from(contr_message) {
                     Ok(msg) => match msg {
-                        ActorSubMsg::SetSignal(msg) => self
-                            .actor
-                            .set_signal(&msg.signal)
-                            .map_err(|err| err.into())
-                            .and_then(|()| {
-                                self.publish(
+                        ActorSubMsg::SetSignal(msg) => {
+                            let sign_res = self.actor.set_signal(&msg.signal);
+                            match sign_res {
+                                Ok(()) => self.publish(
                                     &self.gen_signal_subject(),
                                     &ActorPubMsg::CurrentSignal(msg).into(),
-                                )
-                            }),
+                                ),
+                                Err(err) => match err {
+                                    ActorError::ChangingToAlreadyActiveState => self.publish(
+                                        &self.gen_signal_subject(),
+                                        &ActorPubMsg::CurrentSignal(msg).into(),
+                                    ),
+                                    _ => Err(err.into()),
+                                },
+                            }
+                        }
                     },
                     Err(err) => Err(err).map_err(PubSubError::from),
                 };

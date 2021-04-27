@@ -1,5 +1,5 @@
 use crate::pub_sub::SensorBoxSubMsg;
-use bryggio_lib::actor::{ActorClient, ActorConfig};
+use bryggio_lib::actor::{ActorClient, ActorConfig, ActorError};
 use bryggio_lib::pub_sub::{
     nats_client::{NatsClient, NatsConfig},
     ClientId, ClientState, PubSubClient, PubSubError,
@@ -150,7 +150,7 @@ impl SensorBoxConfig {
 #[derive(Debug)]
 struct ActiveClients {
     sensors: HashMap<ClientId, (Handle, SensorConfig)>,
-    actors: HashMap<ClientId, (Handle, SensorConfig)>,
+    actors: HashMap<ClientId, (Handle, ActorConfig)>,
 }
 
 impl ActiveClients {
@@ -189,7 +189,9 @@ pub enum SensorBoxError {
     Missing(ClientId),
     #[error("'{0}' is already an active client")]
     AlreadyActive(ClientId),
-    #[error("Sensor error")]
+    #[error("Actor error")]
+    Actor(#[from] ActorError),
+    #[error("Sensor error: {0}")]
     Sensor(#[from] SensorError),
     #[error("Pub-sub error: {0}")]
     PubSub(#[from] PubSubError),

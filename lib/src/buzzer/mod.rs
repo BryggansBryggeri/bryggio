@@ -18,8 +18,8 @@ impl Buzzer {
     pub fn try_new(id: &str, constant: u32, pulse: u32) -> Result<Self, BuzzerError> {
         let constant_pin = hardware_impl::get_gpio_pin(constant, id)?;
         let pulse_pin = hardware_impl::get_gpio_pin(pulse, id)?;
-        let constant_actor = SimpleGpioActor::try_new(id, constant_pin)?;
-        let pulse_actor = SimpleGpioActor::try_new(id, pulse_pin)?;
+        let constant_actor = SimpleGpioActor::try_new(id, constant_pin, None)?;
+        let pulse_actor = SimpleGpioActor::try_new(id, pulse_pin, None)?;
         Ok(Buzzer {
             constant: constant_actor,
             pulse: pulse_actor,

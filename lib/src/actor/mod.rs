@@ -2,8 +2,11 @@
 use crate::hardware::dummy as hardware_impl;
 #[cfg(target_arch = "arm")]
 use crate::hardware::rbpi as hardware_impl;
-use crate::hardware::HardwareError;
-use crate::pub_sub::{ClientId, PubSubError};
+use crate::{
+    hardware::GpioState,
+    pub_sub::{ClientId, PubSubError},
+};
+use crate::{hardware::HardwareError, time::TimeStamp};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -31,12 +34,23 @@ impl ActorSignal {
             signal,
         }
     }
+
+    pub fn gpio_state(&self) -> GpioState {
+        if self.signal > 0.0 {
+            GpioState::High
+        } else {
+            GpioState::Low
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub enum ActorType {
     #[serde(rename = "simple_gpio")]
-    SimpleGpio(u32),
+    SimpleGpio {
+        pin_number: u32,
+        time_out: Option<TimeStamp>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -49,10 +63,14 @@ pub struct ActorConfig {
 impl ActorConfig {
     pub fn get_actor(&self) -> Result<Box<dyn Actor>, ActorError> {
         match &self.type_ {
-            ActorType::SimpleGpio(pin_number) => {
+            ActorType::SimpleGpio {
+                pin_number,
+                time_out,
+            } => {
                 let gpio_pin = hardware_impl::get_gpio_pin(*pin_number, &self.id.as_ref())
                     .map_err(HardwareError::from)?;
-                let actor = simple_gpio::SimpleGpioActor::try_new(self.id.as_ref(), gpio_pin)?;
+                let actor =
+                    simple_gpio::SimpleGpioActor::try_new(self.id.as_ref(), gpio_pin, *time_out)?;
                 Ok(Box::new(actor))
             }
         }
@@ -67,6 +85,10 @@ pub enum ActorError {
         lower_bound: f32,
         upper_bound: f32,
     },
+    #[error("No state change in signal")]
+    ChangingToAlreadyActiveState,
+    #[error("Remaining cool down time: {0}")]
+    TimeOut(TimeStamp),
     #[error("Generic: {0}")]
     Generic(String),
     #[error("Hardware: {0}")]

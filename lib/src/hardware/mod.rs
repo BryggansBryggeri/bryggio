@@ -14,7 +14,7 @@ pub enum HardwareError {
     GenericGpio(String),
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GpioState {
     Low,
     High,
