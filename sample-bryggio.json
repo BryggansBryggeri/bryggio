@@ -7,11 +7,11 @@
     "actors": [
       {
         "id": "mash_heater",
-        "type": {"simple_gpio": 0}
+        "type": {"simple_gpio": {"pin_number": 0}}
       },
       {
         "id": "boil_heater",
-        "type": {"simple_gpio": 1}
+        "type": {"simple_gpio": {"pin_number": 1}}
       }
     ]
   ,
@@ -30,7 +30,7 @@
   "nats_config": "./nats-config.yaml",
   "nats": {
     "server": "localhost",
-    "user": "username",
+    "user": "user",
     "pass": "passwd"
   }
 }
