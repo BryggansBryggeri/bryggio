@@ -61,8 +61,13 @@ Before the first release we will not publish any binaries, see [Install from sou
   git clone git@github.com:BryggansBryggeri/bryggio.git bryggio
   cd bryggio
   cargo make --no-workspace build
-  cargo run --bin bryggio-supervisor -- <path_to_bryggio_config_file>
   ```
+
+### Install Nats server
+either from the [website](https://nats.io/download/) or by running (under developement)
+```bash
+cargo run --bin bryggio-cli install
+```
 
 ## Configuration
 
