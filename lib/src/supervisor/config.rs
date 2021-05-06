@@ -116,7 +116,7 @@ impl SupervisorConfig {
 
 #[derive(Error, Debug)]
 pub enum SupervisorConfigError {
-    #[error("'{0}' is not an active client")]
+    #[error("Error opening config file: {0}")]
     Io(#[from] std::io::Error),
     #[error("Config error: {0}")]
     Config(String),
