@@ -189,6 +189,10 @@ pub enum ControllerPubMsg {
         #[serde(rename = "type")]
         type_: ControllerType,
     },
+    ConfirmedStopped {
+        id: ClientId,
+        timestamp: TimeStamp,
+    },
 }
 
 impl ControllerPubMsg {
@@ -204,6 +208,9 @@ impl ControllerPubMsg {
                 target: _,
                 type_: _,
             } => Subject(format!("controller.{}.status", id)),
+            ControllerPubMsg::ConfirmedStopped { id, timestamp: _ } => {
+                Subject(format!("controller.{}.stopped", id))
+            }
         }
     }
 }

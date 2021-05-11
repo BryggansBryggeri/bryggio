@@ -72,6 +72,10 @@ impl TryFrom<&Message> for SupervisorSubMsg {
                 let contr_data: NewContrData = decode_nats_data(&msg.data)?;
                 Ok(SupervisorSubMsg::StartController { contr_data })
             }
+            "command.stop_controller" => {
+                let contr_id: ClientId = decode_nats_data(&msg.data)?;
+                Ok(SupervisorSubMsg::StopController { contr_id })
+            }
             "command.switch_controller" => {
                 let contr_data: NewContrData = decode_nats_data(&msg.data)?;
                 Ok(SupervisorSubMsg::SwitchController { contr_data })

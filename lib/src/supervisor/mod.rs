@@ -65,7 +65,7 @@ impl Supervisor {
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::StopController { contr_id } => {
-                self.stop_controller(&contr_id)?;
+                self.stop_controller(&contr_id, full_msg)?;
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::SwitchController { contr_data } => {
@@ -123,10 +123,32 @@ impl Supervisor {
         }
     }
 
-    fn stop_controller(&mut self, contr_id: &ClientId) -> Result<(), SupervisorError> {
-        match self.active_clients.controllers.get(contr_id) {
+    fn stop_controller(
+        &mut self,
+        contr_id: &ClientId,
+        msg: &Message,
+    ) -> Result<(), SupervisorError> {
+        let status = match self.active_clients.controllers.get(contr_id) {
             Some(_) => self.kill_client(contr_id),
             None => Err(SupervisorError::Missing(contr_id.clone())),
+        };
+        match status {
+            Ok(()) => Ok(msg
+                .respond(format!("Controller {} stopped", contr_id))
+                .map_err(|err| PubSubError::Reply {
+                    msg: msg.clone(),
+                    source: err,
+                })?),
+            Err(err) => Ok(msg
+                .respond(format!(
+                    "Failed stopping controller {}: {}",
+                    contr_id,
+                    err.to_string()
+                ))
+                .map_err(|err| PubSubError::Reply {
+                    msg: msg.clone(),
+                    source: err,
+                })?),
         }
     }
 
