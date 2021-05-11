@@ -90,4 +90,8 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
         self.internal_clock = TimeStamp::now();
         Ok(())
     }
+
+    fn turn_off(&mut self) -> Result<(), ActorError> {
+        self.set_signal(&ActorSignal::new(self.id.clone(), 0.0))
+    }
 }

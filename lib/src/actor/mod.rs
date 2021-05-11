@@ -18,6 +18,7 @@ pub use pub_sub::ActorClient;
 pub trait Actor: Send {
     fn validate_signal(&self, signal: &ActorSignal) -> Result<(), ActorError>;
     fn set_signal(&mut self, signal: &ActorSignal) -> Result<(), ActorError>;
+    fn turn_off(&mut self) -> Result<(), ActorError>;
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

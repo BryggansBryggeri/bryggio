@@ -47,4 +47,9 @@ impl Actor for XorActor {
             Ok(())
         }
     }
+
+    fn turn_off(&mut self) -> Result<(), ActorError> {
+        self.gpio_one.turn_off()?;
+        self.gpio_two.turn_off()
+    }
 }
