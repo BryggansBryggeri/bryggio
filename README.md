@@ -5,42 +5,9 @@ BRYGGANS BRYGGERI's very own brewery control software.
 Currently under heavy developement.
 The goal is to develop a stand-alone pub-sub backend with which any client can communicate and thereby control the brewery hardware.
 
-## Philosophy
-
-Having started our brewery career with first a horrible Python loop and then the much nicer [Craftbeer Pi](http://web.craftbeerpi.com/)
-we knew we always wanted to write our own brewery software.
-
-We are ever grateful for Craftbeer Pi, which has helped us brew a lot of beer,
-but there were a few things we did not like with it:
-
-- Reliability, sometimes sensors or plugins would stop working and a restart was the only fix.
-- There were a lot of versions in use at the same time.
-- Modifying the software, especially the frontend was a bit obscure.
-
-Most of all, we always had the goal of making our own brewery software so do take this mild criticism of CbPi as a
-rationalisation for us to spend a lot of time on BryggIO.
-
-To remedy these projects BryggIO is:
-
-- Implemented in rust --- a strictly typed, compiled and safe language (no unsafe code is used in the core software) ---
-  BryggIO is very reliable. The compiler checks many edge cases and crashing the software is extremely difficult.
-  As a bonus, it also makes BryggIO very fast and memory efficient.
-- We aim to be very stable and use semantic versioning to communicate changes' impact.
-  **Note:** We are currently in pre-release (<1.0, <0.1.0 to be perfectly honest) and during that period wild changes can and will occur.
-- BryggIO is, and will remain, free and open source. We will keep backend and frontend separated so that any frontend can be used.
-
-### Control
-
-Standard is to use a simple PID controller. This is slightly nihilistic given the almost complete model information one usually has when dealing with a simple brewery.
-The arguments in favour of PID control are: ignorance, efficiency, laziness; what if we disregard some information? The system is slow and simple and it works fine.
-
-BryggIO takes the opposite approach: Given a simple and slow system, we have the possibility to have a complicated control. Furthermore, a slow system demands the best possible control in order to save precious time and energy.
-
-Due to the inherent inertia in the objective (heating a lot of water), we can have quite long time between signal updates, providing time to calculate a nearly optimal control sequence.
-
 ## Installation
 
-Before the first release we will not publish any binaries, see [Install from source](#install-from-source)
+Before the first release we will not publish any binaries, see [Build from source](#build-from-source)
 
 ### Build from source
 
@@ -51,11 +18,9 @@ Before the first release we will not publish any binaries, see [Install from sou
   cargo install cargo-make
   ```
 
-- Build targets `bryggio-supervisor`, `bryggio-cli` and `nats-server` from source.
-  The latest released version `nats-server` does not yet support web-sockets, so it needs to be built from the master branch.
-  This step obviously requires installation of [golang](https://golang.org/).
-  Hopefully this feature will [soon](https://nats.io/about/) be on the stable release and a simple download will suffice.
-  Until then, the NATS server [repo](https://github.com/nats-io/nats-server) is included as a submodule in the BryggIO repo.
+  Note: cargo-make is not strictly necessary, just convenient. The underlying cargo commands can be inferred from the `Makefile.toml` file.
+
+- Build targets `bryggio-supervisor`, `bryggio-cli` from source.
 
   ```bash
   git clone git@github.com:BryggansBryggeri/bryggio.git bryggio
@@ -64,7 +29,9 @@ Before the first release we will not publish any binaries, see [Install from sou
   ```
 
 ### Install Nats server
-either from the [website](https://nats.io/download/) or by running (under developement)
+
+either from the [website](https://nats.io/download/) or by running (rather buggy right now)
+
 ```bash
 cargo run --bin bryggio-cli install
 ```
@@ -79,10 +46,10 @@ cargo run --bin bryggio-cli install
 
 Check out the sample configs in this repo for usage.
 
-The supervisor, starts up a `nats-server` in a separate process and then runs a supervisor pub sub client which,
-listening to special command subjects, starts and stops other clients like sensors, actors and controllers.
-
 ## Run
+
+The `bryggio-supervisor`, starts up a `nats-server` in a separate process and then runs a supervisor pub sub client which,
+listening to special command subjects, starts and stops other clients like sensors, actors and controllers.
 
 There are two ways to run the supervisor:
 
@@ -131,6 +98,39 @@ sudo ./bryggio-supervisor <path_to_bryggio_config_file>
 ```
 
 `sudo` is required for gpio manipulation.
+
+## Philosophy
+
+Having started our brewery career with first a horrible Python loop and then the much nicer [Craftbeer Pi](http://web.craftbeerpi.com/)
+we knew we always wanted to write our own brewery software.
+
+We are ever grateful for Craftbeer Pi, which has helped us brew a lot of beer,
+but there were a few things we did not like with it:
+
+- Reliability, sometimes sensors or plugins would stop working and a restart was the only fix.
+- There were a lot of versions in use at the same time.
+- Modifying the software, especially the frontend was a bit obscure.
+
+Most of all, we always had the goal of making our own brewery software so do take this mild criticism of CbPi as a
+rationalisation for us to spend a lot of time on BryggIO.
+
+To remedy these projects BryggIO is:
+
+- Implemented in rust --- a strictly typed, compiled and safe language (no unsafe code is used in the core software) ---
+  BryggIO is very reliable. The compiler checks many edge cases and crashing the software is extremely difficult.
+  As a bonus, it also makes BryggIO very fast and memory efficient.
+- We aim to be very stable and use semantic versioning to communicate changes' impact.
+  **Note:** We are currently in pre-release (<1.0, <0.1.0 to be perfectly honest) and during that period wild changes can and will occur.
+- BryggIO is, and will remain, free and open source. We will keep backend and frontend separated so that any frontend can be used.
+
+### Control
+
+Standard is to use a simple PID controller. This is slightly nihilistic given the almost complete model information one usually has when dealing with a simple brewery.
+The arguments in favour of PID control are: ignorance, efficiency, laziness; what if we disregard some information? The system is slow and simple and it works fine.
+
+BryggIO takes the opposite approach: Given a simple and slow system, we have the possibility to have a complicated control. Furthermore, a slow system demands the best possible control in order to save precious time and energy.
+
+Due to the inherent inertia in the objective (heating a lot of water), we can have quite long time between signal updates, providing time to calculate a nearly optimal control sequence.
 
 ### Literature
 

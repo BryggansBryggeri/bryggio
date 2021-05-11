@@ -42,6 +42,8 @@ impl PubSubClient for Supervisor {
 pub enum SupervisorSubMsg {
     #[serde(rename = "start_controller")]
     StartController { contr_data: NewContrData },
+    #[serde(rename = "stop_controller")]
+    StopController { contr_id: ClientId },
     #[serde(rename = "switch_controller")]
     SwitchController { contr_data: NewContrData },
     #[serde(rename = "list_active_clients")]

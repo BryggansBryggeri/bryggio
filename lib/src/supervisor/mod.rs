@@ -64,6 +64,10 @@ impl Supervisor {
                 self.start_controller(contr_data.config, contr_data.new_target)?;
                 Ok(ClientState::Active)
             }
+            SupervisorSubMsg::StopController { contr_id } => {
+                self.stop_controller(&contr_id)?;
+                Ok(ClientState::Active)
+            }
             SupervisorSubMsg::SwitchController { contr_data } => {
                 self.switch_controller(contr_data.config, contr_data.new_target, full_msg)?;
                 Ok(ClientState::Active)
@@ -116,6 +120,13 @@ impl Supervisor {
                 );
                 Ok(())
             }
+        }
+    }
+
+    fn stop_controller(&mut self, contr_id: &ClientId) -> Result<(), SupervisorError> {
+        match self.active_clients.controllers.get(contr_id) {
+            Some(_) => self.kill_client(contr_id),
+            None => Err(SupervisorError::Missing(contr_id.clone())),
         }
     }
 

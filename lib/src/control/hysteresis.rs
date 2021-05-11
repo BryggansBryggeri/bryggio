@@ -45,10 +45,7 @@ impl control::Control for Controller {
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {
         let measurement = match measurement {
             Some(measurement) => Some(measurement),
-            None => match self.previous_measurement {
-                Some(previous_measurement) => Some(previous_measurement),
-                None => None,
-            },
+            None => self.previous_measurement,
         };
         match measurement {
             Some(measurement) => {

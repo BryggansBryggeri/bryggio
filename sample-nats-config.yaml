@@ -6,7 +6,7 @@ authorization: {
     user: "jackonelli"
     password: "$2a$11$Nzjot89fFgeuMVoAUObIeOqRm/zoqr6rjebsJ7INALJOEuIhBQS/C"
 }
-debug: false
+debug: true
 
 websocket: {
   port: 9222

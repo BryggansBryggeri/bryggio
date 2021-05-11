@@ -17,5 +17,6 @@ pub fn request(opt: &PubSubOpt) -> Result<(), PubSubError> {
 }
 
 pub fn publish_command(opt: &PubSubOpt) -> Result<(), PubSubError> {
+    println!("pub");
     get_client(opt)?.publish(&Subject(opt.topic.clone()), &PubSubMsg(opt.msg.clone()))
 }

@@ -6,7 +6,6 @@ use crate::pub_sub::{
 };
 use crate::time::TimeStamp;
 use crate::{actor::Actor, pub_sub::MessageParseError};
-// use nats::{Message, Subscription};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
