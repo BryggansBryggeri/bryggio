@@ -25,7 +25,7 @@ impl ActorClient {
     }
 
     fn gen_signal_subject(&self) -> Subject {
-        Subject(format!("actor.{}.current_signal", self.id))
+        Subject(format!("actor_pub.{}.current_signal", self.id))
     }
 }
 
@@ -48,7 +48,16 @@ pub enum ActorSubMsg {
 impl TryFrom<Message> for ActorSubMsg {
     type Error = MessageParseError;
     fn try_from(msg: Message) -> Result<Self, Self::Error> {
-        decode_nats_data(&msg.data)
+        let mut tmp = msg.subject.split('.');
+        tmp.next();
+        tmp.next();
+        let sub_sub = tmp.next().unwrap();
+        println!("{}, {}", msg.subject, sub_sub);
+        match sub_sub {
+            "set_signal" => decode_nats_data(&msg.data),
+            "turn_off" => Ok(Self::TurnOff),
+            _ => unreachable!(),
+        }
     }
 }
 
