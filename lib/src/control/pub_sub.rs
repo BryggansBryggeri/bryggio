@@ -1,7 +1,7 @@
 use crate::actor::pub_sub::SignalMsg;
 use crate::actor::ActorSignal;
+use crate::control::Control;
 use crate::control::ControllerType;
-use crate::control::{Control, State};
 use crate::logger::{debug, error, info};
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
@@ -69,21 +69,21 @@ impl PubSubClient for ControllerClient {
         )?;
         let controller = self.subscribe(&ControllerSubMsg::subject(&self.id))?;
         let sensor = self.subscribe(&SensorMsg::subject(&self.sensor_id))?;
-        let mut state = State::Active;
         log_info(
             &self,
             &format!("starting contr. client: {}: {:?}", &self.id, &self.type_),
         );
         self.status_update();
-        while state == State::Active {
+        loop {
             if let Some(msg) = kill_cmd.try_next() {
                 // TODO: Proper Status PubMsg.
                 log_info(&self, "killing contr. client");
+                // TODO Actor turn off
                 msg.respond(format!("{}", self.controller.get_target()))
                     .map_err(|err| {
                         PubSubError::Client(format!("could not respond: '{}'.", err.to_string()))
                     })?;
-                state = State::Inactive;
+                return Ok(());
             }
 
             if let Some(msg) = controller.try_next() {
@@ -121,7 +121,6 @@ impl PubSubClient for ControllerClient {
                 self.publish(&msg.subject(&self.actor_id), &msg.into())?;
             }
         }
-        Ok(())
     }
 
     fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
@@ -189,10 +188,6 @@ pub enum ControllerPubMsg {
         #[serde(rename = "type")]
         type_: ControllerType,
     },
-    ConfirmedStopped {
-        id: ClientId,
-        timestamp: TimeStamp,
-    },
 }
 
 impl ControllerPubMsg {
@@ -208,9 +203,6 @@ impl ControllerPubMsg {
                 target: _,
                 type_: _,
             } => Subject(format!("controller.{}.status", id)),
-            ControllerPubMsg::ConfirmedStopped { id, timestamp: _ } => {
-                Subject(format!("controller.{}.stopped", id))
-            }
         }
     }
 }

@@ -1,5 +1,4 @@
 use self::config::SupervisorConfigError;
-use crate::actor::{ActorClient, ActorConfig, ActorError};
 use crate::control::{
     pub_sub::ControllerPubMsg, ControllerClient, ControllerConfig, ControllerError,
 };
@@ -11,6 +10,10 @@ use crate::pub_sub::{
 use crate::sensor::{SensorClient, SensorConfig, SensorError};
 use crate::supervisor::pub_sub::{SupervisorPubMsg, SupervisorSubMsg};
 use crate::time::TimeStamp;
+use crate::{
+    actor::{ActorClient, ActorConfig, ActorError},
+    pub_sub::Subject,
+};
 use nats::Message;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -129,27 +132,16 @@ impl Supervisor {
         msg: &Message,
     ) -> Result<(), SupervisorError> {
         let status = match self.active_clients.controllers.get(contr_id) {
-            Some(_) => self.kill_client(contr_id),
+            Some(_) => match self.kill_client::<f32>(contr_id) {
+                Ok(_) => Ok(()),
+                Err(err) => {
+                    msg.respond(String::from("Kill error"));
+                    Err(err)
+                }
+            },
             None => Err(SupervisorError::Missing(contr_id.clone())),
         };
-        match status {
-            Ok(()) => Ok(msg
-                .respond(format!("Controller {} stopped", contr_id))
-                .map_err(|err| PubSubError::Reply {
-                    msg: msg.clone(),
-                    source: err,
-                })?),
-            Err(err) => Ok(msg
-                .respond(format!(
-                    "Failed stopping controller {}: {}",
-                    contr_id,
-                    err.to_string()
-                ))
-                .map_err(|err| PubSubError::Reply {
-                    msg: msg.clone(),
-                    source: err,
-                })?),
-        }
+        status
     }
 
     fn switch_controller(
@@ -167,7 +159,7 @@ impl Supervisor {
             "supervisor",
         );
         let contr_id = &config.controller_id;
-        let _: f32 = self.kill_client(contr_id)?;
+        self.stop_controller(contr_id, msg);
         self.start_controller(config.clone(), new_target)?;
         let status: PubSubMsg = ControllerPubMsg::Status {
             id: contr_id.clone(),
