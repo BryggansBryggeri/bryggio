@@ -57,6 +57,12 @@ impl From<&str> for Subject {
 #[derive(Debug, Display)]
 pub struct PubSubMsg(pub String);
 
+impl PubSubMsg {
+    pub fn empty() -> Self {
+        PubSubMsg(String::new())
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum PubSubError {
     #[error("Failed subscribing to NATS server: {0}")]

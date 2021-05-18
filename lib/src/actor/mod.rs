@@ -94,6 +94,8 @@ pub enum ActorError {
     Generic(String),
     #[error("Hardware: {0}")]
     Hardware(#[from] HardwareError),
+    #[error("Faild turning off actor")]
+    TurnOff,
 }
 
 impl From<ActorError> for PubSubError {

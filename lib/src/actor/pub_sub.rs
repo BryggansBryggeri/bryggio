@@ -39,6 +39,8 @@ pub struct SignalMsg {
 pub enum ActorSubMsg {
     #[serde(rename = "set_signal")]
     SetSignal(SignalMsg),
+    #[serde(rename = "turn_off")]
+    TurnOff,
     // #[serde(rename = "stop")]
     // Stop,
 }
@@ -72,8 +74,7 @@ impl PubSubClient for ActorClient {
             format!("Starting actor with id '{}'", self.id),
             &format!("actor.{}", self.id),
         );
-        let sub_set_signal = match self.subscribe(&Subject(format!("actor.{}.set_signal", self.id)))
-        {
+        let sub_set_signal = match self.subscribe(&Subject(format!("actor.{}.>", self.id))) {
             Ok(sub) => sub,
             Err(err) => {
                 error(&self, err.to_string(), &format!("actor.{}", self.id));
@@ -83,27 +84,37 @@ impl PubSubClient for ActorClient {
         // let mut state = ClientState::Active;
         loop {
             if let Some(contr_message) = sub_set_signal.next() {
-                let res: Result<(), PubSubError> = match ActorSubMsg::try_from(contr_message) {
-                    Ok(msg) => match msg {
-                        ActorSubMsg::SetSignal(msg) => {
-                            let sign_res = self.actor.set_signal(&msg.signal);
-                            match sign_res {
-                                Ok(()) => self.publish(
-                                    &self.gen_signal_subject(),
-                                    &ActorPubMsg::CurrentSignal(msg).into(),
-                                ),
-                                Err(err) => match err {
-                                    ActorError::ChangingToAlreadyActiveState => self.publish(
+                let res: Result<(), PubSubError> =
+                    match ActorSubMsg::try_from(contr_message.clone()) {
+                        Ok(msg) => match msg {
+                            ActorSubMsg::SetSignal(new_signal) => {
+                                let sign_res = self.actor.set_signal(&new_signal.signal);
+                                match sign_res {
+                                    Ok(()) => self.publish(
                                         &self.gen_signal_subject(),
-                                        &ActorPubMsg::CurrentSignal(msg).into(),
+                                        &ActorPubMsg::CurrentSignal(new_signal).into(),
                                     ),
-                                    _ => Err(err.into()),
-                                },
+                                    Err(err) => match err {
+                                        ActorError::ChangingToAlreadyActiveState => self.publish(
+                                            &self.gen_signal_subject(),
+                                            &ActorPubMsg::CurrentSignal(new_signal).into(),
+                                        ),
+                                        _ => Err(err.into()),
+                                    },
+                                }
                             }
-                        }
-                    },
-                    Err(err) => Err(err).map_err(PubSubError::from),
-                };
+                            ActorSubMsg::TurnOff => {
+                                //
+                                match self.actor.turn_off() {
+                                    Ok(()) => Ok(()),
+                                    Err(_err) => contr_message
+                                        .respond(String::from("Error turning off actor"))
+                                        .map_err(PubSubError::from),
+                                }
+                            }
+                        },
+                        Err(err) => Err(err).map_err(PubSubError::from),
+                    };
                 if let Err(err) = res {
                     error(&self, err.to_string(), &format!("actor.{}", self.id));
                 }

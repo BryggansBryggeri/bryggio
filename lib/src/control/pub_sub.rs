@@ -78,11 +78,17 @@ impl PubSubClient for ControllerClient {
             if let Some(msg) = kill_cmd.try_next() {
                 // TODO: Proper Status PubMsg.
                 log_info(&self, "killing contr. client");
-                // TODO Actor turn off
-                msg.respond(format!("{}", self.controller.get_target()))
-                    .map_err(|err| {
-                        PubSubError::Client(format!("could not respond: '{}'.", err.to_string()))
-                    })?;
+                let actor_msg = ControllerPubMsg::TurnOffActor;
+                let response = match self
+                    .client
+                    .request(&actor_msg.subject(&self.actor_id), &PubSubMsg::empty())
+                {
+                    Ok(_) => format!("{}", self.controller.get_target()),
+                    Err(err) => format!("Failed turning actor off {}", err.to_string()),
+                };
+                msg.respond(response).map_err(|err| {
+                    PubSubError::Client(format!("could not respond: '{}'.", err.to_string()))
+                })?;
                 return Ok(());
             }
 
@@ -111,7 +117,7 @@ impl PubSubClient for ControllerClient {
                 if let Ok(msg) = SensorMsg::try_from(meas_msg) {
                     self.controller.calculate_signal(msg.meas.ok());
                 }
-                let msg = ControllerPubMsg::SetSignal(SignalMsg {
+                let msg = ControllerPubMsg::SetActorSignal(SignalMsg {
                     timestamp: TimeStamp::now(),
                     signal: ActorSignal::new(
                         self.actor_id.clone(),
@@ -179,7 +185,10 @@ impl TryFrom<Message> for ControllerSubMsg {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum ControllerPubMsg {
     #[serde(rename = "set_signal")]
-    SetSignal(SignalMsg),
+    // TODO: Remove and use actor?
+    SetActorSignal(SignalMsg),
+    #[serde(rename = "turn_off")]
+    TurnOffActor,
     #[serde(rename = "status")]
     Status {
         id: ClientId,
@@ -193,10 +202,11 @@ pub enum ControllerPubMsg {
 impl ControllerPubMsg {
     pub fn subject(&self, msg_id: &ClientId) -> Subject {
         match self {
-            ControllerPubMsg::SetSignal(SignalMsg {
+            ControllerPubMsg::SetActorSignal(SignalMsg {
                 timestamp: _,
                 signal: _,
             }) => Subject(format!("actor.{}.set_signal", msg_id)),
+            ControllerPubMsg::TurnOffActor => Subject(format!("actor.{}.turn_off", msg_id)),
             ControllerPubMsg::Status {
                 id,
                 timestamp: _,
