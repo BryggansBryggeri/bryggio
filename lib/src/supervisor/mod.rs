@@ -131,17 +131,30 @@ impl Supervisor {
         contr_id: &ClientId,
         msg: &Message,
     ) -> Result<(), SupervisorError> {
-        let status = match self.active_clients.controllers.get(contr_id) {
+        match self.common_stop_controller(contr_id) {
+            Ok(()) => msg
+                .respond(format!("Controller '{}' stopped", contr_id,))
+                .map_err(PubSubError::from)
+                .map_err(SupervisorError::from),
+            Err(err) => msg
+                .respond(format!(
+                    "Failed stopping controller '{}': {}",
+                    contr_id,
+                    err.to_string()
+                ))
+                .map_err(PubSubError::from)
+                .map_err(SupervisorError::from),
+        }
+    }
+
+    fn common_stop_controller(&mut self, contr_id: &ClientId) -> Result<(), SupervisorError> {
+        match self.active_clients.controllers.get(contr_id) {
             Some(_) => match self.kill_client::<f32>(contr_id) {
                 Ok(_) => Ok(()),
-                Err(err) => {
-                    msg.respond(String::from("Kill error"));
-                    Err(err)
-                }
+                Err(err) => Err(err),
             },
             None => Err(SupervisorError::Missing(contr_id.clone())),
-        };
-        status
+        }
     }
 
     fn switch_controller(
@@ -159,7 +172,14 @@ impl Supervisor {
             "supervisor",
         );
         let contr_id = &config.controller_id;
-        self.stop_controller(contr_id, msg);
+        if let Err(err) = self.common_stop_controller(contr_id) {
+            msg.respond(format!(
+                "Failed stopping controller '{}': {}",
+                contr_id,
+                err.to_string()
+            ))
+            .map_err(PubSubError::from)?;
+        };
         self.start_controller(config.clone(), new_target)?;
         let status: PubSubMsg = ControllerPubMsg::Status {
             id: contr_id.clone(),
@@ -188,7 +208,7 @@ impl Supervisor {
     }
 
     fn kill_client<T: DeserializeOwned>(&mut self, id: &ClientId) -> Result<T, SupervisorError> {
-        // TODO: NOn-generic hack.
+        // TODO: Non-generic hack.
         let (handle, _config) = match self.active_clients.controllers.remove(id) {
             Some(contr) => Ok(contr),
             None => Err(SupervisorError::Missing(id.clone())),

@@ -37,12 +37,6 @@ impl<T: OutputPin + Send> SimpleGpioActor<T> {
     pub fn time_out_check(&self) -> Result<(), ActorError> {
         // Always positive since internal_clock is a previous init with ::now()
         let timeout_time = TimeStamp::now() - self.internal_clock;
-        println!(
-            "Timeout time: {}, now: {}, internal_clock: {}",
-            timeout_time,
-            TimeStamp::now(),
-            self.internal_clock
-        );
         if timeout_time < self.time_out.unwrap_or(TimeStamp(0)) {
             Err(ActorError::TimeOut(
                 self.internal_clock + self.time_out.unwrap_or(TimeStamp(0)) - TimeStamp::now(),

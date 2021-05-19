@@ -52,7 +52,6 @@ impl TryFrom<Message> for ActorSubMsg {
         tmp.next();
         tmp.next();
         let sub_sub = tmp.next().unwrap();
-        println!("{}, {}", msg.subject, sub_sub);
         match sub_sub {
             "set_signal" => decode_nats_data(&msg.data),
             "turn_off" => Ok(Self::TurnOff),
