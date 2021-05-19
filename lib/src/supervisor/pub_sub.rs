@@ -148,3 +148,27 @@ impl From<SupervisorPubMsg> for PubSubMsg {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::control::ControllerType;
+
+    #[test]
+    fn test_new_contr_data_parse() {
+        let text = r#"{"config":{"controller_id":"mash","actor_id":"mash_heater","sensor_id":"mash_temp","type":{"hysteresis":{"offset_on":10,"offset_off":5}}},"new_target":16.0}"#;
+        let parsed: NewContrData = serde_json::from_str(text).unwrap();
+        let true_ = NewContrData {
+            config: ControllerConfig {
+                controller_id: ClientId(String::from("mash")),
+                actor_id: ClientId(String::from("mash_heater")),
+                sensor_id: ClientId(String::from("mash_temp")),
+                type_: ControllerType::Hysteresis {
+                    offset_on: 10.0,
+                    offset_off: 5.0,
+                },
+            },
+            new_target: 16.0,
+        };
+    }
+}

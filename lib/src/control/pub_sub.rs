@@ -92,9 +92,9 @@ impl PubSubClient for ControllerClient {
                 return Ok(());
             }
 
-            if let Some(msg) = controller.try_next() {
+            if let Some(nats_msg) = controller.try_next() {
                 // TODO: Match and log error
-                match ControllerSubMsg::try_from(msg) {
+                match ControllerSubMsg::try_from(nats_msg.clone()) {
                     Ok(msg) => match msg {
                         ControllerSubMsg::SetTarget(new_target) => {
                             log_debug(
@@ -104,7 +104,13 @@ impl PubSubClient for ControllerClient {
                                     new_target, self.id
                                 ),
                             );
-                            self.controller.set_target(new_target)
+                            self.controller.set_target(new_target);
+                            nats_msg
+                                .respond(format!(
+                                    "Target '{}' set for controller '{}'",
+                                    new_target, self.id
+                                ))
+                                .map_err(PubSubError::from)?;
                         }
                     },
                     Err(err) => log_error(&self, &err.to_string()),

@@ -1,4 +1,5 @@
 use self::config::SupervisorConfigError;
+use crate::actor::{ActorClient, ActorConfig, ActorError};
 use crate::control::{
     pub_sub::ControllerPubMsg, ControllerClient, ControllerConfig, ControllerError,
 };
@@ -10,10 +11,6 @@ use crate::pub_sub::{
 use crate::sensor::{SensorClient, SensorConfig, SensorError};
 use crate::supervisor::pub_sub::{SupervisorPubMsg, SupervisorSubMsg};
 use crate::time::TimeStamp;
-use crate::{
-    actor::{ActorClient, ActorConfig, ActorError},
-    pub_sub::Subject,
-};
 use nats::Message;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
@@ -64,7 +61,7 @@ impl Supervisor {
     ) -> Result<ClientState, SupervisorError> {
         match cmd {
             SupervisorSubMsg::StartController { contr_data } => {
-                self.start_controller(contr_data.config, contr_data.new_target)?;
+                self.start_controller(contr_data.config, contr_data.new_target, full_msg)?;
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::StopController { contr_id } => {
@@ -96,6 +93,26 @@ impl Supervisor {
         &mut self,
         contr_config: ControllerConfig,
         target: f32,
+        msg: &Message,
+    ) -> Result<(), SupervisorError> {
+        let id = contr_config.controller_id.clone();
+        let start_res = self.common_start_controller(contr_config, target);
+        match start_res {
+            Ok(()) => msg.respond(format!("Controller '{}' started", id,)),
+            Err(err) => msg.respond(format!(
+                "Failed starting controller '{}': {}",
+                id,
+                err.to_string()
+            )),
+        }
+        .map_err(PubSubError::from)
+        .map_err(SupervisorError::from)
+    }
+
+    fn common_start_controller(
+        &mut self,
+        contr_config: ControllerConfig,
+        target: f32,
     ) -> Result<(), SupervisorError> {
         // TODO: Disabled checks pga SensorBox
         // contr_config
@@ -103,8 +120,8 @@ impl Supervisor {
         //     .map(|id| self.client_is_active(id))
         //     .collect::<Result<Vec<_>, SupervisorError>>()?;
 
-        let id = &contr_config.controller_id;
-        match self.active_clients.controllers.get(id) {
+        let id = contr_config.controller_id.clone();
+        match self.active_clients.controllers.get(&id) {
             Some(_) => Err(SupervisorError::AlreadyActive(id.clone())),
             None => {
                 let controller_client = ControllerClient::new(
@@ -117,10 +134,9 @@ impl Supervisor {
                 );
                 let control_handle =
                     thread::spawn(|| controller_client.client_loop().map_err(|err| err.into()));
-                self.active_clients.controllers.insert(
-                    contr_config.controller_id.clone(),
-                    (control_handle, contr_config),
-                );
+                self.active_clients
+                    .controllers
+                    .insert(id.clone(), (control_handle, contr_config));
                 Ok(())
             }
         }
@@ -132,19 +148,15 @@ impl Supervisor {
         msg: &Message,
     ) -> Result<(), SupervisorError> {
         match self.common_stop_controller(contr_id) {
-            Ok(()) => msg
-                .respond(format!("Controller '{}' stopped", contr_id,))
-                .map_err(PubSubError::from)
-                .map_err(SupervisorError::from),
-            Err(err) => msg
-                .respond(format!(
-                    "Failed stopping controller '{}': {}",
-                    contr_id,
-                    err.to_string()
-                ))
-                .map_err(PubSubError::from)
-                .map_err(SupervisorError::from),
+            Ok(()) => msg.respond(format!("Controller '{}' stopped", contr_id,)),
+            Err(err) => msg.respond(format!(
+                "Failed stopping controller '{}': {}",
+                contr_id,
+                err.to_string()
+            )),
         }
+        .map_err(PubSubError::from)
+        .map_err(SupervisorError::from)
     }
 
     fn common_stop_controller(&mut self, contr_id: &ClientId) -> Result<(), SupervisorError> {
@@ -180,7 +192,7 @@ impl Supervisor {
             ))
             .map_err(PubSubError::from)?;
         };
-        self.start_controller(config.clone(), new_target)?;
+        self.common_start_controller(config.clone(), new_target)?;
         let status: PubSubMsg = ControllerPubMsg::Status {
             id: contr_id.clone(),
             timestamp: TimeStamp::now(),
@@ -198,8 +210,9 @@ impl Supervisor {
 
     fn reply_active_clients(&self, msg: &Message) -> Result<(), PubSubError> {
         debug(self, String::from("Listing active clients"), "supervisor");
-        let clients: PubSubMsg =
-            SupervisorPubMsg::ActiveClients((&self.active_clients).into()).into();
+        let clients = PubSubMsg::from(SupervisorPubMsg::ActiveClients(ActiveClientsList::from(
+            &self.active_clients,
+        )));
         msg.respond(clients.to_string())
             .map_err(|err| PubSubError::Reply {
                 msg: msg.clone(),
