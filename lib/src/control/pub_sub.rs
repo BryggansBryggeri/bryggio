@@ -52,7 +52,7 @@ impl ControllerClient {
         };
         if let Err(err) = self.publish(&status_update.subject(&self.id), &status_update.into()) {
             log_error(
-                &self,
+                self,
                 &format!("Could not publish status update: {}", err.to_string()),
             );
         };

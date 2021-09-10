@@ -111,15 +111,17 @@ impl PubSubClient for ActorClient {
                                     },
                                 }
                             }
-                            ActorSubMsg::TurnOff => {
-                                //
-                                match self.actor.turn_off() {
-                                    Ok(()) => Ok(()),
-                                    Err(_err) => contr_message
-                                        .respond(String::from("Error turning off actor"))
-                                        .map_err(PubSubError::from),
+                            ActorSubMsg::TurnOff => match self.actor.turn_off() {
+                                Ok(()) => {
+                                    contr_message
+                                        .respond(String::from("Actor output set to zero"))
+                                        .map_err(PubSubError::from)?;
+                                    Ok(())
                                 }
-                            }
+                                Err(_err) => contr_message
+                                    .respond(String::from("Error turning off actor"))
+                                    .map_err(PubSubError::from),
+                            },
                         },
                         Err(err) => Err(err).map_err(PubSubError::from),
                     };
