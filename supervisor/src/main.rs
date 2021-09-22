@@ -18,7 +18,7 @@ async fn run_supervisor() -> Result<(), SupervisorError> {
             let config = SupervisorConfig::try_new(config_file.as_path())?;
             println!("Starting nats");
             let mut nats_server_child =
-                run_nats_server(&config.nats_bin_path, &config.nats_config)?;
+                run_nats_server(&config.nats.nats_bin_path, &config.nats.nats_config)?;
             println!("Starting supervisor");
             let supervisor = Supervisor::init_from_config(config)?;
             supervisor.client_loop()?;

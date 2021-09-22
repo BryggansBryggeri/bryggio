@@ -6,22 +6,53 @@ use std::str::from_utf8;
 use std::thread::sleep;
 use std::time::Duration;
 use std::{any::type_name, path::Path};
+use std::path::PathBuf;
 
 use super::MessageParseError;
 
+
+// TODO: typedefs, e.g. Port
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NatsConfig {
+    pub nats_bin_path: PathBuf,
+    pub nats_config: PathBuf,
     server: String,
+    server_name: String,
     user: String,
     pass: String,
+    listen: String,
+    http_port: u32,
+    websocket: WebSocket,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct WebSocket {
+    port: u32,
+    no_tls: bool
+}
+
+impl WebSocket {
+    pub fn dummy() -> Self {
+        Self {
+            port: 9222,
+            no_tls: true,
+        }
+    }
 }
 
 impl NatsConfig {
     pub fn dummy() -> Self {
         NatsConfig {
-            server: String::new(),
-            user: String::new(),
-            pass: String::new(),
+            server: String::from("nats-server"),
+            server_name: String::from("server-name"),
+            user: String::from("user"),
+            pass: String::from("pass"),
+            nats_bin_path: PathBuf::new(),
+            nats_config: PathBuf::new(),
+            http_port: 8888,
+            listen: String::from("localhost:4222"),
+            websocket: WebSocket::dummy(),
+
         }
     }
 }

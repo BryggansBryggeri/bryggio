@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Read;
 use std::path::Path;
-use std::path::PathBuf;
 use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -17,8 +16,6 @@ pub struct SupervisorConfig {
     pub general: General,
     pub hardware: Hardware,
     pub nats: NatsConfig,
-    pub nats_bin_path: PathBuf,
-    pub nats_config: PathBuf,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -60,8 +57,6 @@ impl SupervisorConfig {
         SupervisorConfig {
             general: General::default(),
             nats: NatsConfig::dummy(),
-            nats_bin_path: PathBuf::new(),
-            nats_config: PathBuf::new(),
             hardware: Hardware {
                 sensors: vec![SensorConfig {
                     id: ClientId("dummy".into()),
@@ -98,16 +93,16 @@ impl SupervisorConfig {
                 "Non-unique client IDs",
             )));
         }
-        if !pres.nats_bin_path.as_path().exists() {
+        if !pres.nats.nats_bin_path.as_path().exists() {
             return Err(SupervisorConfigError::Config(format!(
                 "NATS server bin '{}' missing",
-                pres.nats_bin_path.as_path().to_string_lossy()
+                pres.nats.nats_bin_path.as_path().to_string_lossy()
             )));
         };
-        if !pres.nats_config.as_path().exists() {
+        if !pres.nats.nats_config.as_path().exists() {
             return Err(SupervisorConfigError::Config(format!(
                 "NATS config '{}' missing",
-                pres.nats_config.as_path().to_string_lossy()
+                pres.nats.nats_config.as_path().to_string_lossy()
             )));
         };
         Ok(pres)
@@ -125,7 +120,7 @@ pub enum SupervisorConfigError {
 }
 
 #[cfg(test)]
-mod tests {
+mod supervisor_config_tests {
     use super::*;
 
     #[test]
@@ -141,11 +136,11 @@ mod tests {
                     "actors": [
                       {
                         "id": "mash_heater",
-                        "type": {"simple_gpio": 0}
+                        "type": {"simple_gpio": {"pin_number": 0}}
                       },
                       {
                         "id": "boil_heater",
-                        "type": {"simple_gpio": 1}
+                        "type": {"simple_gpio": {"pin_number": 1}}
                       }
                     ]
                   ,
@@ -160,12 +155,19 @@ mod tests {
                       }
                     ]
                   },
-                  "nats_bin_path": "target/nats-server",
-                  "nats_config": "./nats-config.yaml",
                   "nats": {
+                    "nats_bin_path": "target/nats-server",
+                    "nats_config": "./nats-config.yaml",
                     "server": "localhost",
                     "user": "username",
-                    "pass": "passwd"
+                    "pass": "passwd",
+                    "server_name": "bryggio-nats-server",
+                    "listen": "localhost:4222",
+                    "http_port": 8888,
+                    "websocket": {
+                      "port": 9222,
+                      "no_tls": true
+                    }
                   }
                 }
             "#,

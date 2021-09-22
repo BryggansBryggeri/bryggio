@@ -202,11 +202,11 @@ pub enum SensorBoxError {
 }
 
 #[cfg(test)]
-mod tests {
+mod sensor_box_config_tests {
     use super::*;
 
     #[test]
-    fn test_parse() {
+    fn parse() {
         let _config: SensorBoxConfig = serde_json::from_str(
             r#"
             {
@@ -214,11 +214,11 @@ mod tests {
                 "actors": [
                   {
                     "id": "mash",
-                    "type": {"simple_gpio": 0}
+                    "type": {"simple_gpio": {"pin_number": 0}}
                   },
                   {
                     "id": "boil",
-                    "type": {"simple_gpio": 1}
+                    "type": {"simple_gpio": {"pin_number": 1}}
                   }
                 ]
               ,
@@ -234,9 +234,18 @@ mod tests {
                 ]
               },
               "nats": {
+                "nats_bin_path": "target/nats-server",
+                "nats_config": "./nats-config.yaml",
                 "server": "localhost",
-                "user": "ababa",
-                "pass": "babab"
+                "user": "username",
+                "pass": "passwd",
+                "server_name": "bryggio-nats-server",
+                "listen": "localhost:4222",
+                "http_port": 8888,
+                "websocket": {
+                  "port": 9222,
+                  "no_tls": true
+                }
               }
             }"#,
         )
