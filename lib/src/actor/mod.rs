@@ -68,7 +68,7 @@ impl ActorConfig {
                 pin_number,
                 time_out,
             } => {
-                let gpio_pin = hardware_impl::get_gpio_pin(*pin_number, &self.id.as_ref())
+                let gpio_pin = hardware_impl::get_gpio_pin(*pin_number, self.id.as_ref())
                     .map_err(HardwareError::from)?;
                 let actor =
                     simple_gpio::SimpleGpioActor::try_new(self.id.as_ref(), gpio_pin, *time_out)?;

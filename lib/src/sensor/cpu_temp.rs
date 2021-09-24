@@ -33,7 +33,7 @@ impl CpuTemp {
 impl Sensor for CpuTemp {
     fn get_measurement(&mut self) -> Result<f32, SensorError> {
         let device_path = "/sys/class/thermal/thermal_zone0/temp";
-        let raw_read = match utils::read_file_to_string(&device_path) {
+        let raw_read = match utils::read_file_to_string(device_path) {
             Ok(raw_read) => raw_read,
             Err(err) => {
                 return Err(SensorError::Read(format!(

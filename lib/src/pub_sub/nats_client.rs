@@ -1,6 +1,6 @@
+use crate::logger::LogLevel;
 use crate::pub_sub::{PubSubError, PubSubMsg, Subject};
 use crate::supervisor::config::SupervisorConfig;
-use crate::logger::LogLevel;
 use nats::{Connection, Options, Subscription};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::io::Write;
@@ -56,7 +56,7 @@ impl From<SupervisorConfig> for NatsConfig {
             http_port: nats.http_port,
             debug,
             authorization: Authorization::new(nats.user, nats.pass),
-            websocket: nats.websocket
+            websocket: nats.websocket,
         }
     }
 }
@@ -74,7 +74,6 @@ impl NatsConfig {
     }
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct Authorization {
     user: String,
@@ -83,10 +82,7 @@ pub(crate) struct Authorization {
 
 impl Authorization {
     pub(crate) fn new(user: String, password: String) -> Self {
-        Self {
-            user,
-            password
-        }
+        Self { user, password }
     }
 
     pub(crate) fn dummy() -> Self {
@@ -114,7 +110,7 @@ impl WebSocket {
 
 pub fn decode_nats_data<T: DeserializeOwned>(data: &[u8]) -> Result<T, MessageParseError> {
     let json_string =
-        from_utf8(&data).map_err(|err| MessageParseError::InvalidUtf8(data.to_vec(), err))?;
+        from_utf8(data).map_err(|err| MessageParseError::InvalidUtf8(data.to_vec(), err))?;
     serde_json::from_str(json_string).map_err(|err| {
         MessageParseError::Deserialization(String::from(json_string), type_name::<T>(), err)
     })
@@ -125,7 +121,8 @@ pub struct NatsClient(Connection);
 
 impl NatsClient {
     pub fn try_new(config: &NatsConfig) -> Result<NatsClient, PubSubError> {
-        let opts = Options::with_user_pass(&config.authorization.user, &config.authorization.password);
+        let opts =
+            Options::with_user_pass(&config.authorization.user, &config.authorization.password);
         match opts.connect(&config.listen) {
             Ok(nc) => Ok(NatsClient(nc)),
             Err(err) => Err(PubSubError::Server(err.to_string())),

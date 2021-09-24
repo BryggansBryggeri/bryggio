@@ -75,7 +75,7 @@ impl Supervisor {
                 Ok(ClientState::Active)
             }
             SupervisorSubMsg::ListActiveClients => {
-                if let Err(err) = self.reply_active_clients(&full_msg) {
+                if let Err(err) = self.reply_active_clients(full_msg) {
                     full_msg
                         .respond(format!("Error replying with active clients. {}", err))
                         .map_err(PubSubError::from)?;

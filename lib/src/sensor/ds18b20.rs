@@ -153,7 +153,7 @@ pub fn list_available() -> Result<Vec<Ds18b20Address>, SensorError> {
 fn ds18b20_address_from_file(file: fs::DirEntry) -> Option<Ds18b20Address> {
     let tmp = file.path();
     let file_name = tmp.file_name()?.to_str()?;
-    match Ds18b20Address::try_new(&file_name) {
+    match Ds18b20Address::try_new(file_name) {
         Ok(address) => Some(address),
         Err(_) => None,
     }

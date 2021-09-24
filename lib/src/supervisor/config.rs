@@ -1,6 +1,6 @@
 use crate::actor::ActorConfig;
 use crate::logger::LogLevel;
-use crate::pub_sub::nats_client::{WebSocket};
+use crate::pub_sub::nats_client::WebSocket;
 use crate::pub_sub::ClientId;
 use crate::sensor::ds18b20::Ds18b20Address;
 use crate::sensor::{SensorConfig, SensorType};
@@ -8,7 +8,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Read;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -54,7 +54,6 @@ impl SupervisorConfig {
     }
 
     fn validate(pres: SupervisorConfig) -> Result<SupervisorConfig, SupervisorConfigError> {
-
         if !pres.hardware.validate() {
             return Err(SupervisorConfigError::Config(String::from(
                 "Non-unique client IDs",
