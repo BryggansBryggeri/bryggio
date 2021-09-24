@@ -28,7 +28,7 @@ Before the first release we will not publish any binaries, see [Build from sourc
   cargo make --no-workspace build
   ```
 
-### Install Nats server
+### Install NATS server
 
 either from the [website](https://nats.io/download/) or by running (rather buggy right now)
 
@@ -38,13 +38,10 @@ cargo run --bin bryggio-cli install
 
 ## Configuration
 
-- **BryggIO config:** JSON file which specifies general settings, and importantly **the path to the `nats-server` binary and corresponding config file**.
+- **BryggIO config:** JSON file which specifies general settings, and importantly **the path to the `nats-server` binary**.
   See `sample-bryggio.json` for an example.
-- **NATS config:** particular YAML config file for the `nats-server`.
-  See `sample-nats-config.yaml` for an example.
-  This will be integrated into the general BryggIO config.
 
-Check out the sample configs in this repo for usage.
+Check out the sample config in this repo for usage.
 
 ## Run
 
