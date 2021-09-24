@@ -5,6 +5,7 @@ authors = ["Jakob Lindqvist <jakob.lindqvist.92@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+tempfile = ">=3"
 embedded-hal = "=1.0.0-alpha.4"
 gpio-cdev = "0.4.0"
 embedded-hal-mock = "0.7.1"

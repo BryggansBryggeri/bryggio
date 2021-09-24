@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-use bryggio_lib::pub_sub::{nats_client::run_nats_server, PubSubClient, PubSubError};
+use bryggio_lib::pub_sub::{nats_client::{run_nats_server, NatsConfig}, PubSubClient, PubSubError};
 use bryggio_lib::supervisor::{config::SupervisorConfig, Supervisor, SupervisorError};
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -16,9 +16,7 @@ async fn run_supervisor() -> Result<(), SupervisorError> {
     match opt {
         Opt::Run { config_file } => {
             let config = SupervisorConfig::try_new(config_file.as_path())?;
-            println!("Starting nats");
-            let mut nats_server_child =
-                run_nats_server(&config.nats.nats_bin_path, &config.nats.nats_config)?;
+            let mut nats_server_child = run_nats_server(&NatsConfig::from(config.clone()), &config.nats.bin_path)?;
             println!("Starting supervisor");
             let supervisor = Supervisor::init_from_config(config)?;
             supervisor.client_loop()?;

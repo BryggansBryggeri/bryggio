@@ -1,41 +1,62 @@
 use crate::pub_sub::{PubSubError, PubSubMsg, Subject};
+use crate::supervisor::config::SupervisorConfig;
+use crate::logger::LogLevel;
 use nats::{Connection, Options, Subscription};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::io::Write;
 use std::process::{Child, Command};
 use std::str::from_utf8;
 use std::thread::sleep;
 use std::time::Duration;
 use std::{any::type_name, path::Path};
-use std::path::PathBuf;
+use tempfile::NamedTempFile;
 
 use super::MessageParseError;
 
+pub fn run_nats_server(config: &NatsConfig, bin_path: &Path) -> Result<Child, PubSubError> {
+    // Some NATS settings (Web socket in particular) cannot be set with a command line flag.
+    // Instead we generate a temporary config file.
+    //
+    // NATS config "language" is very forgiving. Serialising NatsConfig as prett JSON parses fine.
+    let config_str = serde_json::to_string_pretty(&config)
+        .map_err(|err| PubSubError::Configuration(err.to_string()))?;
+
+    println!("Starting NATS with config:\n{}", &config_str);
+    let mut temp_file = NamedTempFile::new()?;
+    write!(temp_file, "{}", &config_str)?;
+
+    let child = Command::new(bin_path)
+        .arg("-c")
+        .arg(temp_file.path())
+        .spawn();
+    // Sleeps for a short while to ensure that the server is up and running before
+    // the first connection comes.
+    sleep(Duration::from_millis(10));
+    child.map_err(|err| PubSubError::Server(err.to_string()))
+}
 
 // TODO: typedefs, e.g. Port
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NatsConfig {
-    pub nats_bin_path: PathBuf,
-    pub nats_config: PathBuf,
-    server: String,
     server_name: String,
-    user: String,
-    pass: String,
     listen: String,
     http_port: u32,
+    debug: bool,
+    authorization: Authorization,
     websocket: WebSocket,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct WebSocket {
-    port: u32,
-    no_tls: bool
-}
-
-impl WebSocket {
-    pub fn dummy() -> Self {
+impl From<SupervisorConfig> for NatsConfig {
+    fn from(config: SupervisorConfig) -> Self {
+        let debug = config.general.log_level <= LogLevel::Debug;
+        let nats = config.nats;
         Self {
-            port: 9222,
-            no_tls: true,
+            server_name: nats.server_name,
+            listen: nats.listen,
+            http_port: nats.http_port,
+            debug,
+            authorization: Authorization::new(nats.user, nats.pass),
+            websocket: nats.websocket
         }
     }
 }
@@ -43,16 +64,50 @@ impl WebSocket {
 impl NatsConfig {
     pub fn dummy() -> Self {
         NatsConfig {
-            server: String::from("nats-server"),
             server_name: String::from("server-name"),
-            user: String::from("user"),
-            pass: String::from("pass"),
-            nats_bin_path: PathBuf::new(),
-            nats_config: PathBuf::new(),
             http_port: 8888,
+            debug: true,
             listen: String::from("localhost:4222"),
+            authorization: Authorization::dummy(),
             websocket: WebSocket::dummy(),
+        }
+    }
+}
 
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub(crate) struct Authorization {
+    user: String,
+    password: String,
+}
+
+impl Authorization {
+    pub(crate) fn new(user: String, password: String) -> Self {
+        Self {
+            user,
+            password
+        }
+    }
+
+    pub(crate) fn dummy() -> Self {
+        Self {
+            user: String::from("user"),
+            password: String::from("passwd"),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub(crate) struct WebSocket {
+    port: u32,
+    no_tls: bool,
+}
+
+impl WebSocket {
+    pub fn dummy() -> Self {
+        Self {
+            port: 9222,
+            no_tls: true,
         }
     }
 }
@@ -70,8 +125,8 @@ pub struct NatsClient(Connection);
 
 impl NatsClient {
     pub fn try_new(config: &NatsConfig) -> Result<NatsClient, PubSubError> {
-        let opts = Options::with_user_pass(&config.user, &config.pass);
-        match opts.connect(&config.server) {
+        let opts = Options::with_user_pass(&config.authorization.user, &config.authorization.password);
+        match opts.connect(&config.listen) {
             Ok(nc) => Ok(NatsClient(nc)),
             Err(err) => Err(PubSubError::Server(err.to_string())),
         }
@@ -97,13 +152,4 @@ impl NatsClient {
             .request(&subject.0, &msg.0)
             .map_err(|err| PubSubError::Publish(err.to_string()))
     }
-}
-
-pub fn run_nats_server(bin_path: &Path, config: &Path) -> Result<Child, PubSubError> {
-    let child = Command::new(bin_path).arg("-c").arg(config).spawn();
-
-    // Sleeps for a short while to ensure that the server is up and running before
-    // the first connection comes.
-    sleep(Duration::from_millis(10));
-    child.map_err(|err| PubSubError::Server(err.to_string()))
 }

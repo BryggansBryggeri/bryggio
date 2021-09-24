@@ -234,8 +234,7 @@ mod sensor_box_config_tests {
                 ]
               },
               "nats": {
-                "nats_bin_path": "target/nats-server",
-                "nats_config": "./nats-config.yaml",
+                "bin_path": "target/nats-server",
                 "server": "localhost",
                 "user": "username",
                 "pass": "passwd",

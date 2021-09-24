@@ -1,6 +1,6 @@
 use crate::actor::ActorConfig;
 use crate::logger::LogLevel;
-use crate::pub_sub::nats_client::NatsConfig;
+use crate::pub_sub::nats_client::{WebSocket};
 use crate::pub_sub::ClientId;
 use crate::sensor::ds18b20::Ds18b20Address;
 use crate::sensor::{SensorConfig, SensorType};
@@ -8,14 +8,66 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::Read;
-use std::path::Path;
+use std::path::{PathBuf, Path};
 use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SupervisorConfig {
     pub general: General,
     pub hardware: Hardware,
-    pub nats: NatsConfig,
+    pub nats: ParseNatsConfig,
+}
+
+impl SupervisorConfig {
+    pub fn dummy() -> SupervisorConfig {
+        SupervisorConfig {
+            general: General::default(),
+            nats: ParseNatsConfig::dummy(),
+            hardware: Hardware {
+                sensors: vec![SensorConfig {
+                    id: ClientId("dummy".into()),
+                    type_: SensorType::Dsb(Ds18b20Address::dummy()),
+                }],
+                actors: Vec::new(),
+            },
+        }
+    }
+
+    pub fn pprint(&self) -> String {
+        //toml::ser::to_string_pretty(self).unwrap()
+        serde_json::to_string_pretty(self).unwrap()
+    }
+
+    pub fn try_new(config_file: &Path) -> Result<SupervisorConfig, SupervisorConfigError> {
+        let mut f = match fs::File::open(config_file) {
+            Ok(f) => f,
+            Err(err) => return Err(SupervisorConfigError::Io(err)),
+        };
+        let mut config_string = String::new();
+        match f.read_to_string(&mut config_string) {
+            Ok(_) => {}
+            Err(err) => return Err(SupervisorConfigError::Io(err)),
+        };
+        let conf_presumptive = serde_json::from_str(&config_string)
+            .map_err(|err| SupervisorConfigError::Parse(err.to_string()))?;
+        SupervisorConfig::validate(conf_presumptive)
+    }
+
+    fn validate(pres: SupervisorConfig) -> Result<SupervisorConfig, SupervisorConfigError> {
+
+        if !pres.hardware.validate() {
+            return Err(SupervisorConfigError::Config(String::from(
+                "Non-unique client IDs",
+            )));
+        }
+        if !pres.nats.bin_path.as_path().exists() {
+            return Err(SupervisorConfigError::Config(format!(
+                "NATS server bin '{}' missing",
+                pres.nats.bin_path.as_path().to_string_lossy()
+            )));
+        };
+        Ok(pres)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -52,60 +104,29 @@ impl Hardware {
         unique_count == self.sensors.len() + self.actors.len()
     }
 }
-impl SupervisorConfig {
-    pub fn dummy() -> SupervisorConfig {
-        SupervisorConfig {
-            general: General::default(),
-            nats: NatsConfig::dummy(),
-            hardware: Hardware {
-                sensors: vec![SensorConfig {
-                    id: ClientId("dummy".into()),
-                    type_: SensorType::Dsb(Ds18b20Address::dummy()),
-                }],
-                actors: Vec::new(),
-            },
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ParseNatsConfig {
+    pub bin_path: PathBuf,
+    pub(crate) server_name: String,
+    pub(crate) user: String,
+    pub(crate) pass: String,
+    pub(crate) listen: String,
+    pub(crate) http_port: u32,
+    pub(crate) websocket: WebSocket,
+}
+
+impl ParseNatsConfig {
+    pub fn dummy() -> Self {
+        Self {
+            bin_path: PathBuf::new(),
+            server_name: String::from("server-name"),
+            user: String::from("user"),
+            pass: String::from("passwd"),
+            listen: String::from("localhost:4222"),
+            http_port: 8888,
+            websocket: WebSocket::dummy(),
         }
-    }
-
-    pub fn pprint(&self) -> String {
-        //toml::ser::to_string_pretty(self).unwrap()
-        serde_json::to_string_pretty(self).unwrap()
-    }
-
-    pub fn try_new(config_file: &Path) -> Result<SupervisorConfig, SupervisorConfigError> {
-        let mut f = match fs::File::open(config_file) {
-            Ok(f) => f,
-            Err(err) => return Err(SupervisorConfigError::Io(err)),
-        };
-        let mut config_string = String::new();
-        match f.read_to_string(&mut config_string) {
-            Ok(_) => {}
-            Err(err) => return Err(SupervisorConfigError::Io(err)),
-        };
-        let conf_presumptive = serde_json::from_str(&config_string)
-            .map_err(|err| SupervisorConfigError::Parse(err.to_string()))?;
-        SupervisorConfig::validate(conf_presumptive)
-    }
-
-    fn validate(pres: SupervisorConfig) -> Result<SupervisorConfig, SupervisorConfigError> {
-        if !pres.hardware.validate() {
-            return Err(SupervisorConfigError::Config(String::from(
-                "Non-unique client IDs",
-            )));
-        }
-        if !pres.nats.nats_bin_path.as_path().exists() {
-            return Err(SupervisorConfigError::Config(format!(
-                "NATS server bin '{}' missing",
-                pres.nats.nats_bin_path.as_path().to_string_lossy()
-            )));
-        };
-        if !pres.nats.nats_config.as_path().exists() {
-            return Err(SupervisorConfigError::Config(format!(
-                "NATS config '{}' missing",
-                pres.nats.nats_config.as_path().to_string_lossy()
-            )));
-        };
-        Ok(pres)
     }
 }
 
@@ -156,8 +177,7 @@ mod supervisor_config_tests {
                     ]
                   },
                   "nats": {
-                    "nats_bin_path": "target/nats-server",
-                    "nats_config": "./nats-config.yaml",
+                    "bin_path": "target/nats-server",
                     "server": "localhost",
                     "user": "username",
                     "pass": "passwd",

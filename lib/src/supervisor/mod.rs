@@ -33,7 +33,9 @@ impl Supervisor {
     pub fn init_from_config(
         config: config::SupervisorConfig,
     ) -> Result<Supervisor, SupervisorError> {
-        let client = NatsClient::try_new(&config.nats)?;
+        println!("Starting supervisor");
+        let nats_config = NatsConfig::from(config.clone());
+        let client = NatsClient::try_new(&nats_config)?;
         let mut supervisor = Supervisor {
             client,
             config: config.clone(),
@@ -43,11 +45,11 @@ impl Supervisor {
         supervisor.add_logger(&config)?;
 
         for sensor_config in config.hardware.sensors {
-            supervisor.add_sensor(sensor_config, &config.nats)?;
+            supervisor.add_sensor(sensor_config, &nats_config)?;
         }
 
         for actor_config in config.hardware.actors {
-            supervisor.add_actor(actor_config, &config.nats)?;
+            supervisor.add_actor(actor_config, &nats_config)?;
         }
 
         info(&supervisor, String::from("Supervisor ready"), "supervisor");
@@ -129,7 +131,7 @@ impl Supervisor {
                     contr_config.actor_id.clone(),
                     contr_config.sensor_id.clone(),
                     contr_config.get_controller(target)?,
-                    &self.config.nats,
+                    &NatsConfig::from(self.config.clone()),
                     contr_config.type_.clone(),
                 );
                 let control_handle =
@@ -240,7 +242,7 @@ impl Supervisor {
     }
 
     fn add_logger(&mut self, config: &config::SupervisorConfig) -> Result<(), SupervisorError> {
-        let log = Log::new(&config.nats, config.general.log_level);
+        let log = Log::new(&NatsConfig::from(config.clone()), config.general.log_level);
         let log_handle = thread::spawn(|| log.client_loop().map_err(|err| err.into()));
         self.add_misc_client(ClientId("log".into()), log_handle)
     }
