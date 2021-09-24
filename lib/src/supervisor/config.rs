@@ -23,13 +23,7 @@ impl SupervisorConfig {
         SupervisorConfig {
             general: General::default(),
             nats: ParseNatsConfig::dummy(),
-            hardware: Hardware {
-                sensors: vec![SensorConfig {
-                    id: ClientId("dummy".into()),
-                    type_: SensorType::Dsb(Ds18b20Address::dummy()),
-                }],
-                actors: Vec::new(),
-            },
+            hardware: Hardware::dummy(),
         }
     }
 
@@ -92,6 +86,16 @@ pub struct Hardware {
 }
 
 impl Hardware {
+    pub fn dummy() -> Self {
+        Hardware {
+            sensors: vec![SensorConfig {
+                id: ClientId("dummy".into()),
+                type_: SensorType::Dsb(Ds18b20Address::dummy()),
+            }],
+            actors: Vec::new(),
+        }
+    }
+
     pub fn validate(&self) -> bool {
         let unique_count = self
             .sensors
@@ -107,12 +111,12 @@ impl Hardware {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ParseNatsConfig {
     pub bin_path: PathBuf,
-    pub(crate) server_name: String,
-    pub(crate) user: String,
-    pub(crate) pass: String,
-    pub(crate) listen: String,
-    pub(crate) http_port: u32,
-    pub(crate) websocket: WebSocket,
+    pub server_name: String,
+    pub user: String,
+    pub pass: String,
+    pub listen: String,
+    pub http_port: u32,
+    pub websocket: WebSocket,
 }
 
 impl ParseNatsConfig {
@@ -177,7 +181,6 @@ mod supervisor_config_tests {
                   },
                   "nats": {
                     "bin_path": "target/nats-server",
-                    "server": "localhost",
                     "user": "username",
                     "pass": "passwd",
                     "server_name": "bryggio-nats-server",

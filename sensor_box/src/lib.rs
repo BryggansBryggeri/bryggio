@@ -1,12 +1,14 @@
 use crate::pub_sub::SensorBoxSubMsg;
 use bryggio_lib::actor::{ActorClient, ActorConfig, ActorError};
 use bryggio_lib::pub_sub::{
-    nats_client::{NatsClient, NatsConfig},
+    nats_client::{Authorization, NatsClient, NatsConfig},
     ClientId, ClientState, PubSubClient, PubSubError,
 };
-use bryggio_lib::sensor::ds18b20::Ds18b20Address;
-use bryggio_lib::sensor::{SensorClient, SensorConfig, SensorError, SensorType};
-use bryggio_lib::{logger::error, supervisor::config::Hardware};
+use bryggio_lib::sensor::{SensorClient, SensorConfig, SensorError};
+use bryggio_lib::{
+    logger::{error, LogLevel},
+    supervisor::config::{Hardware, ParseNatsConfig},
+};
 use nats::Message;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -24,17 +26,18 @@ pub struct SensorBox {
 
 impl SensorBox {
     pub fn init_from_config(config: SensorBoxConfig) -> Result<SensorBox, SensorBoxError> {
-        let client = NatsClient::try_new(&config.nats)?;
+        let nats_config = NatsConfig::from(config.clone());
+        let client = NatsClient::try_new(&nats_config)?;
         let mut sensor_box = SensorBox {
             client,
             active_clients: ActiveClients::new(),
         };
 
         for sensor_config in config.hardware.sensors {
-            sensor_box.add_sensor(sensor_config, &config.nats)?;
+            sensor_box.add_sensor(sensor_config, &nats_config)?;
         }
         for actor_config in config.hardware.actors {
-            sensor_box.add_actor(actor_config, &config.nats)?;
+            sensor_box.add_actor(actor_config, &nats_config)?;
         }
         Ok(sensor_box)
     }
@@ -100,21 +103,17 @@ impl SensorBox {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SensorBoxConfig {
+    pub general: General,
     pub hardware: Hardware,
-    pub nats: NatsConfig,
+    pub nats: ParseNatsConfig,
 }
 
 impl SensorBoxConfig {
     pub fn dummy() -> SensorBoxConfig {
         SensorBoxConfig {
-            hardware: Hardware {
-                sensors: vec![SensorConfig {
-                    id: ClientId("dummy".into()),
-                    type_: SensorType::Dsb(Ds18b20Address::dummy()),
-                }],
-                actors: Vec::new(),
-            },
-            nats: NatsConfig::dummy(),
+            general: General::default(),
+            hardware: Hardware::dummy(),
+            nats: ParseNatsConfig::dummy(),
         }
     }
 
@@ -143,6 +142,37 @@ impl SensorBoxConfig {
             Err(SensorBoxError::Config(String::from(
                 "Non-unique client IDs",
             )))
+        }
+    }
+}
+
+impl From<SensorBoxConfig> for NatsConfig {
+    fn from(config: SensorBoxConfig) -> Self {
+        let debug = config.general.log_level <= LogLevel::Debug;
+        let nats = config.nats;
+        Self::new(
+            nats.server_name,
+            nats.http_port,
+            debug,
+            nats.listen,
+            Authorization::new(nats.user, nats.pass),
+            nats.websocket,
+        )
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct General {
+    pub client_name: String,
+    // TODO: Rename all
+    pub log_level: LogLevel,
+}
+
+impl Default for General {
+    fn default() -> Self {
+        General {
+            client_name: "No name".into(),
+            log_level: LogLevel::Info,
         }
     }
 }
@@ -210,6 +240,10 @@ mod sensor_box_config_tests {
         let _config: SensorBoxConfig = serde_json::from_str(
             r#"
             {
+              "general": {
+              "client_name": "Sensor box",
+              "log_level": "info"
+              },
               "hardware": {
                 "actors": [
                   {
@@ -235,7 +269,6 @@ mod sensor_box_config_tests {
               },
               "nats": {
                 "bin_path": "target/nats-server",
-                "server": "localhost",
                 "user": "username",
                 "pass": "passwd",
                 "server_name": "bryggio-nats-server",

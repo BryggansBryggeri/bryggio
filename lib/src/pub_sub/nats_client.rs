@@ -62,39 +62,53 @@ impl From<SupervisorConfig> for NatsConfig {
 }
 
 impl NatsConfig {
-    pub fn dummy() -> Self {
+    pub fn new(
+        server_name: String,
+        http_port: u32,
+        debug: bool,
+        listen: String,
+        authorization: Authorization,
+        websocket: WebSocket,
+    ) -> Self {
         NatsConfig {
-            server_name: String::from("server-name"),
-            http_port: 8888,
-            debug: true,
-            listen: String::from("localhost:4222"),
-            authorization: Authorization::dummy(),
-            websocket: WebSocket::dummy(),
+            server_name,
+            http_port,
+            debug,
+            listen,
+            authorization,
+            websocket,
         }
+    }
+    pub fn dummy() -> Self {
+        Self::new(
+            String::from("server-name"),
+            8888,
+            true,
+            String::from("localhost:4222"),
+            Authorization::dummy(),
+            WebSocket::dummy(),
+        )
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub(crate) struct Authorization {
+pub struct Authorization {
     user: String,
     password: String,
 }
 
 impl Authorization {
-    pub(crate) fn new(user: String, password: String) -> Self {
+    pub fn new(user: String, password: String) -> Self {
         Self { user, password }
     }
 
     pub(crate) fn dummy() -> Self {
-        Self {
-            user: String::from("user"),
-            password: String::from("passwd"),
-        }
+        Self::new(String::from("user"), String::from("passwd"))
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub(crate) struct WebSocket {
+pub struct WebSocket {
     port: u32,
     no_tls: bool,
 }
