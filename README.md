@@ -125,6 +125,10 @@ We take further advantage of Rust's generic type system by providing generic imp
 In Rust it is possible to make a generic implementation for all types that implements a second trait.
 This allows us to reduce code repetition by, for instance, implementing the `PubSubClient` trait for each type that implements the `Sensor` trait.
 
+In short, pub-sub is well-suited for this application. With that said, there are some communication that require more direct communication, i.e. with acknowledgements.
+NATS provide this out-of-the-box, with the [request-reply](https://docs.nats.io/nats-concepts/reqreply) feature.
+Using that a message can be explicitly responded to, this is vital for messages that can't be lost (like shutting down some high-power hardware).
+
 For the actual pub-sub system we use a protocol called [NATS](https://nats.io/). NATS is really just a protocol but it also comes with a server implementation that we use in BryggIO.
 A pub-sub server is a complex piece of software so it is nice to use an existing solution.
 Other alternatives exist, like [MQTT](https://mqtt.org/), but thus far we are quite happy with NATS.
@@ -135,6 +139,13 @@ Since we use the pub-sub pattern we could in principle have one executable for e
 This would not be convenient however, so instead we have a special "Supervisor" client which is run as an executable.
 The supervisor is responsible for starting and monitoring all our basic clients, like sensors, actors and controllers.
 Via pub-sub messages we can also shut-down and start new clients during the brewing process.
+
+### User interface (UI)
+
+BryggIO intentionally does not come with a UI. A clear design goal is to have a full decoupling between frontend and backend.
+The beauty of pub-sub is that any external application, like a UI, with a working NATS client can participate with any part of the brewing process.
+We are developing a web-based UI, [BryggUI](https://github.com/BryggansBryggeri/bryggui), but whereas BryggIO is general and configurable,
+the web UI is tailored to a specific brewery setup (our own).
 
 ## Issues/Road map
 
@@ -177,9 +188,15 @@ either from the [website](https://nats.io/download/) or by running (rather buggy
 cargo run --bin bryggio-cli install
 ```
 
+Installation is a fancy word for simply downloading the `nats-server` executable.
+Do this by manual download from the link above, or the `bryggio-cli install` command.
+The latter figures out what OS you are running, and downloads the corresponding executable.
+This is the preferred method, the end-goal is to use the CLI for a complete install of the entire BryggIO app.
+It is though -- as stated -- still in development.
+
 ## Configuration
 
-- **BryggIO config:** JSON file which specifies general settings, and importantly **the path to the `nats-server` binary**.
+- **BryggIO config:** JSON file which specifies general settings, and importantly **the path to the `nats-server` binary** (that you downloaded in the install step).
   See `sample-bryggio.json` for an example.
 
 Check out the sample config in this repo for usage.
