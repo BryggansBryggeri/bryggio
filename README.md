@@ -13,7 +13,7 @@ It is intended to introduce new potential contributors to the application and un
 ### Structure
 The repo contains four crates (a crate is a Rust library or executable):
 
-- `bryggio_lib`: The main library where most functionality is implemented.
+- `bryggio_core`: The main library where most functionality is implemented.
 - `bryggio_supervisor`: The main executable that is running during the brewing process. It is a very small crate, that starts up and runs a BryggIO supervisor client,
   which controls the brewing process.
 - `bryggio_sensor_box`: A separate executable that controls an external sensor interface. Essentially a smaller version of `bryggio_supervisor`.
@@ -56,7 +56,7 @@ A controller is an abstract component. It listens for measurement from a sensor,
 
 The component types are represented in Rust's type system as "traits", which are like "interfaces" in other languages.
 A trait defines common functionality that a set of concrete types share.
-For example, the `Sensor` trait, defined in `bryggio_lib::sensor`, looks like this:
+For example, the `Sensor` trait, defined in `bryggio_core::sensor`, looks like this:
 ```rust
 pub trait Sensor: Send {
     fn get_measurement(&mut self) -> Result<f32, SensorError>;
@@ -120,7 +120,7 @@ or even the web UI that merely displays the value.
 The pub-sub pattern makes client more independent, and new clients can be added without having to update the existing set of clients.
 Furthermore, the communication is language agnostic, one could for instance write a, say, twitter bot in Python that listens to the server and makes updates about the brewing process.
 
-The pattern is also encoded in Rust's type system. All components -- now clients -- implement the `PubSubClient` trait in `bryggio_lib::pub_sub`.
+The pattern is also encoded in Rust's type system. All components -- now clients -- implement the `PubSubClient` trait in `bryggio_core::pub_sub`.
 We take further advantage of Rust's generic type system by providing generic implementations for the different component types.
 In Rust it is possible to make a generic implementation for all types that implements a second trait.
 This allows us to reduce code repetition by, for instance, implementing the `PubSubClient` trait for each type that implements the `Sensor` trait.

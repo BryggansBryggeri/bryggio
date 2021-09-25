@@ -5,6 +5,6 @@ authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-bryggio-lib = { path = "../lib" }
+bryggio-core = { path = "../bryggio_core" }
 structopt = ">=0.3"
 tokio = { version = "1", features = ["full"] }

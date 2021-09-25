@@ -1,8 +1,8 @@
 [workspace]
 
 members = [
-    "lib",
-    "cli",
-    "supervisor",
-    "sensor_box",
+    "bryggio_core",
+    "bryggio_cli",
+    "bryggio_supervisor",
+    "bryggio_sensor_box",
 ]
