@@ -117,11 +117,6 @@ impl SensorBoxConfig {
         }
     }
 
-    pub fn pprint(&self) -> String {
-        //toml::ser::to_string_pretty(self).unwrap()
-        serde_json::to_string_pretty(self).unwrap()
-    }
-
     pub fn try_new(config_file: &Path) -> Result<SensorBoxConfig, SensorBoxError> {
         let mut f = match fs::File::open(config_file) {
             Ok(f) => f,

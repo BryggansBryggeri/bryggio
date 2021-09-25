@@ -11,6 +11,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
+/// Main supervisor configuration
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SupervisorConfig {
     pub general: General,
@@ -19,19 +20,6 @@ pub struct SupervisorConfig {
 }
 
 impl SupervisorConfig {
-    pub fn dummy() -> SupervisorConfig {
-        SupervisorConfig {
-            general: General::default(),
-            nats: ParseNatsConfig::dummy(),
-            hardware: Hardware::dummy(),
-        }
-    }
-
-    pub fn pprint(&self) -> String {
-        //toml::ser::to_string_pretty(self).unwrap()
-        serde_json::to_string_pretty(self).unwrap()
-    }
-
     pub fn try_new(config_file: &Path) -> Result<SupervisorConfig, SupervisorConfigError> {
         let mut f = match fs::File::open(config_file) {
             Ok(f) => f,
@@ -45,6 +33,14 @@ impl SupervisorConfig {
         let conf_presumptive = serde_json::from_str(&config_string)
             .map_err(|err| SupervisorConfigError::Parse(err.to_string()))?;
         SupervisorConfig::validate(conf_presumptive)
+    }
+
+    pub fn dummy() -> SupervisorConfig {
+        SupervisorConfig {
+            general: General::default(),
+            nats: ParseNatsConfig::dummy(),
+            hardware: Hardware::dummy(),
+        }
     }
 
     fn validate(pres: SupervisorConfig) -> Result<SupervisorConfig, SupervisorConfigError> {

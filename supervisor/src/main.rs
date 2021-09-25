@@ -7,6 +7,8 @@ use bryggio_lib::supervisor::{config::SupervisorConfig, Supervisor, SupervisorEr
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+// Note: I have started some trials into converting the code base to be async.
+// At present, none of it is async, only the main function which have no practical meaning.
 #[tokio::main]
 async fn main() {
     if let Err(err) = run_supervisor().await {
@@ -14,6 +16,12 @@ async fn main() {
     }
 }
 
+/// Supervisor main loop
+///
+/// A config (sample-bryggio.json) is parsed, with settings for both the NATS server and the
+/// bryggio process.
+/// The NATS server is started in a separate process then,
+/// a Supervisor client is started which runs indefinetly.
 async fn run_supervisor() -> Result<(), SupervisorError> {
     let opt = Opt::from_args();
     match opt {

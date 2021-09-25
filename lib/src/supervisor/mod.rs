@@ -23,6 +23,11 @@ pub mod pub_sub;
 
 type Handle = thread::JoinHandle<Result<(), SupervisorError>>;
 
+/// BryggIO supervisor client
+///
+/// Responsible for monitoring, starting, and stopping other clients.
+/// The pub-sub topics that the supervisor subscribes to is the closest thing resembling a public
+/// API for BryggIO.
 pub struct Supervisor {
     client: NatsClient,
     config: config::SupervisorConfig,

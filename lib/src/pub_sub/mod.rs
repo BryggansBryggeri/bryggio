@@ -12,6 +12,9 @@ pub enum ClientState {
     Active,
 }
 
+/// Common Publish-Subscribe functionality
+///
+/// Every BryggIO client implement this trait.
 pub trait PubSubClient {
     fn client_loop(self) -> Result<(), PubSubError>;
     fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError>;
