@@ -1,5 +1,5 @@
 use crate::opts::Opt;
-use bryggio_lib::{pub_sub::PubSubError, supervisor::config::SupervisorConfigError};
+use bryggio_core::{pub_sub::PubSubError, supervisor::config::SupervisorConfigError};
 use install::InstallError;
 use serde::de::DeserializeOwned;
 use serde::Serialize;

@@ -1,11 +1,11 @@
 use crate::pub_sub::SensorBoxSubMsg;
-use bryggio_lib::actor::{ActorClient, ActorConfig, ActorError};
-use bryggio_lib::pub_sub::{
+use bryggio_core::actor::{ActorClient, ActorConfig, ActorError};
+use bryggio_core::pub_sub::{
     nats_client::{Authorization, NatsClient, NatsConfig},
     ClientId, ClientState, PubSubClient, PubSubError,
 };
-use bryggio_lib::sensor::{SensorClient, SensorConfig, SensorError};
-use bryggio_lib::{
+use bryggio_core::sensor::{SensorClient, SensorConfig, SensorError};
+use bryggio_core::{
     logger::{error, LogLevel},
     supervisor::config::{Hardware, ParseNatsConfig},
 };

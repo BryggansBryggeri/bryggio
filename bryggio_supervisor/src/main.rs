@@ -1,9 +1,9 @@
 #![forbid(unsafe_code)]
-use bryggio_lib::pub_sub::{
+use bryggio_core::pub_sub::{
     nats_client::{run_nats_server, NatsConfig},
     PubSubClient, PubSubError,
 };
-use bryggio_lib::supervisor::{config::SupervisorConfig, Supervisor, SupervisorError};
+use bryggio_core::supervisor::{config::SupervisorConfig, Supervisor, SupervisorError};
 use std::path::PathBuf;
 use structopt::StructOpt;
 

@@ -1,5 +1,5 @@
 #![forbid(unsafe_code)]
-use bryggio_lib::pub_sub::PubSubClient;
+use bryggio_core::pub_sub::PubSubClient;
 use bryggio_sensor_box::{SensorBox, SensorBoxConfig, SensorBoxError};
 use std::path::PathBuf;
 use structopt::StructOpt;

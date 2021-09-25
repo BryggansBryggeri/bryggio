@@ -1,6 +1,6 @@
 use crate::{ActiveClientsList, SensorBox};
-use bryggio_lib::pub_sub::{ClientId, ClientState, PubSubClient, PubSubError, Subject};
-use bryggio_lib::pub_sub::{MessageParseError, PubSubMsg};
+use bryggio_core::pub_sub::{ClientId, ClientState, PubSubClient, PubSubError, Subject};
+use bryggio_core::pub_sub::{MessageParseError, PubSubMsg};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;

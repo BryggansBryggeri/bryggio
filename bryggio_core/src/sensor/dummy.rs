@@ -1,5 +1,6 @@
 use crate::sensor::{Sensor, SensorError};
 use rand_distr::{Distribution, Normal};
+use rand::prelude::*;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -30,7 +31,7 @@ impl DummySensor {
 
 impl Sensor for DummySensor {
     fn get_measurement(&mut self) -> Result<f32, SensorError> {
-        let measurement = self.latest_value + self.rng.sample(&mut rand::thread_rng()) / 10.0;
+        let measurement = self.latest_value + self.rng.sample(&mut thread_rng()) / 10.0;
         self.latest_value = measurement;
         sleep(self.delay);
         Ok(measurement)

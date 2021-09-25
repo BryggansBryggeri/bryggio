@@ -1,7 +1,7 @@
 use crate::opts::PubSubOpt;
-use bryggio_lib::pub_sub::nats_client::{NatsClient, NatsConfig};
-use bryggio_lib::pub_sub::{PubSubError, PubSubMsg, Subject};
-use bryggio_lib::supervisor::config::SupervisorConfig;
+use bryggio_core::pub_sub::nats_client::{NatsClient, NatsConfig};
+use bryggio_core::pub_sub::{PubSubError, PubSubMsg, Subject};
+use bryggio_core::supervisor::config::SupervisorConfig;
 
 fn get_client(opt: &PubSubOpt) -> Result<NatsClient, PubSubError> {
     let config = SupervisorConfig::try_new(&opt.config)
