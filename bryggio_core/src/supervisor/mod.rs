@@ -294,13 +294,9 @@ impl Supervisor {
         }
     }
 
-    fn client_is_active(&self, id: &ClientId) -> Result<(), SupervisorError> {
-        if self.active_clients.contains_id(id) {
-            Ok(())
-        } else {
-            Err(SupervisorError::Missing(id.clone()))
-        }
-    }
+    // fn client_is_active(&self, id: &ClientId) -> bool {
+    //     self.active_clients.contains_id(id)
+    // }
 
     fn add_misc_client(
         &mut self,

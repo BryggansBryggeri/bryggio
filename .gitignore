@@ -17,4 +17,3 @@ bryggio.json
 nats-config.yaml
 !sample-*.yaml
 !sample-*.json
-assets/*.svg
