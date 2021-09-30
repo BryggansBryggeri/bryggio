@@ -6,9 +6,8 @@ edition = "2018"
 
 [dependencies]
 tempfile = ">=3"
-embedded-hal = "=1.0.0-alpha.4"
-gpio-cdev = "0.4.0"
-embedded-hal-mock = "0.7.1"
+embedded-hal = "=1.0.0-alpha.5"
+gpio-cdev = "0.5.0"
 rand = ">=0.8"
 rand_distr = ">=0.2.1"
 toml = ">=0.5"

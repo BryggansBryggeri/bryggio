@@ -3,7 +3,7 @@ use crate::{
     hardware::{GpioState, HardwareError},
     time::TimeStamp,
 };
-use embedded_hal::digital::OutputPin;
+use embedded_hal::digital::blocking::OutputPin;
 
 use super::ActorSignal;
 
@@ -67,14 +67,14 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
     fn set_signal(&mut self, signal: &ActorSignal) -> Result<(), ActorError> {
         self.validate_signal(signal)?;
         if signal.signal > 0.0 {
-            self.handle.try_set_high().map_err(|_err| {
+            self.handle.set_high().map_err(|_err| {
                 ActorError::Hardware(HardwareError::GenericGpio(String::from(
                     "Failed setting high",
                 )))
             })?;
             self.state = GpioState::High;
         } else {
-            self.handle.try_set_low().map_err(|_err| {
+            self.handle.set_low().map_err(|_err| {
                 ActorError::Hardware(HardwareError::GenericGpio(String::from(
                     "Failed setting low",
                 )))
