@@ -17,12 +17,12 @@ pub fn run_nats_server(config: &NatsConfig, bin_path: &Path) -> Result<Child, Pu
     // Some NATS settings (Web socket in particular) cannot be set with a command line flag.
     // Instead we generate a temporary config file.
     //
-    // NATS config "language" is very forgiving. Serialising NatsConfig as prett JSON parses fine.
+    // NATS config "language" is very forgiving. Serialising NatsConfig as pretty JSON parses fine.
     let config_str = serde_json::to_string_pretty(&config)
         .map_err(|err| PubSubError::Configuration(err.to_string()))?;
 
     println!("Starting NATS with config:\n{}", &config_str);
-    let mut temp_file = NamedTempFile::new()?;
+    let mut temp_file = NamedTempFile::new_in(".")?;
     write!(temp_file, "{}", &config_str)?;
 
     let child = Command::new(bin_path)
