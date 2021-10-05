@@ -163,21 +163,14 @@ Before the first release we will not publish any binaries, see [Build from sourc
 
 ### Build from source
 
-- Install rust, cargo and cargo-make from [here](https://www.rust-lang.org/tools/install).
-  Rust and cargo are provided by official distributions, cargo-make can subsequently be installed with
-
-  ```bash
-  cargo install cargo-make
-  ```
-
-  Note: cargo-make is not strictly necessary, just convenient. The underlying cargo commands can be inferred from the `Makefile.toml` file.
+- Install rust and Cargo. Rust and Cargo are provided by official distributions.
 
 - Build targets `bryggio-supervisor`, `bryggio-cli` from source.
 
   ```bash
   git clone git@github.com:BryggansBryggeri/bryggio.git bryggio
   cd bryggio
-  cargo make --no-workspace build
+  cargo build
   ```
 
 ### Install NATS server
@@ -217,31 +210,34 @@ cargo run --bin bryggio-supervisor -- run <path_to_bryggio_config_file>
 
 ## Build for and run on rbpi
 
-Build for rbpi needs an arm-compatible rust toolchain. Install with
+We use [`cross`](https://github.com/rust-embedded/cross) for cross compilation.
+To use it, install and setup Docker then install `cross`.
+
+You can get Docker from [here](https://docs.docker.com/get-docker/),
+if you're on a Debian like distro this will perform the setup:
 
 ```bash
-rustup target add armv7-unknown-linux-musleabihf
+sudo apt install docker.io
+sudo systemctl start docker
+sudo chmod 666 /var/run/docker.sock
 ```
 
-and add the target to `~/.cargo/config`
+Install `cross` through Cargo:
 
-```
-[target.armv7-unknown-linux-musleabihf]
-linker = "arm-linux-gnueabihf-gcc-7"
+```bash
+cargo install cross
 ```
 
 Build the required executables
 
 ```bash
 # In the bryggio repo root
-cargo make rbpi-build
+cross build --target=armv7-unknown-linux-musleabihf
 ```
 
-TODO: Add rbpi host and path as env. variables and make them available to the `cargo make rbpi-install` command.
-
-Move the resulting executables
-(`target/armv7-unknown-linux-gnueabihf/<build-mode>/bryggio-supervisor`) and
-(`target/rbpi-nats-server`)
+Move the resulting executable
+(`target/armv7-unknown-linux-musleabihf/<build-mode>/bryggio-supervisor`) and
+`rbpi-nats-server` (you need to download the Arm version of it)
 to the rbpi, as well as the config files listed in [Configuration](#configuration)
 
 On the rbpi run:
@@ -252,4 +248,4 @@ sudo ./bryggio-supervisor <path_to_bryggio_config_file>
 # sudo ./bryggio-supervisor sample-bryggio.toml
 ```
 
-`sudo` is required for gpio manipulation.
+`sudo` is required for GPIO manipulation.
