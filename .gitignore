@@ -17,3 +17,6 @@ bryggio.json
 sensor-box.json
 !sample-*.yaml
 !sample-*.json
+
+# Cross
+*.core

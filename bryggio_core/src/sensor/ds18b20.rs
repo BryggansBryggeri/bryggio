@@ -163,6 +163,7 @@ fn ds18b20_address_from_file(file: fs::DirEntry) -> Option<Ds18b20Address> {
 mod tests {
     use super::*;
     use assert_approx_eq::assert_approx_eq;
+    use std::matches;
 
     #[test]
     fn test_address_correct() {
@@ -172,19 +173,20 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_address_wrong_start() {
         let string = String::from("29-0416802230ff");
         let address = Ds18b20Address::verify(&string);
-        address.unwrap();
+        assert!(matches!(address, Err(SensorError::InvalidAddressStart(..))));
     }
 
     #[test]
-    #[should_panic]
     fn test_address_too_short() {
-        let string = String::from("284E1F69140");
+        let string = String::from("28-4E1F69140");
         let address = Ds18b20Address::verify(&string);
-        address.unwrap();
+        assert!(matches!(
+            address.unwrap_err(),
+            SensorError::InvalidAddressLength(..)
+        ));
     }
 
     #[test]
