@@ -3,13 +3,12 @@ use crate::pub_sub::{PubSubError, PubSubMsg, Subject};
 use crate::supervisor::config::SupervisorConfig;
 use nats::{Connection, Options, Subscription};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::io::Write;
+use std::fs::write;
 use std::process::{Child, Command};
 use std::str::from_utf8;
 use std::thread::sleep;
 use std::time::Duration;
 use std::{any::type_name, path::Path};
-use tempfile::NamedTempFile;
 
 use super::MessageParseError;
 
@@ -22,13 +21,24 @@ pub fn run_nats_server(config: &NatsConfig, bin_path: &Path) -> Result<Child, Pu
         .map_err(|err| PubSubError::Configuration(err.to_string()))?;
 
     println!("Starting NATS with config:\n{}", &config_str);
-    let mut temp_file = NamedTempFile::new_in(".")?;
-    write!(temp_file, "{}", &config_str)?;
+    let config_name = bin_path
+        .parent()
+        .ok_or_else(|| {
+            PubSubError::Configuration(format!(
+                "bin_path: {} has no parent.",
+                &bin_path.to_string_lossy()
+            ))
+        })?
+        .join("nats.conf");
+    write(&config_name, config_str).map_err(|err| {
+        PubSubError::Configuration(format!(
+            "Unable to write NATS config to {}: '{}'",
+            &config_name.to_string_lossy(),
+            err.to_string()
+        ))
+    })?;
 
-    let child = Command::new(bin_path)
-        .arg("-c")
-        .arg(temp_file.path())
-        .spawn();
+    let child = Command::new(bin_path).arg("-c").arg(config_name).spawn();
     // Sleeps for a short while to ensure that the server is up and running before
     // the first connection comes.
     sleep(Duration::from_millis(10));

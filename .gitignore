@@ -13,10 +13,12 @@ tags.temp
 # ARCHIVES
 *.zip
 
+# BryggIO
 bryggio.json
 sensor-box.json
 !sample-*.yaml
 !sample-*.json
+nats.conf
 
 # Cross
 *.core
