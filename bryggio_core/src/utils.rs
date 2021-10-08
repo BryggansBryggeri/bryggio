@@ -1,9 +1,14 @@
+use semver::Version;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 
-pub const fn get_bryggio_version() -> &'static str {
+pub const fn bryggio_version_str() -> &'static str {
     env!("CARGO_PKG_VERSION")
+}
+
+pub fn bryggio_version() -> Option<Version> {
+    Version::parse(bryggio_version_str()).ok()
 }
 
 /// File read helper function.
