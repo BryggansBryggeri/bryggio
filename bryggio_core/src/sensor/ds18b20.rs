@@ -21,6 +21,8 @@ pub struct Ds18b20 {
 // I tried it: it would work if Regex::new() was const fn.
 // const TEMP_PATTERN: regex::Regex = regex::Regex::new(r"t=(-?[0-9]{4,6})").unwrap();
 // Instead, resort to lazy_static.
+//
+// The issue is addressed here: https://github.com/rust-lang/regex/issues/607
 lazy_static! {
     static ref TEMP_PATTERN: regex::Regex = regex::Regex::new(
         r"t=(-?[0-9]{4,6})"
