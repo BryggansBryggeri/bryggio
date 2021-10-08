@@ -21,8 +21,8 @@ thiserror = ">=1.0"
 itertools = ">=0.10"
 
 [target.'cfg(target_arch = "arm")'.dependencies]
-linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", branch = "master", features=["gpio_cdev"]} # This commit works: 0c1a0bbccd5875fe518a8cd41e2bf13d9bd1e130
-# linux-embedded-hal = { version = "0.4.0-alpha.0", features = ["gpio_cdev"] }
+# linux-embedded-hal = {git = "https://github.com/rust-embedded/linux-embedded-hal", branch = "master", features=["gpio_cdev"]} # This commit works: 0c1a0bbccd5875fe518a8cd41e2bf13d9bd1e130
+linux-embedded-hal = { version = "0.4.0-alpha.1", features = ["gpio_cdev"] }
 
 [dev-dependencies]
 assert_approx_eq = ">=1.1"
