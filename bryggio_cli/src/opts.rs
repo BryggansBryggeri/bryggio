@@ -74,7 +74,7 @@ pub struct SupervisorOpt {
     #[structopt(long)]
     pub update: bool,
     #[structopt(default_value = "~/bryggio", long)]
-    pub bryggio_root: PathBuf,
+    pub dir: PathBuf,
     #[structopt(default_value = "nats-server", long)]
     pub nats_path: PathBuf,
     #[structopt(default_value = "bryggio-supervisor", long)]

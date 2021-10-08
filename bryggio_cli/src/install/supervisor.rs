@@ -17,8 +17,8 @@ use super::InstallError;
 
 pub fn install_supervisor(opt: &SupervisorOpt) -> Result<(), InstallError> {
     let bryggio_root = PathBuf::from(
-        shellexpand::tilde(opt.bryggio_root.to_str().ok_or_else(|| {
-            InstallError::InvalidPath(String::from(opt.bryggio_root.to_string_lossy()))
+        shellexpand::tilde(opt.dir.to_str().ok_or_else(|| {
+            InstallError::InvalidPath(String::from(opt.dir.to_string_lossy()))
         })?)
         .to_string(),
     );

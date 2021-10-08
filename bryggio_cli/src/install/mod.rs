@@ -79,11 +79,11 @@ fn semver_from_executable(path: &Path) -> Result<Version, InstallError> {
     semver_from_text_output(&str::from_utf8(&output).unwrap())
 }
 
-pub(crate) fn semver_from_text_output<S: AsRef<str>>(output: &S) -> Result<Version, InstallError> {
-    let output = output.as_ref();
+pub(crate) fn semver_from_text_output<S: AsRef<str>>(text: &S) -> Result<Version, InstallError> {
+    let output = text.as_ref();
     Version::parse(
         SEMVER_VERSION_PATTERN
-            .captures(output.as_ref())
+            .captures(output)
             .ok_or_else(|| InstallError::SemVer(output.to_string()))?
             .get(1)
             .unwrap()
