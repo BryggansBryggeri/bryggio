@@ -1,6 +1,6 @@
 use crate::sensor::{Sensor, SensorError};
-use rand_distr::{Distribution, Normal};
 use rand::prelude::*;
+use rand_distr::{Distribution, Normal};
 use std::thread::sleep;
 use std::time::Duration;
 

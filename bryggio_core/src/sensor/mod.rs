@@ -57,7 +57,7 @@ pub enum SensorError {
     #[error("Address length must be 15, got {0}")]
     InvalidAddressLength(usize),
     #[error("Unable to read from file: {0}")]
-    Read(String),
+    FileRead(String),
     #[error("Could not parse value: {0}")]
     Parse(String),
     #[error("Unable to acquire sensor lock: {0}")]

@@ -36,7 +36,7 @@ impl Sensor for CpuTemp {
         let raw_read = match utils::read_file_to_string(device_path) {
             Ok(raw_read) => raw_read,
             Err(err) => {
-                return Err(SensorError::Read(format!(
+                return Err(SensorError::FileRead(format!(
                     "'{}'. {}",
                     device_path,
                     err.to_string()
