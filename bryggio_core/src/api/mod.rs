@@ -1,4 +1,4 @@
-//! # API
+//! # Old http API, no longer used.
 //!
 //! ## Structure
 //!

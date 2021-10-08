@@ -1,5 +1,8 @@
 # API DOCUMENTATION
 
+_This API is no longer in use, since the switch to the pub-sub framework.
+It is kept around for comparing API parity._
+
 ## Structure
 
 ### Communication
