@@ -2,7 +2,7 @@
 name = "bryggio-sensor-box"
 version = "0.2.0"
 authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 bryggio-core = { path = "../bryggio_core" }

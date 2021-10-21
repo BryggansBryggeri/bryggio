@@ -2,7 +2,7 @@
 name = "bryggio-core"
 version = "0.2.0"
 authors = ["Jakob Lindqvist <jakob.lindqvist.92@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 embedded-hal = "=1.0.0-alpha.5"
