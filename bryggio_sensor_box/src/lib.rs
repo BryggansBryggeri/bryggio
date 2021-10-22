@@ -1,7 +1,7 @@
 use crate::pub_sub::SensorBoxSubMsg;
 use bryggio_core::actor::{ActorClient, ActorConfig, ActorError};
 use bryggio_core::pub_sub::{
-    nats_client::{Authorization, NatsClient, NatsConfig},
+    nats_client::{Authorization, NatsClient, NatsClientConfig},
     ClientId, ClientState, PubSubClient, PubSubError,
 };
 use bryggio_core::sensor::{SensorClient, SensorConfig, SensorError};
@@ -26,7 +26,8 @@ pub struct SensorBox {
 
 impl SensorBox {
     pub fn init_from_config(config: SensorBoxConfig) -> Result<SensorBox, SensorBoxError> {
-        let nats_config = NatsConfig::from(config.clone());
+        let nats_config = NatsClientConfig::from(config.clone());
+        println!("{:?}", nats_config);
         let client = NatsClient::try_new(&nats_config)?;
         let mut sensor_box = SensorBox {
             client,
@@ -56,7 +57,7 @@ impl SensorBox {
     fn add_sensor(
         &mut self,
         sensor_config: SensorConfig,
-        config: &NatsConfig,
+        config: &NatsClientConfig,
     ) -> Result<(), SensorBoxError> {
         let id = &sensor_config.id;
         match self.active_clients.sensors.get(id) {
@@ -79,7 +80,7 @@ impl SensorBox {
     fn add_actor(
         &mut self,
         actor_config: ActorConfig,
-        config: &NatsConfig,
+        config: &NatsClientConfig,
     ) -> Result<(), SensorBoxError> {
         let id = &actor_config.id;
         match self.active_clients.actors.get(id) {
@@ -141,17 +142,13 @@ impl SensorBoxConfig {
     }
 }
 
-impl From<SensorBoxConfig> for NatsConfig {
+impl From<SensorBoxConfig> for NatsClientConfig {
     fn from(config: SensorBoxConfig) -> Self {
-        let debug = config.general.log_level <= LogLevel::Debug;
         let nats = config.nats;
         Self::new(
-            nats.server_name,
-            nats.http_port,
-            debug,
-            nats.listen,
+            nats.host,
+            nats.port,
             Authorization::new(nats.user, nats.pass),
-            nats.websocket,
         )
     }
 }

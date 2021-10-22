@@ -1,6 +1,6 @@
 use crate::actor::ActorConfig;
 use crate::logger::LogLevel;
-use crate::pub_sub::nats_client::WebSocket;
+use crate::pub_sub::nats_client::{Authorization, NatsClientConfig, NatsServerConfig, WebSocket};
 use crate::pub_sub::ClientId;
 use crate::sensor::ds18b20::Ds18b20Address;
 use crate::sensor::{SensorConfig, SensorType};
@@ -59,6 +59,33 @@ impl SupervisorConfig {
     }
 }
 
+impl From<SupervisorConfig> for NatsServerConfig {
+    fn from(config: SupervisorConfig) -> Self {
+        let debug = config.general.log_level <= LogLevel::Debug;
+        let nats = config.nats;
+        Self::new(
+            nats.server_name,
+            nats.host,
+            nats.port,
+            nats.http_port,
+            debug,
+            Authorization::new(nats.user, nats.pass),
+            nats.websocket,
+        )
+    }
+}
+
+impl From<SupervisorConfig> for NatsClientConfig {
+    fn from(config: SupervisorConfig) -> Self {
+        let nats = config.nats;
+        Self::new(
+            nats.host,
+            nats.port,
+            Authorization::new(nats.user, nats.pass),
+        )
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct General {
     pub brewery_name: String,
@@ -106,13 +133,14 @@ impl Hardware {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ParseNatsConfig {
-    pub bin_path: PathBuf,
     pub server_name: String,
+    pub host: String,
+    pub port: u32,
     pub user: String,
     pub pass: String,
-    pub listen: String,
     pub http_port: u32,
     pub websocket: WebSocket,
+    pub bin_path: PathBuf,
 }
 
 impl ParseNatsConfig {
@@ -122,7 +150,8 @@ impl ParseNatsConfig {
             server_name: String::from("server-name"),
             user: String::from("user"),
             pass: String::from("passwd"),
-            listen: String::from("localhost:4222"),
+            host: String::from("localhost"),
+            port: 8888,
             http_port: 8888,
             websocket: WebSocket::dummy(),
         }

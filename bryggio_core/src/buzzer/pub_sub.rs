@@ -1,5 +1,5 @@
 use crate::pub_sub::{
-    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
+    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::{logger::error, pub_sub::MessageParseError};
@@ -16,7 +16,7 @@ pub struct BuzzerClient {
 }
 
 impl BuzzerClient {
-    pub fn try_new(id: ClientId, buzzer: Buzzer, config: &NatsConfig) -> Result<Self, PubSubError> {
+    pub fn try_new(id: ClientId, buzzer: Buzzer, config: &NatsClientConfig) -> Result<Self, PubSubError> {
         let client = NatsClient::try_new(config)?;
         Ok(BuzzerClient { id, buzzer, client })
     }

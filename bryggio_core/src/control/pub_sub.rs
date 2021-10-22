@@ -4,7 +4,7 @@ use crate::control::Control;
 use crate::control::ControllerType;
 use crate::logger::{debug, error, info};
 use crate::pub_sub::{
-    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
+    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::sensor::SensorMsg;
@@ -29,7 +29,7 @@ impl ControllerClient {
         actor_id: ClientId,
         sensor_id: ClientId,
         controller: Box<dyn Control>,
-        config: &NatsConfig,
+        config: &NatsClientConfig,
         type_: ControllerType,
     ) -> Self {
         let client = NatsClient::try_new(config).unwrap();

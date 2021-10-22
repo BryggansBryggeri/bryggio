@@ -1,5 +1,5 @@
 use crate::pub_sub::{
-    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig,
+    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig,
     MessageParseError, PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use derive_more::{Display, From};
@@ -47,7 +47,7 @@ pub struct Log {
 }
 
 impl Log {
-    pub fn new(config: &NatsConfig, level: LogLevel) -> Self {
+    pub fn new(config: &NatsClientConfig, level: LogLevel) -> Self {
         let client = NatsClient::try_new(config).unwrap();
         Log { level, client }
     }

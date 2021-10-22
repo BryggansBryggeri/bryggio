@@ -5,7 +5,7 @@ use crate::control::{
 };
 use crate::logger::{debug, error, info, Log};
 use crate::pub_sub::{
-    nats_client::{decode_nats_data, NatsClient, NatsConfig},
+    nats_client::{decode_nats_data, NatsClient, NatsClientConfig},
     ClientId, ClientState, PubSubClient, PubSubError, PubSubMsg,
 };
 use crate::sensor::{SensorClient, SensorConfig, SensorError};
@@ -39,7 +39,7 @@ impl Supervisor {
         config: config::SupervisorConfig,
     ) -> Result<Supervisor, SupervisorError> {
         println!("Starting supervisor");
-        let nats_config = NatsConfig::from(config.clone());
+        let nats_config = NatsClientConfig::from(config.clone());
         let client = NatsClient::try_new(&nats_config)?;
         let mut supervisor = Supervisor {
             client,
@@ -136,7 +136,7 @@ impl Supervisor {
                     contr_config.actor_id.clone(),
                     contr_config.sensor_id.clone(),
                     contr_config.get_controller(target)?,
-                    &NatsConfig::from(self.config.clone()),
+                    &NatsClientConfig::from(self.config.clone()),
                     contr_config.type_.clone(),
                 );
                 let control_handle =
@@ -247,7 +247,7 @@ impl Supervisor {
     }
 
     fn add_logger(&mut self, config: &config::SupervisorConfig) -> Result<(), SupervisorError> {
-        let log = Log::new(&NatsConfig::from(config.clone()), config.general.log_level);
+        let log = Log::new(&NatsClientConfig::from(config.clone()), config.general.log_level);
         let log_handle = thread::spawn(|| log.client_loop().map_err(|err| err.into()));
         self.add_misc_client(ClientId("log".into()), log_handle)
     }
@@ -255,7 +255,7 @@ impl Supervisor {
     fn add_sensor(
         &mut self,
         sensor_config: SensorConfig,
-        config: &NatsConfig,
+        config: &NatsClientConfig,
     ) -> Result<(), SupervisorError> {
         let id = &sensor_config.id;
         match self.active_clients.sensors.get(id) {
@@ -278,7 +278,7 @@ impl Supervisor {
     fn add_actor(
         &mut self,
         actor_config: ActorConfig,
-        config: &NatsConfig,
+        config: &NatsClientConfig,
     ) -> Result<(), SupervisorError> {
         let id = &actor_config.id;
         match self.active_clients.actors.get(id) {

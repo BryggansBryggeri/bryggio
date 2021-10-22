@@ -1,7 +1,7 @@
 use crate::actor::ActorError;
 use crate::logger::{error, info};
 use crate::pub_sub::{
-    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
+    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig, ClientId,
     PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::time::TimeStamp;
@@ -14,12 +14,11 @@ use super::ActorSignal;
 pub struct ActorClient {
     id: ClientId,
     actor: Box<dyn Actor>,
-    /// TODO: Make generic over PubSubClient
     client: NatsClient,
 }
 
 impl ActorClient {
-    pub fn new(id: ClientId, actor: Box<dyn Actor>, config: &NatsConfig) -> Self {
+    pub fn new(id: ClientId, actor: Box<dyn Actor>, config: &NatsClientConfig) -> Self {
         let client = NatsClient::try_new(config).unwrap();
         ActorClient { id, actor, client }
     }

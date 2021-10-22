@@ -12,7 +12,7 @@ use std::{any::type_name, path::Path};
 
 use super::MessageParseError;
 
-pub fn run_nats_server(config: &NatsConfig, bin_path: &Path) -> Result<Child, PubSubError> {
+pub fn run_nats_server(config: &NatsServerConfig, bin_path: &Path) -> Result<Child, PubSubError> {
     // Some NATS settings (Web socket in particular) cannot be set with a command line flag.
     // Instead we generate a temporary config file.
     //
@@ -45,46 +45,77 @@ pub fn run_nats_server(config: &NatsConfig, bin_path: &Path) -> Result<Child, Pu
     child.map_err(|err| PubSubError::Server(err.to_string()))
 }
 
+pub fn decode_nats_data<T: DeserializeOwned>(data: &[u8]) -> Result<T, MessageParseError> {
+    let json_string =
+        from_utf8(data).map_err(|err| MessageParseError::InvalidUtf8(data.to_vec(), err))?;
+    serde_json::from_str(json_string).map_err(|err| {
+        MessageParseError::Deserialization(String::from(json_string), type_name::<T>(), err)
+    })
+}
+
+#[derive(Clone)]
+pub struct NatsClient(Connection);
+
+impl NatsClient {
+    pub fn try_new(config: &NatsClientConfig) -> Result<NatsClient, PubSubError> {
+        let opts =
+            Options::with_user_pass(&config.authorization.user, &config.authorization.password);
+        match opts.connect(&config.nats_url()) {
+            Ok(nc) => Ok(NatsClient(nc)),
+            Err(err) => Err(PubSubError::Server(err.to_string())),
+        }
+    }
+    pub fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
+        self.0
+            .subscribe(&subject.0)
+            .map_err(|err| PubSubError::Subscription(err.to_string()))
+    }
+
+    pub fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
+        self.0
+            .publish(&subject.0, &msg.0)
+            .map_err(|err| PubSubError::Publish(err.to_string()))
+    }
+
+    pub fn request(
+        &self,
+        subject: &Subject,
+        msg: &PubSubMsg,
+    ) -> Result<nats::Message, PubSubError> {
+        self.0
+            .request(&subject.0, &msg.0)
+            .map_err(|err| PubSubError::Publish(err.to_string()))
+    }
+}
+
 // TODO: typedefs, e.g. Port
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct NatsConfig {
+pub struct NatsServerConfig {
     server_name: String,
-    listen: String,
+    host: String,
+    port: u32,
     http_port: u32,
     debug: bool,
     authorization: Authorization,
     websocket: WebSocket,
 }
 
-impl From<SupervisorConfig> for NatsConfig {
-    fn from(config: SupervisorConfig) -> Self {
-        let debug = config.general.log_level <= LogLevel::Debug;
-        let nats = config.nats;
-        Self {
-            server_name: nats.server_name,
-            listen: nats.listen,
-            http_port: nats.http_port,
-            debug,
-            authorization: Authorization::new(nats.user, nats.pass),
-            websocket: nats.websocket,
-        }
-    }
-}
-
-impl NatsConfig {
+impl NatsServerConfig {
     pub fn new(
         server_name: String,
+        host: String,
+        port: u32,
         http_port: u32,
         debug: bool,
-        listen: String,
         authorization: Authorization,
         websocket: WebSocket,
     ) -> Self {
-        NatsConfig {
+        Self {
             server_name,
+            host,
+            port,
             http_port,
             debug,
-            listen,
             authorization,
             websocket,
         }
@@ -92,11 +123,45 @@ impl NatsConfig {
     pub fn dummy() -> Self {
         Self::new(
             String::from("server-name"),
+            String::from("localhost"),
+            4222,
             8888,
             true,
-            String::from("localhost:4222"),
             Authorization::dummy(),
             WebSocket::dummy(),
+        )
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NatsClientConfig {
+    host: String,
+    port: u32,
+    authorization: Authorization,
+}
+
+impl NatsClientConfig {
+    pub fn new(
+        host: String,
+        port: u32,
+        authorization: Authorization,
+    ) -> Self {
+        Self {
+            host,
+            port,
+            authorization,
+        }
+    }
+
+    pub fn nats_url(&self) -> String {
+        format!("{}:{}", self.host, self.port)
+    }
+
+    pub fn dummy() -> Self {
+        Self::new(
+            String::from("localhost"),
+            4222,
+            Authorization::dummy(),
         )
     }
 }
@@ -129,48 +194,5 @@ impl WebSocket {
             port: 9222,
             no_tls: true,
         }
-    }
-}
-
-pub fn decode_nats_data<T: DeserializeOwned>(data: &[u8]) -> Result<T, MessageParseError> {
-    let json_string =
-        from_utf8(data).map_err(|err| MessageParseError::InvalidUtf8(data.to_vec(), err))?;
-    serde_json::from_str(json_string).map_err(|err| {
-        MessageParseError::Deserialization(String::from(json_string), type_name::<T>(), err)
-    })
-}
-
-#[derive(Clone)]
-pub struct NatsClient(Connection);
-
-impl NatsClient {
-    pub fn try_new(config: &NatsConfig) -> Result<NatsClient, PubSubError> {
-        let opts =
-            Options::with_user_pass(&config.authorization.user, &config.authorization.password);
-        match opts.connect(&config.listen) {
-            Ok(nc) => Ok(NatsClient(nc)),
-            Err(err) => Err(PubSubError::Server(err.to_string())),
-        }
-    }
-    pub fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
-        self.0
-            .subscribe(&subject.0)
-            .map_err(|err| PubSubError::Subscription(err.to_string()))
-    }
-
-    pub fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
-        self.0
-            .publish(&subject.0, &msg.0)
-            .map_err(|err| PubSubError::Publish(err.to_string()))
-    }
-
-    pub fn request(
-        &self,
-        subject: &Subject,
-        msg: &PubSubMsg,
-    ) -> Result<nats::Message, PubSubError> {
-        self.0
-            .request(&subject.0, &msg.0)
-            .map_err(|err| PubSubError::Publish(err.to_string()))
     }
 }

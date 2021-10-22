@@ -1,6 +1,6 @@
 use crate::logger::{debug, info};
 use crate::pub_sub::{
-    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsConfig, ClientId,
+    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig, ClientId,
     MessageParseError, PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::sensor::{Sensor, SensorError};
@@ -16,7 +16,7 @@ pub struct SensorClient {
 }
 
 impl SensorClient {
-    pub fn new(id: ClientId, sensor: Box<dyn Sensor>, config: &NatsConfig) -> Self {
+    pub fn new(id: ClientId, sensor: Box<dyn Sensor>, config: &NatsClientConfig) -> Self {
         let client = NatsClient::try_new(config).unwrap();
         SensorClient { id, sensor, client }
     }
