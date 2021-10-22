@@ -1,5 +1,12 @@
+//! # NATS Pub-sub client
+//!
+//! BryggIO uses NATS for its pub-sub needs.
+//! BryggIO only constructs NATS clients, and relies on a NATS server
+//! (downloaded executable) to relay communication between clients.
+//!
+//! <https://docs.nats.io/>
 use crate::logger::LogLevel;
-use crate::pub_sub::{PubSubError, PubSubMsg, Subject};
+use crate::pub_sub::{MessageParseError, PubSubError, PubSubMsg, Subject};
 use crate::supervisor::config::SupervisorConfig;
 use nats::{Connection, Options, Subscription};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -10,8 +17,7 @@ use std::thread::sleep;
 use std::time::Duration;
 use std::{any::type_name, path::Path};
 
-use super::MessageParseError;
-
+/// Run a nats-server in a separate process
 pub fn run_nats_server(config: &NatsServerConfig, bin_path: &Path) -> Result<Child, PubSubError> {
     // Some NATS settings (Web socket in particular) cannot be set with a command line flag.
     // Instead we generate a temporary config file.
@@ -45,6 +51,7 @@ pub fn run_nats_server(config: &NatsServerConfig, bin_path: &Path) -> Result<Chi
     child.map_err(|err| PubSubError::Server(err.to_string()))
 }
 
+/// Generic deserialisation of NATS messages
 pub fn decode_nats_data<T: DeserializeOwned>(data: &[u8]) -> Result<T, MessageParseError> {
     let json_string =
         from_utf8(data).map_err(|err| MessageParseError::InvalidUtf8(data.to_vec(), err))?;
@@ -53,6 +60,9 @@ pub fn decode_nats_data<T: DeserializeOwned>(data: &[u8]) -> Result<T, MessagePa
     })
 }
 
+/// # NATS client wrapper
+///
+/// Wraps a [`Connection`] and exposes a minimal API.
 #[derive(Clone)]
 pub struct NatsClient(Connection);
 
@@ -89,14 +99,24 @@ impl NatsClient {
 }
 
 // TODO: typedefs, e.g. Port
+/// Serialisable NATS config understood by the nats-server executable.
+///
+/// See <https://docs.nats.io/nats-server/configuration>
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NatsServerConfig {
+    /// Human-readable server name, displayed in logging.
     server_name: String,
+    /// Host for client connections.
     host: String,
+    /// Port for client connections.
     port: u32,
+    /// http port for server monitoring.
     http_port: u32,
+    /// Binary log level.
     debug: bool,
+    /// Authorisation credentials, currently user and passwd.
     authorization: Authorization,
+    /// Websocket config, allows web client communication.
     websocket: WebSocket,
 }
 
@@ -135,8 +155,11 @@ impl NatsServerConfig {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NatsClientConfig {
+    /// Host for client connections.
     host: String,
+    /// Port for client connections.
     port: u32,
+    /// Authorisation credentials, currently user and passwd.
     authorization: Authorization,
 }
 

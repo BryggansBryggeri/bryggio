@@ -26,7 +26,7 @@ fn run_sensor_box() -> Result<(), SensorBoxError> {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "bryggio-sensor-box", about = "Sensor box client for BryggIO")]
 pub enum Opt {
-    ///Run supervisor
+    ///Run sensor box
     #[structopt(name = "run")]
     Run { config_file: PathBuf },
 }

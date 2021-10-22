@@ -93,10 +93,10 @@ impl From<SensorBoxPubMsg> for PubSubMsg {
     fn from(msg: SensorBoxPubMsg) -> PubSubMsg {
         match &msg {
             SensorBoxPubMsg::ActiveClients(clients) => PubSubMsg(
-                serde_json::to_string(&clients).expect("SupervisorPubMsg serialization error"),
+                serde_json::to_string(&clients).expect("SensorBoxPubMsg serialization error"),
             ),
             SensorBoxPubMsg::KillClient { client_id } => PubSubMsg(
-                serde_json::to_string(&client_id).expect("SupervisorSubMsg serialization error"),
+                serde_json::to_string(&client_id).expect("SensorBoxSubMsg serialization error"),
             ),
         }
     }
