@@ -5,7 +5,6 @@ use crate::pub_sub::{
 use derive_more::{Display, From};
 use nats::Subscription;
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
 
 pub fn debug<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
     log(client, msg, sub_subject, LogLevel::Debug);
@@ -86,12 +85,6 @@ impl Log {
     fn write(&self, msg: &str, level: LogLevel) {
         println!("{}: {}", level, msg);
     }
-}
-
-#[derive(Deserialize, Debug)]
-struct ExtComm {
-    id: String,
-    cmd: String,
 }
 
 impl PubSubClient for Log {
