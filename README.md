@@ -7,10 +7,11 @@ The goal is to develop a stand-alone pub-sub backend with which any client can c
 
 ## Project overview
 
-*In this section we give a high-level overview of BryggIO's architecture.
-It is intended to introduce new potential contributors to the application and underlying design choices.*
+_In this section we give a high-level overview of BryggIO's architecture.
+It is intended to introduce new potential contributors to the application and underlying design choices._
 
 ### Structure
+
 The repo contains four crates (a crate is a Rust library or executable):
 
 - `bryggio_core`: The main library where most functionality is implemented.
@@ -23,23 +24,23 @@ The repo contains four crates (a crate is a Rust library or executable):
 
 BryggIO is written in a language called [Rust](https://www.rust-lang.org/) I don't really find the choice of language particularly interesting but Rust is still a rather niche language, prompting a brief motivation for choosing Rust.
 The language candidates I considered were: Python, C, C++ and Rust.
-To me, Rust have some properties making it the language, among the ones I know, best suited for an application like this.
+To me, Rust have some properties making it the language -- among the ones I know -- best suited for an application like this.
 
 These are:
 
- - **Robustness:** Rust is often described as safe. BryggIO will initially be run on local networks, making safety less important.
-   However, the same mechanisms that make Rust safe, also make it robust.
-   Our goal is to produce an application that just works, and keeps on working. Rusts expressive type system, pedantic compiler and lack of exceptions is a perfect match for BryggIO.
-   It is hard to make the code compile, but when it finally does, you can trust it to a large extent.
-   The same thing does not apply to the other languages considered.
+- **Robustness:** Rust is often described as safe. BryggIO will initially be run on local networks, making safety less important.
+  However, the same mechanisms that make Rust safe, also make it robust.
+  Our goal is to produce an application that just works, and keeps on working. Rusts expressive type system, pedantic compiler and lack of exceptions is a perfect match for BryggIO.
+  It is hard to make the code compile, but when it finally does, you can trust it to a large extent.
+  The same thing does not apply to the other languages considered.
 
- - **Modern dependency management:** Rust comes with a modern package manager called "Cargo".
-   It makes it easy to compile the source code and importantly, to include third-party dependencies.
-   Python has similar functionality, while C and C++ do not.
+- **Modern dependency management:** Rust comes with a modern package manager called "Cargo".
+  It makes it easy to compile the source code and importantly, to include third-party dependencies.
+  Python has similar functionality, while C and C++ do not.
 
- - **Low-level:** The target platform for BryggIO is a Raspberry Pi (rbpi), which in this context is hardly embedded, but in the future we will likely end up with some clients running on microcontrollers.
-   This rules out Python. C and C++ have better embedded support but Rust is good enough to not disqualify it based on this property.
-   Furthermore, though not embedded, the rbpi is resource constrained, making a language without a runtime preferable.
+- **Low-level:** The target platform for BryggIO is a Raspberry Pi (rbpi), which in this context is hardly embedded, but in the future we will likely end up with some clients running on microcontrollers.
+  This rules out Python. C and C++ have better embedded support but Rust is good enough to not disqualify it based on this property.
+  Furthermore, though not embedded, the rbpi is resource constrained, making a language without a runtime preferable.
 
 ### Components
 
@@ -57,12 +58,14 @@ A controller is an abstract component. It listens for measurement from a sensor,
 The component types are represented in Rust's type system as "traits", which are like "interfaces" in other languages.
 A trait defines common functionality that a set of concrete types share.
 For example, the `Sensor` trait, defined in `bryggio_core::sensor`, looks like this:
+
 ```rust
 pub trait Sensor: Send {
     fn get_measurement(&mut self) -> Result<f32, SensorError>;
     fn get_id(&self) -> String;
 }
 ```
+
 We make a concrete type become a sensor type by implementing the `Sensor` trait, e.g. for a dummy sensor that we use for prototyping:
 
 ```rust
@@ -85,6 +88,7 @@ impl Sensor for DummySensor {
     }
 }
 ```
+
 NB: Rust does not have object-oriented inheritance. We don't have a "sensor base class/type" but rather a set of functions that each sensor type must provide.
 
 Using the trait system enables us to define types for every sensor that we want to use and still have a common interface for them.
@@ -113,29 +117,29 @@ In this centralised way, clients can communicate without really having knowledge
 
 ![Pub-sub pattern](assets/pub_sub.svg)
 
-For instance, when a sensor makes a measurement it simply publishes a message with subject "temp\_sensor\_1.measurement" containing the measurement.
+For instance, when a sensor makes a measurement it simply publishes a message with subject "temp_sensor_1.measurement" containing the measurement.
 Any other interested client -- i.e. that subscribes to this topic -- receives this message. This can be a controller client, which uses it to publish a new control signal,
-or even the web UI that merely displays the value.
+or even a web UI that merely displays the value.
 
-The pub-sub pattern makes client more independent, and new clients can be added without having to update the existing set of clients.
+The pub-sub pattern makes clients more independent, and new clients can be added without having to update the existing set of clients.
 Furthermore, the communication is language agnostic, one could for instance write a, say, twitter bot in Python that listens to the server and makes updates about the brewing process.
 
 The pattern is also encoded in Rust's type system. All components -- now clients -- implement the `PubSubClient` trait in `bryggio_core::pub_sub`.
 We take further advantage of Rust's generic type system by providing generic implementations for the different component types.
 In Rust it is possible to make a generic implementation for all types that implements a second trait.
-This allows us to reduce code repetition by, for instance, implementing the `PubSubClient` trait for each type that implements the `Sensor` trait.
-
-In short, pub-sub is well-suited for this application. With that said, there are some communication that require more direct communication, i.e. with acknowledgements.
-NATS provide this out-of-the-box, with the [request-reply](https://docs.nats.io/nats-concepts/reqreply) feature.
-Using that a message can be explicitly responded to, this is vital for messages that can't be lost (like shutting down some high-power hardware).
+This allows us to reduce code repetition by, for instance, by providing a common implementation of the `PubSubClient` trait for each type that implements the `Sensor` trait.
 
 For the actual pub-sub system we use a protocol called [NATS](https://nats.io/). NATS is really just a protocol but it also comes with a server implementation that we use in BryggIO.
 A pub-sub server is a complex piece of software so it is nice to use an existing solution.
 Other alternatives exist, like [MQTT](https://mqtt.org/), but thus far we are quite happy with NATS.
 
+Pub-sub is well-suited for this application. With that said, there are some processes that require more direct communication, i.e. with acknowledgements.
+NATS provide this out-of-the-box, with the [request-reply](https://docs.nats.io/nats-concepts/reqreply) feature.
+A request message can be explicitly responded to, this is vital for messages that can't be lost (like shutting down some high-power hardware).
+
 ### The supervisor client
 
-Since we use the pub-sub pattern we could in principle have one executable for every client, and run them in separate process.
+Since we use the pub-sub pattern we could in principle have one executable for every client, and run them in separate processes.
 This would not be convenient however, so instead we have a special "Supervisor" client which is run as an executable.
 The supervisor is responsible for starting and monitoring all our basic clients, like sensors, actors and controllers.
 Via pub-sub messages we can also shut-down and start new clients during the brewing process.
@@ -189,20 +193,18 @@ It is though -- as stated -- still in development.
 
 ## Configuration
 
-- **BryggIO config:** JSON file which specifies general settings, and importantly **the path to the `nats-server` binary** (that you downloaded in the install step).
-  See `sample-bryggio.json` for an example.
-
-Check out the sample config in this repo for usage.
+The `bryggio-supervisor` executable expects a JSON file which specifies general settings, and importantly **the path to the `nats-server` binary** (that you downloaded in the install step).
+See `sample-bryggio.json` for an example.
 
 ## Run
 
-The `bryggio-supervisor`, starts up a `nats-server` in a separate process and then runs a supervisor pub sub client which,
+The `bryggio-supervisor`, starts up a `nats-server` in a separate process and then runs a supervisor pub-sub client which,
 listening to special command subjects, starts and stops other clients like sensors, actors and controllers.
 
 There are two ways to run the supervisor:
 
 ```bash
-# This will recompile if there are code changes
+# This will build the executable (i.e. recompile if there are code changes) and run it
 cargo run --bin bryggio-supervisor -- run <path_to_bryggio_config_file>
 # ... while this will simply run the executable created in the build step.
 ./target/<profile>/bryggio-supervisor run <path_to_bryggio_config_file>
@@ -245,7 +247,7 @@ On the rbpi run:
 ```bash
 sudo ./bryggio-supervisor <path_to_bryggio_config_file>
 # E.g.:
-# sudo ./bryggio-supervisor sample-bryggio.toml
+# sudo ./bryggio-supervisor run sample-bryggio.toml
 ```
 
 `sudo` is required for GPIO manipulation.

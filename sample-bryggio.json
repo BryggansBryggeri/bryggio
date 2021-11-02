@@ -28,11 +28,11 @@
   },
   "nats": {
     "bin_path": "target/nats-server",
-    "server": "localhost",
     "server_name": "bryggio-nats-server",
+    "host": "localhost",
+    "port": 4222,
     "user": "user",
     "pass": "passwd",
-    "listen": "localhost:4222",
     "http_port": 8888,
     "websocket": {
       "port": 9222,
