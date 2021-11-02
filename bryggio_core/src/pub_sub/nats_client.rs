@@ -56,7 +56,6 @@ pub fn decode_nats_data<T: DeserializeOwned>(data: &[u8]) -> Result<T, MessagePa
     let json_string =
         from_utf8(data).map_err(|err| MessageParseError::InvalidUtf8(data.to_vec(), err))?;
     serde_json::from_str(json_string).map_err(|err| {
-        println!("Error decoding message: {:?}", json_string);
         MessageParseError::Deserialization(String::from(json_string), type_name::<T>(), err)
     })
 }
@@ -165,11 +164,7 @@ pub struct NatsClientConfig {
 }
 
 impl NatsClientConfig {
-    pub fn new(
-        host: String,
-        port: u32,
-        authorization: Authorization,
-    ) -> Self {
+    pub fn new(host: String, port: u32, authorization: Authorization) -> Self {
         Self {
             host,
             port,
@@ -182,11 +177,7 @@ impl NatsClientConfig {
     }
 
     pub fn dummy() -> Self {
-        Self::new(
-            String::from("localhost"),
-            4222,
-            Authorization::dummy(),
-        )
+        Self::new(String::from("localhost"), 4222, Authorization::dummy())
     }
 }
 

@@ -22,7 +22,12 @@ impl PubSubClient for Supervisor {
                         Ok(state) => state,
                         Err(err) => self.handle_err(err),
                     },
-                    Err(err) => self.handle_err(SupervisorError::from(PubSubError::from(err))),
+                    Err(err) => {
+                        if msg.reply.is_some() {
+                            msg.respond(err.to_string())?;
+                        }
+                        self.handle_err(SupervisorError::from(PubSubError::from(err)))
+                    }
                 };
             }
         }
@@ -50,18 +55,6 @@ pub enum SupervisorSubMsg {
     ListActiveClients,
     #[serde(rename = "stop")]
     Stop,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NewContrData {
-    pub(crate) config: ControllerConfig,
-    pub(crate) new_target: f32,
-}
-
-impl NewContrData {
-    pub fn new(config: ControllerConfig, new_target: f32) -> Self {
-        NewContrData { config, new_target }
-    }
 }
 
 impl TryFrom<&Message> for SupervisorSubMsg {
@@ -115,6 +108,19 @@ impl From<SupervisorSubMsg> for PubSubMsg {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NewContrData {
+    pub(crate) config: ControllerConfig,
+    pub(crate) new_target: f32,
+}
+
+impl NewContrData {
+    pub fn new(config: ControllerConfig, new_target: f32) -> Self {
+        NewContrData { config, new_target }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum SupervisorPubMsg {
     #[serde(rename = "active_clients")]
