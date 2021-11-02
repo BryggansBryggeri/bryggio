@@ -16,7 +16,7 @@ use thiserror::Error;
 pub struct SupervisorConfig {
     pub general: General,
     pub hardware: Hardware,
-    pub nats: ParseNatsConfig,
+    pub nats: ParseNatsServerConfig,
 }
 
 impl SupervisorConfig {
@@ -38,7 +38,7 @@ impl SupervisorConfig {
     pub fn dummy() -> SupervisorConfig {
         SupervisorConfig {
             general: General::default(),
-            nats: ParseNatsConfig::dummy(),
+            nats: ParseNatsServerConfig::dummy(),
             hardware: Hardware::dummy(),
         }
     }
@@ -132,7 +132,7 @@ impl Hardware {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ParseNatsConfig {
+pub struct ParseNatsServerConfig {
     pub server_name: String,
     pub host: String,
     pub port: u32,
@@ -143,7 +143,7 @@ pub struct ParseNatsConfig {
     pub bin_path: PathBuf,
 }
 
-impl ParseNatsConfig {
+impl ParseNatsServerConfig {
     pub fn dummy() -> Self {
         Self {
             bin_path: PathBuf::new(),
@@ -154,6 +154,25 @@ impl ParseNatsConfig {
             port: 8888,
             http_port: 8888,
             websocket: WebSocket::dummy(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ParseNatsClientConfig {
+    pub host: String,
+    pub port: u32,
+    pub user: String,
+    pub pass: String,
+}
+
+impl ParseNatsClientConfig {
+    pub fn dummy() -> Self {
+        Self {
+            host: String::from("localhost"),
+            port: 8888,
+            user: String::from("user"),
+            pass: String::from("passwd"),
         }
     }
 }

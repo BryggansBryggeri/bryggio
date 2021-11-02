@@ -7,7 +7,7 @@ use bryggio_core::pub_sub::{
 use bryggio_core::sensor::{SensorClient, SensorConfig, SensorError};
 use bryggio_core::{
     logger::{error, LogLevel},
-    supervisor::config::{Hardware, ParseNatsConfig},
+    supervisor::config::{Hardware, ParseNatsClientConfig},
 };
 use nats::Message;
 use serde::{Deserialize, Serialize};
@@ -106,7 +106,7 @@ impl SensorBox {
 pub struct SensorBoxConfig {
     pub general: General,
     pub hardware: Hardware,
-    pub nats: ParseNatsConfig,
+    pub nats: ParseNatsClientConfig,
 }
 
 impl SensorBoxConfig {
@@ -114,7 +114,7 @@ impl SensorBoxConfig {
         SensorBoxConfig {
             general: General::default(),
             hardware: Hardware::dummy(),
-            nats: ParseNatsConfig::dummy(),
+            nats: ParseNatsClientConfig::dummy(),
         }
     }
 
@@ -260,17 +260,10 @@ mod sensor_box_config_tests {
                 ]
               },
               "nats": {
-                "bin_path": "target/nats-server",
                 "user": "username",
                 "pass": "passwd",
-                "server_name": "bryggio-nats-server",
                 "host": "localhost",
-                "port": 4222,
-                "http_port": 8888,
-                "websocket": {
-                  "port": 9222,
-                  "no_tls": true
-                }
+                "port": 4222
               }
             }"#,
         )
