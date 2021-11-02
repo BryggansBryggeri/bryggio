@@ -209,9 +209,9 @@ mod supervisor_config_tests {
                     "server_name": "bryggio-nats-server",
                     "host": "localhost",
                     "port": 4222,
+                    "http_port": 8888,
                     "user": "username",
                     "pass": "passwd",
-                    "http_port": 8888,
                     "websocket": {
                       "port": 9222,
                       "no_tls": true
