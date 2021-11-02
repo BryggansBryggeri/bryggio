@@ -206,10 +206,11 @@ mod supervisor_config_tests {
                   },
                   "nats": {
                     "bin_path": "target/nats-server",
+                    "server_name": "bryggio-nats-server",
+                    "host": "localhost",
+                    "port": 4222,
                     "user": "username",
                     "pass": "passwd",
-                    "server_name": "bryggio-nats-server",
-                    "listen": "localhost:4222",
                     "http_port": 8888,
                     "websocket": {
                       "port": 9222,

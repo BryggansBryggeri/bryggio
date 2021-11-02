@@ -27,8 +27,10 @@ async fn run_supervisor() -> Result<(), SupervisorError> {
     match opt {
         Opt::Run { config_file } => {
             let config = SupervisorConfig::try_new(config_file.as_path())?;
-            let mut nats_server_child =
-                run_nats_server(&NatsServerConfig::from(config.clone()), &config.nats.bin_path)?;
+            let mut nats_server_child = run_nats_server(
+                &NatsServerConfig::from(config.clone()),
+                &config.nats.bin_path,
+            )?;
             let supervisor = Supervisor::init_from_config(config)?;
             supervisor.client_loop()?;
             nats_server_child

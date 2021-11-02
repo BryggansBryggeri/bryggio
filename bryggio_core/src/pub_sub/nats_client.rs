@@ -165,11 +165,7 @@ pub struct NatsClientConfig {
 }
 
 impl NatsClientConfig {
-    pub fn new(
-        host: String,
-        port: u32,
-        authorization: Authorization,
-    ) -> Self {
+    pub fn new(host: String, port: u32, authorization: Authorization) -> Self {
         Self {
             host,
             port,
@@ -182,11 +178,7 @@ impl NatsClientConfig {
     }
 
     pub fn dummy() -> Self {
-        Self::new(
-            String::from("localhost"),
-            4222,
-            Authorization::dummy(),
-        )
+        Self::new(String::from("localhost"), 4222, Authorization::dummy())
     }
 }
 

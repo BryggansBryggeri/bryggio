@@ -31,9 +31,9 @@
 #![cfg_attr(feature = "clippy", warn(wrong_pub_self_convention))]
 
 pub mod actor;
-pub mod data_logger;
 pub mod buzzer;
 pub mod control;
+pub mod data_logger;
 mod hardware;
 pub mod logger;
 pub mod pub_sub;

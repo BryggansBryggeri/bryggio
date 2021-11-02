@@ -16,12 +16,13 @@ use crate::install::nats;
 use super::InstallError;
 
 pub fn install_supervisor(opt: &SupervisorOpt) -> Result<(), InstallError> {
-    let bryggio_root = PathBuf::from(
-        shellexpand::tilde(opt.dir.to_str().ok_or_else(|| {
-            InstallError::InvalidPath(String::from(opt.dir.to_string_lossy()))
-        })?)
-        .to_string(),
-    );
+    let bryggio_root =
+        PathBuf::from(
+            shellexpand::tilde(opt.dir.to_str().ok_or_else(|| {
+                InstallError::InvalidPath(String::from(opt.dir.to_string_lossy()))
+            })?)
+            .to_string(),
+        );
     info!(
         "Installing `bryggio-supervisor` in '{}'",
         bryggio_root.to_string_lossy()

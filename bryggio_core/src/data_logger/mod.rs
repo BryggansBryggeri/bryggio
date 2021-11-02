@@ -1,21 +1,19 @@
 //! Data logger
-use serde::{Deserialize, de::DeserializeOwned, Serialize};
 use crate::pub_sub::ClientId;
-use crate::time::TimeStamp;
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig,
     MessageParseError, PubSubClient, PubSubError, PubSubMsg, Subject,
 };
-use std::fmt::Debug as DebugTrait;
-use nats::Subscription;
 use crate::sensor::SensorMsg;
-
+use crate::time::TimeStamp;
+use nats::Subscription;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::fmt::Debug as DebugTrait;
 
 pub struct DataLogger {
     client_id: ClientId,
     client: NatsClient,
 }
-
 
 impl PubSubClient for DataLogger {
     fn client_loop(self) -> Result<(), PubSubError> {
@@ -36,4 +34,3 @@ impl PubSubClient for DataLogger {
         self.client.publish(subject, msg)
     }
 }
-

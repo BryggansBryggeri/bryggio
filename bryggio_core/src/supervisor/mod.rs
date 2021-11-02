@@ -247,7 +247,10 @@ impl Supervisor {
     }
 
     fn add_logger(&mut self, config: &config::SupervisorConfig) -> Result<(), SupervisorError> {
-        let log = Log::new(&NatsClientConfig::from(config.clone()), config.general.log_level);
+        let log = Log::new(
+            &NatsClientConfig::from(config.clone()),
+            config.general.log_level,
+        );
         let log_handle = thread::spawn(|| log.client_loop().map_err(|err| err.into()));
         self.add_misc_client(ClientId("log".into()), log_handle)
     }

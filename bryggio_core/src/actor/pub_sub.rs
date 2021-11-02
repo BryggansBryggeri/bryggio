@@ -1,8 +1,8 @@
 use crate::actor::ActorError;
 use crate::logger::{error, info};
 use crate::pub_sub::{
-    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig, ClientId,
-    PubSubClient, PubSubError, PubSubMsg, Subject,
+    nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig,
+    ClientId, PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::time::TimeStamp;
 use crate::{actor::Actor, pub_sub::MessageParseError};
@@ -32,6 +32,15 @@ impl ActorClient {
 pub struct SignalMsg {
     pub(crate) timestamp: TimeStamp,
     pub(crate) signal: ActorSignal,
+}
+
+impl SignalMsg {
+    pub fn new(signal: ActorSignal) -> Self {
+        Self {
+            timestamp: TimeStamp::now(),
+            signal,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -112,6 +121,12 @@ impl PubSubClient for ActorClient {
                             }
                             ActorSubMsg::TurnOff => match self.actor.turn_off() {
                                 Ok(()) => {
+                                    let shut_off_signal =
+                                        SignalMsg::new(ActorSignal::new(self.id.clone(), 0.0));
+                                    self.publish(
+                                        &self.gen_signal_subject(),
+                                        &ActorPubMsg::CurrentSignal(shut_off_signal).into(),
+                                    );
                                     contr_message
                                         .respond(String::from("Actor output set to zero"))
                                         .map_err(PubSubError::from)?;
