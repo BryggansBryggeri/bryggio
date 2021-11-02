@@ -198,6 +198,7 @@ impl Supervisor {
                 err.to_string()
             ))
             .map_err(PubSubError::from)?;
+            return Err(SupervisorError::Missing(contr_id.clone()));
         };
         self.common_start_controller(config.clone(), new_target)?;
         let status: PubSubMsg = ControllerPubMsg::Status {
