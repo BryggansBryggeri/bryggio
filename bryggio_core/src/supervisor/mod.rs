@@ -3,6 +3,7 @@ use crate::actor::{ActorClient, ActorConfig, ActorError};
 use crate::control::{
     pub_sub::ControllerPubMsg, ControllerClient, ControllerConfig, ControllerError,
 };
+use crate::data_logger::DataLogger;
 use crate::logger::{debug, error, info, Log};
 use crate::pub_sub::{
     nats_client::{decode_nats_data, NatsClient, NatsClientConfig},
@@ -15,6 +16,7 @@ use nats::Message;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::thread;
 use thiserror::Error;
 
@@ -48,6 +50,7 @@ impl Supervisor {
         };
 
         supervisor.add_logger(&config)?;
+        supervisor.add_data_logger(&config)?;
 
         for sensor_config in config.hardware.sensors {
             supervisor.add_sensor(sensor_config, &nats_config)?;
@@ -254,6 +257,20 @@ impl Supervisor {
         );
         let log_handle = thread::spawn(|| log.client_loop().map_err(|err| err.into()));
         self.add_misc_client(ClientId("log".into()), log_handle)
+    }
+
+    fn add_data_logger(
+        &mut self,
+        config: &config::SupervisorConfig,
+    ) -> Result<(), SupervisorError> {
+        let id = ClientId(String::from("data_logger"));
+        let log = DataLogger::new(
+            id.clone(),
+            &NatsClientConfig::from(config.clone()),
+            PathBuf::from("log_file.csv"),
+        );
+        let log_handle = thread::spawn(|| log.client_loop().map_err(|err| err.into()));
+        self.add_misc_client(id, log_handle)
     }
 
     fn add_sensor(

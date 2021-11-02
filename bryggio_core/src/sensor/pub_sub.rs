@@ -28,8 +28,8 @@ impl SensorClient {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SensorMsg {
-    id: ClientId,
-    timestamp: TimeStamp,
+    pub(crate) id: ClientId,
+    pub(crate) timestamp: TimeStamp,
     pub(crate) meas: Result<f32, SensorError>,
 }
 

@@ -69,6 +69,7 @@ impl TryFrom<Message> for ActorSubMsg {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
 pub enum ActorPubMsg {
     CurrentSignal(SignalMsg),
 }

@@ -24,8 +24,8 @@ pub trait Actor: Send {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ActorSignal {
     // TODO: Deserialization
-    id: String,
-    signal: f32,
+    pub(crate) id: String,
+    pub(crate) signal: f32,
 }
 
 impl ActorSignal {
