@@ -28,27 +28,28 @@ To me, Rust have some properties making it the language -- among the ones I know
 
 These are:
 
-- **Robustness:** Rust is often described as safe. BryggIO will initially be run on local networks, making safety less important.
-  However, the same mechanisms that make Rust safe, also make it robust.
+- **Robustness:** Rust is often described as safe. BryggIO will initially be run on local networks, making safety in the sense of security less important.
+  However, safety is also tightly coupled with robustness.
   Our goal is to produce an application that just works, and keeps on working. Rusts expressive type system, pedantic compiler and lack of exceptions is a perfect match for BryggIO.
   It is hard to make the code compile, but when it finally does, you can trust it to a large extent.
   The same thing does not apply to the other languages considered.
 
 - **Modern dependency management:** Rust comes with a modern package manager called "Cargo".
-  It makes it easy to compile the source code and importantly, to include third-party dependencies.
+  It makes it easy to build the source code and importantly, to include third-party dependencies.
+  The former is particularly important to make it easier for people to contribute.
   Python has similar functionality, while C and C++ do not.
 
 - **Low-level:** The target platform for BryggIO is a Raspberry Pi (rbpi), which in this context is hardly embedded, but in the future we will likely end up with some clients running on microcontrollers.
-  This rules out Python. C and C++ have better embedded support but Rust is good enough to not disqualify it based on this property.
-  Furthermore, though not embedded, the rbpi is resource constrained, making a language without a runtime preferable.
+  This rules out Python[^python_embedded]. C and C++ certainly have better embedded but Rust has good enough (and growing) support to not disqualify it based on this property.
+  Furthermore, though not embedded, the rbpi is resource constrained, making a language without a runtime preferable[^lang_eff].
 
 ### Components
 
 The automated brewing process can be quite simple.
 The foundation of it is temperature control. We observe temperature measurements and control the output of a heating element to follow a target temperature.
 
-In BryggIO, we have modelled this process with three component types: sensors, actors and controllers.
-A sensor is sort of a passive, independent component. Intermittently, it emits a measurement.
+In BryggIO, we have modelled this process with three component types: _sensors_, _actors_ and _controllers_.
+A sensor is sort of a passive, independent component, which intermittently emits a measurement.
 An actor is something that we can control, like a heating element, a pump, et c; something that can be turned on and off.
 Both sensors and actors are associated with real hardware.
 A controller is an abstract component. It listens for measurement from a sensor, computes a signal that it sends to an actor, in order to reach a set target.
@@ -102,22 +103,22 @@ computes the average and sends that "meta-measurement" to the controller.
 That is, we get the more complex functionality that we want but still uphold the invariant.
 
 Another restriction is that an actor is always associated with a controller.
-That is, even though you could imagine two modes of actor operation: an automated actor, run by a controller and a manual actor that is turned on/off, the API does not allow for the latter.
+That is, while you could imagine two modes of actor operation: an automated actor, run by a controller and a manual actor that is turned on/off, the API does not allow for the latter.
 This is for safety, the actors control the high-power hardware, so it is reasonable to only have one way to do it.
 For the kind of simple manual control, we have a manual controller that acts as a middle man, yet still conforms to the design pattern.
 
 ### Publish-subscribe pattern
 
-The communication between components such as sensors and controllers we use a publish-subscribe pattern, which you can read about [here](https://ably.com/topic/pub-sub).
+The communication between components such as sensors and controllers we use a _publish-subscribe_ pattern, which you can read about [here](https://ably.com/topic/pub-sub).
 The gist of it is that components don't communicate directly with each other.
-Instead, components act like "clients", whcih communicate via a central server.
+Instead, components act like "clients", which communicate via a central server.
 A client can publish messages to the server, messages which are tagged with a "subject".
 Clients receive messages by subscribing to subjects.
 In this centralised way, clients can communicate without really having knowledge of each other.
 
 ![Pub-sub pattern](assets/pub_sub.svg)
 
-For instance, when a sensor makes a measurement it simply publishes a message with subject "temp_sensor_1.measurement" containing the measurement.
+For instance, when a sensor makes a measurement it simply publishes a message with subject `sensor.temp_sensor_1.measurement` containing the measurement.
 Any other interested client -- i.e. that subscribes to this topic -- receives this message. This can be a controller client, which uses it to publish a new control signal,
 or even a web UI that merely displays the value.
 
@@ -156,9 +157,9 @@ the web UI is tailored to a specific brewery setup (our own).
 - **Asynchronicity:** This application is async. in nature; sensors publish measurements at semi-random interval, triggering controllers to compute a new signal, which actors react to.
   The entire design would be much more intuitive if we managed to make it async.
   We have done some minor work exploring async. but much more remain to be done here, see [Tracking issue: Async](https://github.com/BryggansBryggeri/bryggio/issues/55).
-- **Permanent data logging:** Currently, no data is stored. We will start out with some simple, writing to file and from there explore proper database options.
+- **Permanent data logging:** Currently, no data is stored. We will start out with some simple, writing to file and from there explore proper database options, see [db tracking issue](https://github.com/BryggansBryggeri/bryggio/issues/71).
 - **BryggIO protocol:** The system of subjects that structure the communication have grown organically.
-  Some work should be dedicated to create a more principled protocol.
+  Some work should be dedicated to create a more principled protocol, see the [issue](https://github.com/BryggansBryggeri/bryggio/issues/106).
 - **1.0 version:** For a more detailed version, see the [Github project](https://github.com/BryggansBryggeri/bryggio/projects/2).
 
 ## Installation
@@ -167,7 +168,7 @@ Before the first release we will not publish any binaries, see [Build from sourc
 
 ### Build from source
 
-- Install rust and Cargo. Rust and Cargo are provided by official distributions.
+- [Install rust and Cargo](https://www.rust-lang.org/tools/install). Rust and Cargo are provided by official distributions.
 
 - Build targets `bryggio-supervisor`, `bryggio-cli` from source.
 
@@ -251,3 +252,10 @@ sudo ./bryggio-supervisor <path_to_bryggio_config_file>
 ```
 
 `sudo` is required for GPIO manipulation.
+
+[^python_embedded]:
+  This is not strictly true. Options exist, such as [MicroPython](https://micropython.org/).
+  I have not considered it though since I'm not excited about taking up space with a runtime, especially one which does not satisfy the robustness property.
+
+[^lang_eff]:
+  [Energy Efficiency across Programming Languages](https://sites.google.com/view/energy-efficiency-languages/home)

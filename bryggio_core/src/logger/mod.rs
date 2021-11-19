@@ -45,6 +45,31 @@ pub struct Log {
     client: NatsClient,
 }
 
+impl PubSubClient for Log {
+    fn client_loop(self) -> Result<(), PubSubError> {
+        let log_sub = self.subscribe(&Subject(String::from("log.>")))?;
+        loop {
+            if let Some(msg) = log_sub.next() {
+                match LogLevel::from_msg_subject(&msg.subject) {
+                    Ok(log_level) => match decode_nats_data::<LogMsg>(&msg.data) {
+                        Ok(msg) => self.log(&msg.0, log_level),
+                        Err(err) => self.error(&err.to_string()),
+                    },
+                    Err(err) => self.error(&err.to_string()),
+                };
+            }
+        }
+    }
+
+    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
+        self.client.subscribe(subject)
+    }
+
+    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg)
+    }
+}
+
 impl Log {
     pub fn new(config: &NatsClientConfig, level: LogLevel) -> Self {
         let client = NatsClient::try_new(config).unwrap();
@@ -84,31 +109,6 @@ impl Log {
 
     fn write(&self, msg: &str, level: LogLevel) {
         println!("{}: {}", level, msg);
-    }
-}
-
-impl PubSubClient for Log {
-    fn client_loop(self) -> Result<(), PubSubError> {
-        let log_sub = self.subscribe(&Subject(String::from("log.>")))?;
-        loop {
-            if let Some(msg) = log_sub.next() {
-                match LogLevel::from_msg_subject(&msg.subject) {
-                    Ok(log_level) => match decode_nats_data::<LogMsg>(&msg.data) {
-                        Ok(msg) => self.log(&msg.0, log_level),
-                        Err(err) => self.error(&err.to_string()),
-                    },
-                    Err(err) => self.error(&err.to_string()),
-                };
-            }
-        }
-    }
-
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
-        self.client.subscribe(subject)
-    }
-
-    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
-        self.client.publish(subject, msg)
     }
 }
 
