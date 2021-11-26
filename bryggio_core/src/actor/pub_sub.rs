@@ -124,10 +124,16 @@ impl PubSubClient for ActorClient {
                                 Ok(()) => {
                                     let shut_off_signal =
                                         SignalMsg::new(ActorSignal::new(self.id.clone(), 0.0));
-                                    self.publish(
+                                    if let Err(err) = self.publish(
                                         &self.gen_signal_subject(),
                                         &ActorPubMsg::CurrentSignal(shut_off_signal).into(),
-                                    );
+                                    ) {
+                                        error(
+                                            &self,
+                                            format!("Failed switching off client '{}'", err),
+                                            &format!("actor.{}", self.id),
+                                        )
+                                    };
                                     contr_message
                                         .respond(String::from("Actor output set to zero"))
                                         .map_err(PubSubError::from)?;
