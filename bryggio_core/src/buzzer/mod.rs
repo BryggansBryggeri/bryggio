@@ -1,4 +1,4 @@
-use crate::actor::{simple_gpio::SimpleGpioActor, Actor, ActorError, ActorSignal};
+use crate::actor::{bin_gpio::BinaryGpioActor, Actor, ActorError, ActorSignal};
 #[cfg(target_arch = "x86_64")]
 use crate::hardware::dummy as hardware_impl;
 #[cfg(target_arch = "arm")]
@@ -10,16 +10,16 @@ use thiserror::Error;
 pub mod pub_sub;
 
 pub struct Buzzer {
-    constant: SimpleGpioActor<hardware_impl::GpioPin>,
-    pulse: SimpleGpioActor<hardware_impl::GpioPin>,
+    constant: BinaryGpioActor<hardware_impl::GpioPin>,
+    pulse: BinaryGpioActor<hardware_impl::GpioPin>,
 }
 
 impl Buzzer {
     pub fn try_new(id: &str, constant: u32, pulse: u32) -> Result<Self, BuzzerError> {
         let constant_pin = hardware_impl::get_gpio_pin(constant, id)?;
         let pulse_pin = hardware_impl::get_gpio_pin(pulse, id)?;
-        let constant_actor = SimpleGpioActor::try_new(id, constant_pin, None)?;
-        let pulse_actor = SimpleGpioActor::try_new(id, pulse_pin, None)?;
+        let constant_actor = BinaryGpioActor::try_new(id, constant_pin, None)?;
+        let pulse_actor = BinaryGpioActor::try_new(id, pulse_pin, None)?;
         Ok(Buzzer {
             constant: constant_actor,
             pulse: pulse_actor,

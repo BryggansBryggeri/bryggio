@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::f32;
 use thiserror::Error;
 
-pub mod duty_cycle;
 pub mod hysteresis;
 pub mod manual;
 pub mod pid;
@@ -72,7 +71,7 @@ impl ControllerConfig {
                 let control = pid::Controller::new(target, kp, ki, kd, None, None, None);
                 Ok(Box::new(control))
             }
-            ControllerType::Manual { .. } => Ok(Box::new(manual::Controller::new(target))),
+            ControllerType::Manual { .. } => Ok(Box::new(manual::ManualController::new(target))),
             //_ => unimplemented!(),
         }
     }
