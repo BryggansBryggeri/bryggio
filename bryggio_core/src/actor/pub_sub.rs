@@ -56,8 +56,10 @@ impl PubSubClient for ActorClient {
                             }
                             ActorSubMsg::TurnOff => match self.actor.turn_off() {
                                 Ok(()) => {
-                                    let shut_off_signal =
-                                        SignalMsg::new(ActorSignal::new(self.id.clone(), 0.0));
+                                    let shut_off_signal = SignalMsg::new(
+                                        self.id.clone(),
+                                        ActorSignal::new(self.id.clone(), 0.0),
+                                    );
                                     if let Err(err) = self.publish(
                                         &self.gen_signal_subject(),
                                         &ActorPubMsg::CurrentSignal(shut_off_signal).into(),
@@ -121,13 +123,15 @@ impl ActorClient {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SignalMsg {
+    pub(crate) id: ClientId,
     pub(crate) timestamp: TimeStamp,
     pub(crate) signal: ActorSignal,
 }
 
 impl SignalMsg {
-    pub fn new(signal: ActorSignal) -> Self {
+    pub fn new(id: ClientId, signal: ActorSignal) -> Self {
         Self {
+            id,
             timestamp: TimeStamp::now(),
             signal,
         }
@@ -150,8 +154,8 @@ impl TryFrom<Message> for ActorSubMsg {
         let mut tmp = msg.subject.split('.');
         tmp.next();
         tmp.next();
-        let sub_sub = tmp.next().unwrap();
-        match sub_sub {
+        let sub_subject = tmp.next().unwrap();
+        match sub_subject {
             "set_signal" => decode_nats_data(&msg.data),
             "turn_off" => Ok(Self::TurnOff),
             _ => unreachable!(),
@@ -166,7 +170,7 @@ pub enum ActorPubMsg {
 }
 
 impl From<ActorPubMsg> for PubSubMsg {
-    fn from(msg: ActorPubMsg) -> PubSubMsg {
+    fn from(msg: ActorPubMsg) -> Self {
         match &msg {
             ActorPubMsg::CurrentSignal(signal_msg) => {
                 PubSubMsg(serde_json::to_string(&signal_msg).expect("Pub sub serialization error"))

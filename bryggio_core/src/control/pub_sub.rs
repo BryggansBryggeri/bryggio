@@ -89,6 +89,7 @@ impl PubSubClient for ControllerClient {
                     self.controller.calculate_signal(msg.meas.ok());
                 }
                 let msg = ControllerPubMsg::SetActorSignal(SignalMsg {
+                    id: self.actor_id.clone(),
                     timestamp: TimeStamp::now(),
                     signal: ActorSignal::new(
                         self.actor_id.clone(),
@@ -212,6 +213,7 @@ impl ControllerPubMsg {
     pub fn subject(&self, msg_id: &ClientId) -> Subject {
         match self {
             ControllerPubMsg::SetActorSignal(SignalMsg {
+                id: _,
                 timestamp: _,
                 signal: _,
             }) => Subject(format!("actor.{}.set_signal", msg_id)),

@@ -2,7 +2,6 @@
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::thread::sleep;
-use std::time::Duration;
 
 use crate::actor::pub_sub::{ActorPubMsg, SignalMsg};
 use crate::pub_sub::ClientId;
@@ -11,7 +10,7 @@ use crate::pub_sub::{
     PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::sensor::SensorMsg;
-use crate::time::TimeStamp;
+use crate::time::{TimeStamp, LOOP_PAUSE_TIME};
 use csv::WriterBuilder;
 use nats::Subscription;
 use serde::{Deserialize, Serialize};
@@ -51,7 +50,7 @@ impl PubSubClient for DataLogger {
                 wtr.serialize(rec_str).expect("Failed serialising");
                 wtr.flush().expect("Failed flushing");
             }
-            sleep(Duration::from_millis(50));
+            sleep(LOOP_PAUSE_TIME);
         }
     }
 
