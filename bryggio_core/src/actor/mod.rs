@@ -10,14 +10,16 @@ use crate::{hardware::HardwareError, time::TimeStamp};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+pub mod bin_gpio;
 pub mod pub_sub;
 pub mod simple_gpio;
-pub mod xor_gpio;
+// pub mod xor_gpio;
 pub use pub_sub::ActorClient;
 
 pub trait Actor: Send {
     fn validate_signal(&self, signal: &ActorSignal) -> Result<(), ActorError>;
-    fn set_signal(&mut self, signal: &ActorSignal) -> Result<(), ActorError>;
+    fn set_signal(&mut self) -> Result<(), ActorError>;
+    fn update_signal(&mut self, signal: &ActorSignal) -> Result<(), ActorError>;
     fn turn_off(&mut self) -> Result<(), ActorError>;
 }
 
