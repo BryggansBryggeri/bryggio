@@ -1,3 +1,7 @@
+//! Simple model of GPIO pin.
+//!
+//! This actor has only two states, on and off.
+
 use crate::{
     actor::{Actor, ActorError},
     hardware::{GpioState, HardwareError},

@@ -2,6 +2,18 @@ use crate::control;
 use std::f32;
 use std::time::Instant;
 
+pub trait DutyCycle {
+    fn pct_to_bin(&self, target: f32, cycle_duration: f32) -> f32 {
+        let delta = Instant::now() - self.start_time();
+        if calculate_cycle_ratio(delta.as_secs(), cycle_duration) > target {
+            0.0
+        } else {
+            1.0
+        }
+    }
+    fn start_time(&self) -> Instant;
+}
+
 pub struct DutyCycleController {
     pub target: f32,
     pub current_signal: f32,

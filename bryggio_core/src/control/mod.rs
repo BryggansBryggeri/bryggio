@@ -72,7 +72,7 @@ impl ControllerConfig {
                 let control = pid::Controller::new(target, kp, ki, kd, None, None, None);
                 Ok(Box::new(control))
             }
-            ControllerType::Manual { .. } => Ok(Box::new(manual::Controller::new(target))),
+            ControllerType::Manual { .. } => Ok(Box::new(manual::ManualController::new(target))),
             //_ => unimplemented!(),
         }
     }
