@@ -51,8 +51,10 @@ impl PubSubClient for ControllerClient {
                     Ok(_) => format!("{}", self.controller.get_target()),
                     Err(err) => format!("Failed turning actor off {}", err.to_string()),
                 };
-                msg.respond(response).map_err(|err| {
-                    PubSubError::Client(format!("could not respond: '{}'.", err.to_string()))
+                msg.respond(response).map_err(|err| PubSubError::Reply {
+                    task: "kill contr.",
+                    msg: msg.clone(),
+                    source: err,
                 })?;
                 self.status_update();
                 return Ok(());
@@ -76,7 +78,11 @@ impl PubSubClient for ControllerClient {
                                     "Target '{}' set for controller '{}'",
                                     new_target, self.id
                                 ))
-                                .map_err(PubSubError::from)?;
+                                .map_err(|err| PubSubError::Reply {
+                                    task: "List active clients",
+                                    msg: nats_msg.clone(),
+                                    source: err,
+                                })?;
                         }
                     },
                     Err(err) => log_error(&self, &err.to_string()),

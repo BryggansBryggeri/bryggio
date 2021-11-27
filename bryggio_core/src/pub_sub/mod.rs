@@ -70,8 +70,9 @@ impl PubSubMsg {
 pub enum PubSubError {
     #[error("Failed subscribing to NATS server: {0}")]
     Subscription(String),
-    #[error("Error replying to: {msg}. {source}")]
+    #[error("Error replying during '{task}'. Err: '{source}', msg: {msg}.")]
     Reply {
+        task: &'static str,
         msg: Message,
         source: std::io::Error,
     },

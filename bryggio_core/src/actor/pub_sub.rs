@@ -41,71 +41,12 @@ impl PubSubClient for ActorClient {
         let sub_turn_off = self.subscribe(&actor_turn_off_subject(&self.id))?;
         loop {
             if let Some(contr_message) = sub_set_signal.try_next() {
-                let res: Result<(), PubSubError> =
-                    match ActorSubMsg::try_from(contr_message.clone()) {
-                        Ok(msg) => match msg {
-                            ActorSubMsg::SetSignal(new_signal) => {
-                                let sign_res = self.actor.update_signal(&new_signal.signal);
-                                match sign_res {
-                                    Ok(()) => self.publish(
-                                        &actor_current_signal_subject(&self.id),
-                                        &ActorPubMsg::CurrentSignal(new_signal).into(),
-                                    ),
-                                    Err(err) => match err {
-                                        ActorError::ChangingToAlreadyActiveState => self.publish(
-                                            &actor_current_signal_subject(&self.id),
-                                            &ActorPubMsg::CurrentSignal(new_signal).into(),
-                                        ),
-                                        _ => Err(err)?,
-                                    },
-                                }
-                            }
-                            _ => Err(MessageParseError::InvalidSubject(Subject(
-                                contr_message.subject,
-                            )))?,
-                        },
-                        Err(err) => Err(err.into()),
-                    };
-                if let Err(err) = res {
+                if let Err(err) = self.update_signal(contr_message) {
                     error(&self, err.to_string(), &format!("actor.{}", self.id));
                 }
             };
             if let Some(contr_message) = sub_turn_off.try_next() {
-                let res: Result<(), PubSubError> =
-                    match ActorSubMsg::try_from(contr_message.clone()) {
-                        Ok(msg) => match msg {
-                            ActorSubMsg::TurnOff => match self.actor.turn_off() {
-                                Ok(()) => {
-                                    let shut_off_signal = SignalMsg::new(
-                                        self.id.clone(),
-                                        ActorSignal::new(self.id.clone(), 0.0),
-                                    );
-                                    if let Err(err) = self.publish(
-                                        &actor_turn_off_subject(&self.id),
-                                        &ActorPubMsg::CurrentSignal(shut_off_signal).into(),
-                                    ) {
-                                        error(
-                                            &self,
-                                            format!("Failed switching off client '{}'", err),
-                                            &format!("actor.{}", self.id),
-                                        )
-                                    };
-                                    contr_message
-                                        .respond(String::from("Actor output set to zero"))
-                                        .map_err(PubSubError::from)?;
-                                    Ok(())
-                                }
-                                Err(_err) => contr_message
-                                    .respond(String::from("Error turning off actor"))
-                                    .map_err(PubSubError::from),
-                            },
-                            _ => Err(MessageParseError::InvalidSubject(Subject(
-                                contr_message.subject,
-                            )))?,
-                        },
-                        Err(err) => Err(err.into()),
-                    };
-                if let Err(err) = res {
+                if let Err(err) = self.turn_off(contr_message) {
                     error(&self, err.to_string(), &format!("actor.{}", self.id));
                 }
             };
@@ -137,6 +78,68 @@ impl ActorClient {
     pub fn new(id: ClientId, actor: Box<dyn Actor>, config: &NatsClientConfig) -> Self {
         let client = NatsClient::try_new(config).unwrap();
         ActorClient { id, actor, client }
+    }
+
+    fn update_signal(&mut self, contr_message: Message) -> Result<(), PubSubError> {
+        match ActorSubMsg::try_from(contr_message.clone()) {
+            Ok(msg) => match msg {
+                ActorSubMsg::SetSignal(new_signal) => {
+                    let sign_res = self.actor.update_signal(&new_signal.signal);
+                    match sign_res {
+                        Ok(()) => self.publish(
+                            &actor_current_signal_subject(&self.id),
+                            &ActorPubMsg::CurrentSignal(new_signal).into(),
+                        ),
+                        Err(err) => match err {
+                            ActorError::ChangingToAlreadyActiveState => self.publish(
+                                &actor_current_signal_subject(&self.id),
+                                &ActorPubMsg::CurrentSignal(new_signal).into(),
+                            ),
+                            _ => Err(err)?,
+                        },
+                    }
+                }
+                _ => Err(MessageParseError::InvalidSubject(Subject(
+                    contr_message.subject,
+                )))?,
+            },
+            Err(err) => Err(err.into()),
+        }
+    }
+
+    fn turn_off(&mut self, contr_message: Message) -> Result<(), PubSubError> {
+        match ActorSubMsg::try_from(contr_message.clone()) {
+            Ok(msg) => match msg {
+                ActorSubMsg::TurnOff => match self.actor.turn_off() {
+                    Ok(()) => {
+                        let shut_off_signal =
+                            SignalMsg::new(self.id.clone(), ActorSignal::new(self.id.clone(), 0.0));
+                        contr_message
+                            .respond(String::from("Actor output set to zero"))
+                            .map_err(|err| PubSubError::Reply {
+                                task: "turn off actor",
+                                msg: contr_message.clone(),
+                                source: err,
+                            })?;
+                        self.publish(
+                            &actor_turn_off_subject(&self.id),
+                            &ActorPubMsg::CurrentSignal(shut_off_signal).into(),
+                        )
+                    }
+                    Err(_err) => contr_message
+                        .respond(String::from("Error turning off actor"))
+                        .map_err(|err| PubSubError::Reply {
+                            task: "turning off actor",
+                            msg: contr_message.clone(),
+                            source: err,
+                        }),
+                },
+                _ => Err(MessageParseError::InvalidSubject(Subject(
+                    contr_message.subject,
+                )))?,
+            },
+            Err(err) => Err(err.into()),
+        }
     }
 }
 

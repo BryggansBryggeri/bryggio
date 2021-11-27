@@ -86,7 +86,11 @@ impl Supervisor {
                 if let Err(err) = self.reply_active_clients(full_msg) {
                     full_msg
                         .respond(format!("Error replying with active clients. {}", err))
-                        .map_err(PubSubError::from)?;
+                        .map_err(|err| PubSubError::Reply {
+                            task: "list active clients",
+                            msg: full_msg.clone(),
+                            source: err,
+                        })?;
                     error(
                         self,
                         format!("Failed replying with active clients. {}", err),
@@ -115,7 +119,11 @@ impl Supervisor {
                 err.to_string()
             )),
         }
-        .map_err(PubSubError::from)
+        .map_err(|err| PubSubError::Reply {
+            task: "start controller",
+            msg: msg.clone(),
+            source: err,
+        })
         .map_err(SupervisorError::from)
     }
 
@@ -165,7 +173,11 @@ impl Supervisor {
                 err.to_string()
             )),
         }
-        .map_err(PubSubError::from)
+        .map_err(|err| PubSubError::Reply {
+            task: "stop controller",
+            msg: msg.clone(),
+            source: err,
+        })
         .map_err(SupervisorError::from)
     }
 
@@ -200,7 +212,11 @@ impl Supervisor {
                 contr_id,
                 err.to_string()
             ))
-            .map_err(PubSubError::from)?;
+            .map_err(|err| PubSubError::Reply {
+                task: "stop contr. when switching contr.",
+                msg: msg.clone(),
+                source: err,
+            })?;
             return Err(SupervisorError::Missing(contr_id.clone()));
         };
         self.common_start_controller(config.clone(), new_target)?;
@@ -214,6 +230,7 @@ impl Supervisor {
         Ok(msg
             .respond(status.to_string())
             .map_err(|err| PubSubError::Reply {
+                task: "start contr. when switching contr.",
                 msg: msg.clone(),
                 source: err,
             })?)
@@ -226,6 +243,7 @@ impl Supervisor {
         )));
         msg.respond(clients.to_string())
             .map_err(|err| PubSubError::Reply {
+                task: "list active clients",
                 msg: msg.clone(),
                 source: err,
             })
@@ -335,6 +353,15 @@ impl Supervisor {
 
     fn handle_err(&self, err: SupervisorError) -> ClientState {
         error(self, err.to_string(), "supervisor");
+        // match err {
+        //     SupervisorError::PubSub(pub_err) => match pub_err {
+        //         PubSubError::Io(err) => {
+        //             panic!("{}", err);
+        //         }
+        //         _ => {}
+        //     },
+        //     _ => {}
+        // }
         ClientState::Active
     }
 }
