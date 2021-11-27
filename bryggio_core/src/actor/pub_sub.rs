@@ -56,10 +56,24 @@ impl PubSubClient for ActorClient {
                                             &actor_current_signal_subject(&self.id),
                                             &ActorPubMsg::CurrentSignal(new_signal).into(),
                                         ),
-                                        _ => Err(err.into()),
+                                        _ => Err(err)?,
                                     },
                                 }
                             }
+                            _ => Err(MessageParseError::InvalidSubject(Subject(
+                                contr_message.subject,
+                            )))?,
+                        },
+                        Err(err) => Err(err.into()),
+                    };
+                if let Err(err) = res {
+                    error(&self, err.to_string(), &format!("actor.{}", self.id));
+                }
+            };
+            if let Some(contr_message) = sub_turn_off.try_next() {
+                let res: Result<(), PubSubError> =
+                    match ActorSubMsg::try_from(contr_message.clone()) {
+                        Ok(msg) => match msg {
                             ActorSubMsg::TurnOff => match self.actor.turn_off() {
                                 Ok(()) => {
                                     let shut_off_signal = SignalMsg::new(
@@ -85,13 +99,16 @@ impl PubSubClient for ActorClient {
                                     .respond(String::from("Error turning off actor"))
                                     .map_err(PubSubError::from),
                             },
+                            _ => Err(MessageParseError::InvalidSubject(Subject(
+                                contr_message.subject,
+                            )))?,
                         },
-                        Err(err) => Err(err).map_err(PubSubError::from),
+                        Err(err) => Err(err.into()),
                     };
                 if let Err(err) = res {
                     error(&self, err.to_string(), &format!("actor.{}", self.id));
                 }
-            }
+            };
             match self.actor.set_signal() {
                 Err(err) => match err {
                     ActorError::ChangingToAlreadyActiveState => {}
@@ -157,7 +174,6 @@ impl TryFrom<Message> for ActorSubMsg {
         tmp.next();
         tmp.next();
         let sub_subject = tmp.next().unwrap();
-        println!("sub subject {}", sub_subject);
         match sub_subject {
             "set_signal" => decode_nats_data(&msg.data),
             "turn_off" => Ok(Self::TurnOff),
