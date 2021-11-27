@@ -3,7 +3,7 @@ use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::thread::sleep;
 
-use crate::actor::pub_sub::{ActorPubMsg, SignalMsg};
+use crate::actor::pub_sub::{actor_current_signal_subject, ActorPubMsg, SignalMsg};
 use crate::pub_sub::ClientId;
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig,
@@ -35,8 +35,9 @@ impl PubSubClient for DataLogger {
             // .has_headers(false)
             .from_path(&self.log_file_path)
             .expect("Could not create CSV writer.");
+        let wildcard_id = ClientId::from("*");
         let sensor_sub = self.subscribe(&Subject(String::from("sensor.*.measurement")))?;
-        let actor_sub = self.subscribe(&Subject(String::from("actor_pub.*.current_signal")))?;
+        let actor_sub = self.subscribe(&actor_current_signal_subject(&wildcard_id))?;
         loop {
             if let Some(msg) = sensor_sub.try_next() {
                 let data = decode_nats_data::<SensorMsg>(&msg.data).expect("Failed decoding data");
@@ -116,11 +117,7 @@ impl From<SensorMsg> for Record {
 
 impl From<SignalMsg> for Record {
     fn from(x: SignalMsg) -> Self {
-        Record::new(
-            ClientId(x.signal.id),
-            x.timestamp,
-            Value::Val(x.signal.signal),
-        )
+        Record::new(x.signal.id, x.timestamp, Value::Val(x.signal.signal))
     }
 }
 

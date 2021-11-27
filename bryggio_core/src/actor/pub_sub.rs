@@ -12,6 +12,18 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::thread::sleep;
 
+pub fn actor_current_signal_subject(id: &ClientId) -> Subject {
+    Subject(format!("actor.{}.current_signal", id))
+}
+
+pub fn actor_set_signal_subject(id: &ClientId) -> Subject {
+    Subject(format!("actor.{}.set_signal", id))
+}
+
+pub fn actor_turn_off_subject(id: &ClientId) -> Subject {
+    Subject(format!("actor.{}.turn_off", id))
+}
+
 pub struct ActorClient {
     id: ClientId,
     actor: Box<dyn Actor>,
@@ -25,14 +37,8 @@ impl PubSubClient for ActorClient {
             format!("Starting actor with id '{}'", self.id),
             &format!("actor.{}", self.id),
         );
-        let sub_set_signal = match self.subscribe(&Subject(format!("actor.{}.>", self.id))) {
-            Ok(sub) => sub,
-            Err(err) => {
-                error(&self, err.to_string(), &format!("actor.{}", self.id));
-                return Err(err);
-            }
-        };
-        // let mut state = ClientState::Active;
+        let sub_set_signal = self.subscribe(&actor_set_signal_subject(&self.id))?;
+        let sub_turn_off = self.subscribe(&actor_turn_off_subject(&self.id))?;
         loop {
             if let Some(contr_message) = sub_set_signal.try_next() {
                 let res: Result<(), PubSubError> =
@@ -42,12 +48,12 @@ impl PubSubClient for ActorClient {
                                 let sign_res = self.actor.update_signal(&new_signal.signal);
                                 match sign_res {
                                     Ok(()) => self.publish(
-                                        &self.gen_signal_subject(),
+                                        &actor_current_signal_subject(&self.id),
                                         &ActorPubMsg::CurrentSignal(new_signal).into(),
                                     ),
                                     Err(err) => match err {
                                         ActorError::ChangingToAlreadyActiveState => self.publish(
-                                            &self.gen_signal_subject(),
+                                            &actor_current_signal_subject(&self.id),
                                             &ActorPubMsg::CurrentSignal(new_signal).into(),
                                         ),
                                         _ => Err(err.into()),
@@ -61,7 +67,7 @@ impl PubSubClient for ActorClient {
                                         ActorSignal::new(self.id.clone(), 0.0),
                                     );
                                     if let Err(err) = self.publish(
-                                        &self.gen_signal_subject(),
+                                        &actor_turn_off_subject(&self.id),
                                         &ActorPubMsg::CurrentSignal(shut_off_signal).into(),
                                     ) {
                                         error(
@@ -115,10 +121,6 @@ impl ActorClient {
         let client = NatsClient::try_new(config).unwrap();
         ActorClient { id, actor, client }
     }
-
-    fn gen_signal_subject(&self) -> Subject {
-        Subject(format!("actor_pub.{}.current_signal", self.id))
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -155,10 +157,11 @@ impl TryFrom<Message> for ActorSubMsg {
         tmp.next();
         tmp.next();
         let sub_subject = tmp.next().unwrap();
+        println!("sub subject {}", sub_subject);
         match sub_subject {
             "set_signal" => decode_nats_data(&msg.data),
             "turn_off" => Ok(Self::TurnOff),
-            _ => unreachable!(),
+            _ => Err(MessageParseError::InvalidSubject(Subject(msg.subject))),
         }
     }
 }

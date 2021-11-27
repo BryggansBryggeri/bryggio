@@ -32,7 +32,7 @@ impl<T: OutputPin + Send> SimpleGpioActor<T> {
         Ok(SimpleGpioActor {
             id: id.into(),
             bin_gpio,
-            current_signal: ActorSignal::new(id, 0.0),
+            current_signal: ActorSignal::new(id.into(), 0.0),
             cycle_duration: CYCLE_DURATION,
             start_time: TimeStamp::now(),
         })
@@ -60,7 +60,7 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
     fn set_signal(&mut self) -> Result<(), ActorError> {
         let bin_signal = self.pct_to_bin(self.current_signal.signal, self.cycle_duration);
         let bin_signal = ActorSignal {
-            id: self.id.clone(),
+            id: self.id.clone().into(),
             signal: bin_signal,
         };
         self.bin_gpio.update_signal(&bin_signal)?;
@@ -69,7 +69,7 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
     }
 
     fn turn_off(&mut self) -> Result<(), ActorError> {
-        self.update_signal(&ActorSignal::new(self.id.clone(), 0.0))?;
+        self.update_signal(&ActorSignal::new(self.id.clone().into(), 0.0))?;
         self.set_signal()
     }
 

@@ -32,7 +32,7 @@ impl<T: OutputPin + Send> BinaryGpioActor<T> {
             id: id.into(),
             handle,
             state: GpioState::Low,
-            current_signal: ActorSignal::new(id, 0.0),
+            current_signal: ActorSignal::new(id.into(), 0.0),
             time_out,
             internal_clock: TimeStamp(0),
         })
@@ -99,7 +99,7 @@ impl<T: OutputPin + Send> Actor for BinaryGpioActor<T> {
     }
 
     fn turn_off(&mut self) -> Result<(), ActorError> {
-        self.update_signal(&ActorSignal::new(self.id.clone(), 0.0))?;
+        self.update_signal(&ActorSignal::new(self.id.clone().into(), 0.0))?;
         self.set_signal()
     }
 }

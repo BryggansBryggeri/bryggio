@@ -26,16 +26,13 @@ pub trait Actor: Send {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ActorSignal {
     // TODO: Deserialization
-    pub(crate) id: String,
+    pub(crate) id: ClientId,
     pub(crate) signal: f32,
 }
 
 impl ActorSignal {
-    pub fn new<T: Into<String>>(id: T, signal: f32) -> Self {
-        ActorSignal {
-            id: id.into(),
-            signal,
-        }
+    pub fn new(id: ClientId, signal: f32) -> Self {
+        ActorSignal { id, signal }
     }
 
     pub fn gpio_state(&self) -> GpioState {
