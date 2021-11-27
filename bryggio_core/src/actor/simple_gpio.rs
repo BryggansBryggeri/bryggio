@@ -33,7 +33,7 @@ impl<T: OutputPin + Send> SimpleGpioActor<T> {
             id: id.into(),
             bin_gpio,
             current_signal: ActorSignal::new(id, 0.0),
-            cycle_duration: TimeStamp(10_000),
+            cycle_duration: CYCLE_DURATION,
             start_time: TimeStamp::now(),
         })
     }
@@ -47,6 +47,8 @@ impl<T: OutputPin + Send> SimpleGpioActor<T> {
         }
     }
 }
+
+const CYCLE_DURATION: TimeStamp = TimeStamp(10000);
 
 impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
     fn update_signal(&mut self, signal: &ActorSignal) -> Result<(), ActorError> {

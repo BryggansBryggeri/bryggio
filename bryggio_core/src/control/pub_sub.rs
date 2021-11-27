@@ -9,10 +9,11 @@ use crate::pub_sub::{
 };
 use crate::sensor::SensorMsg;
 use crate::supervisor::pub_sub::SupervisorPubMsg;
-use crate::time::TimeStamp;
+use crate::time::{TimeStamp, LOOP_PAUSE_TIME};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+use std::thread::sleep;
 
 pub struct ControllerClient {
     id: ClientId,
@@ -119,7 +120,7 @@ impl PubSubClient for ControllerClient {
 
             self.status_update();
 
-            if let Some(meas_msg) = sensor.next() {
+            if let Some(meas_msg) = sensor.try_next() {
                 if let Ok(msg) = SensorMsg::try_from(meas_msg) {
                     self.controller.calculate_signal(msg.meas.ok());
                 }
@@ -132,6 +133,7 @@ impl PubSubClient for ControllerClient {
                 });
                 self.publish(&msg.subject(&self.actor_id), &msg.into())?;
             }
+            sleep(LOOP_PAUSE_TIME);
         }
     }
 

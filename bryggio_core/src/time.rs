@@ -1,6 +1,6 @@
 use derive_more::{Add, Display, Sub};
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(
     Copy, Clone, Debug, Add, Sub, Display, Deserialize, Serialize, Ord, PartialOrd, PartialEq, Eq,
@@ -16,6 +16,8 @@ impl TimeStamp {
         TimeStamp(since_the_epoch.as_millis())
     }
 }
+
+pub(crate) const LOOP_PAUSE_TIME: Duration = Duration::from_millis(100);
 
 #[cfg(test)]
 mod test {

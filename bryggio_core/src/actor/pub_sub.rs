@@ -5,13 +5,12 @@ use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig,
     ClientId, PubSubClient, PubSubError, PubSubMsg, Subject,
 };
-use crate::time::TimeStamp;
+use crate::time::{TimeStamp, LOOP_PAUSE_TIME};
 use crate::{actor::Actor, pub_sub::MessageParseError};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::thread::sleep;
-use std::time::Duration;
 
 pub struct ActorClient {
     id: ClientId,
@@ -96,10 +95,8 @@ impl PubSubClient for ActorClient {
                 },
                 _ => {}
             };
-            sleep(CYCLE_DURATION);
+            sleep(LOOP_PAUSE_TIME);
         }
-        // TODO: Exit gracefully
-        // Ok(())
     }
 
     fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
@@ -110,8 +107,6 @@ impl PubSubClient for ActorClient {
         self.client.publish(subject, msg)
     }
 }
-
-const CYCLE_DURATION: Duration = Duration::from_millis(1000);
 
 impl ActorClient {
     pub fn new(id: ClientId, actor: Box<dyn Actor>, config: &NatsClientConfig) -> Self {
