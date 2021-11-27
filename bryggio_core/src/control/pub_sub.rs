@@ -24,6 +24,93 @@ pub struct ControllerClient {
     type_: ControllerType,
 }
 
+impl PubSubClient for ControllerClient {
+    fn client_loop(mut self) -> Result<(), PubSubError> {
+        let kill_cmd = self.subscribe(
+            &SupervisorPubMsg::KillClient {
+                client_id: self.id.clone(),
+            }
+            .subject(),
+        )?;
+        let controller = self.subscribe(&ControllerSubMsg::subject(&self.id))?;
+        let sensor = self.subscribe(&SensorMsg::subject(&self.sensor_id))?;
+        log_info(
+            &self,
+            &format!("starting contr. client: {}: {:?}", &self.id, &self.type_),
+        );
+        self.status_update();
+        loop {
+            if let Some(msg) = kill_cmd.try_next() {
+                // TODO: Proper Status PubMsg.
+                log_info(&self, "killing contr. client");
+                let actor_msg = ControllerPubMsg::TurnOffActor;
+                let response = match self
+                    .client
+                    .request(&actor_msg.subject(&self.actor_id), &PubSubMsg::empty())
+                {
+                    Ok(_) => format!("{}", self.controller.get_target()),
+                    Err(err) => format!("Failed turning actor off {}", err.to_string()),
+                };
+                msg.respond(response).map_err(|err| {
+                    PubSubError::Client(format!("could not respond: '{}'.", err.to_string()))
+                })?;
+                self.status_update();
+                return Ok(());
+            }
+
+            if let Some(nats_msg) = controller.try_next() {
+                // TODO: Match and log error
+                match ControllerSubMsg::try_from(nats_msg.clone()) {
+                    Ok(msg) => match msg {
+                        ControllerSubMsg::SetTarget(new_target) => {
+                            log_debug(
+                                &self,
+                                &format!(
+                                    "Setting target '{}' for controller '{}'",
+                                    new_target, self.id
+                                ),
+                            );
+                            self.controller.set_target(new_target);
+                            nats_msg
+                                .respond(format!(
+                                    "Target '{}' set for controller '{}'",
+                                    new_target, self.id
+                                ))
+                                .map_err(PubSubError::from)?;
+                        }
+                    },
+                    Err(err) => log_error(&self, &err.to_string()),
+                };
+                self.status_update();
+            }
+
+            if let Some(meas_msg) = sensor.try_next() {
+                if let Ok(msg) = SensorMsg::try_from(meas_msg) {
+                    self.controller.calculate_signal(msg.meas.ok());
+                }
+                let msg = ControllerPubMsg::SetActorSignal(SignalMsg {
+                    timestamp: TimeStamp::now(),
+                    signal: ActorSignal::new(
+                        self.actor_id.clone(),
+                        self.controller.get_control_signal(),
+                    ),
+                });
+                self.publish(&msg.subject(&self.actor_id), &msg.into())?;
+                self.status_update();
+            }
+            sleep(LOOP_PAUSE_TIME);
+        }
+    }
+
+    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
+        self.client.subscribe(subject)
+    }
+
+    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg)
+    }
+}
+
 impl ControllerClient {
     pub fn new(
         id: ClientId,
@@ -57,92 +144,6 @@ impl ControllerClient {
                 &format!("Could not publish status update: {}", err.to_string()),
             );
         };
-    }
-}
-
-impl PubSubClient for ControllerClient {
-    fn client_loop(mut self) -> Result<(), PubSubError> {
-        let kill_cmd = self.subscribe(
-            &SupervisorPubMsg::KillClient {
-                client_id: self.id.clone(),
-            }
-            .subject(),
-        )?;
-        let controller = self.subscribe(&ControllerSubMsg::subject(&self.id))?;
-        let sensor = self.subscribe(&SensorMsg::subject(&self.sensor_id))?;
-        log_info(
-            &self,
-            &format!("starting contr. client: {}: {:?}", &self.id, &self.type_),
-        );
-        self.status_update();
-        loop {
-            if let Some(msg) = kill_cmd.try_next() {
-                // TODO: Proper Status PubMsg.
-                log_info(&self, "killing contr. client");
-                let actor_msg = ControllerPubMsg::TurnOffActor;
-                let response = match self
-                    .client
-                    .request(&actor_msg.subject(&self.actor_id), &PubSubMsg::empty())
-                {
-                    Ok(_) => format!("{}", self.controller.get_target()),
-                    Err(err) => format!("Failed turning actor off {}", err.to_string()),
-                };
-                msg.respond(response).map_err(|err| {
-                    PubSubError::Client(format!("could not respond: '{}'.", err.to_string()))
-                })?;
-                return Ok(());
-            }
-
-            if let Some(nats_msg) = controller.try_next() {
-                // TODO: Match and log error
-                match ControllerSubMsg::try_from(nats_msg.clone()) {
-                    Ok(msg) => match msg {
-                        ControllerSubMsg::SetTarget(new_target) => {
-                            log_debug(
-                                &self,
-                                &format!(
-                                    "Setting target '{}' for controller '{}'",
-                                    new_target, self.id
-                                ),
-                            );
-                            self.controller.set_target(new_target);
-                            nats_msg
-                                .respond(format!(
-                                    "Target '{}' set for controller '{}'",
-                                    new_target, self.id
-                                ))
-                                .map_err(PubSubError::from)?;
-                        }
-                    },
-                    Err(err) => log_error(&self, &err.to_string()),
-                };
-            }
-
-            self.status_update();
-
-            if let Some(meas_msg) = sensor.try_next() {
-                if let Ok(msg) = SensorMsg::try_from(meas_msg) {
-                    self.controller.calculate_signal(msg.meas.ok());
-                }
-                let msg = ControllerPubMsg::SetActorSignal(SignalMsg {
-                    timestamp: TimeStamp::now(),
-                    signal: ActorSignal::new(
-                        self.actor_id.clone(),
-                        self.controller.get_control_signal(),
-                    ),
-                });
-                self.publish(&msg.subject(&self.actor_id), &msg.into())?;
-            }
-            sleep(LOOP_PAUSE_TIME);
-        }
-    }
-
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
-        self.client.subscribe(subject)
-    }
-
-    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
-        self.client.publish(subject, msg)
     }
 }
 
