@@ -22,7 +22,8 @@ The repo contains four crates (a crate is a Rust library or executable):
 
 ### Short note on language choice
 
-BryggIO is written in a language called [Rust](https://www.rust-lang.org/) I don't really find the choice of language particularly interesting but Rust is still a rather niche language, prompting a brief motivation for choosing Rust.
+BryggIO is written in a language called [Rust](https://www.rust-lang.org/).
+I don't really find the choice of language particularly interesting but Rust is still a rather niche language, prompting a brief motivation for choosing Rust.
 The language candidates I considered were: Python, C, C++ and Rust.
 To me, Rust have some properties making it the language -- among the ones I know -- best suited for an application like this.
 
@@ -40,7 +41,7 @@ These are:
   Python has similar functionality, while C and C++ do not.
 
 - **Low-level:** The target platform for BryggIO is a Raspberry Pi (rbpi), which in this context is hardly embedded, but in the future we will likely end up with some clients running on microcontrollers.
-  This rules out Python[^python_embedded]. C and C++ certainly have better embedded but Rust has good enough (and growing) support to not disqualify it based on this property.
+  This rules out Python[^python_embedded]. C and C++ certainly have better embedded support but Rust has good enough (and growing) support to not disqualify it based on this property.
   Furthermore, though not embedded, the rbpi is resource constrained, making a language without a runtime preferable[^lang_eff].
 
 ### Components
@@ -98,7 +99,7 @@ There are corresponding traits for actors and controllers.
 We have imposed an invariant that each controller has a single actor and a single sensor.
 This may seem restrictive but remember that, for instance, what constitutes a sensor has a wide interpretation.
 Let's say we want to use two thermometers instead of one, and control their average temp.
-Well, then we'll simply define a new concrete sensor type "AverageSensor" which internally reads the two temp's,
+Well, then we'll simply define a new concrete sensor type `AverageSensor` which internally reads the two temp's,
 computes the average and sends that "meta-measurement" to the controller.
 That is, we get the more complex functionality that we want but still uphold the invariant.
 
@@ -109,10 +110,10 @@ For the kind of simple manual control, we have a manual controller that acts as 
 
 ### Publish-subscribe pattern
 
-The communication between components such as sensors and controllers we use a _publish-subscribe_ pattern, which you can read about [here](https://ably.com/topic/pub-sub).
+For communication between components such as sensors and controllers we use a _publish-subscribe_ pattern, which you can read about [here](https://ably.com/topic/pub-sub).
 The gist of it is that components don't communicate directly with each other.
-Instead, components act like "clients", which communicate via a central server.
-A client can publish messages to the server, messages which are tagged with a "subject".
+Instead, components act like _clients_, which communicate via a central server.
+A client can publish messages to the server, messages which are tagged with a _subject_.
 Clients receive messages by subscribing to subjects.
 In this centralised way, clients can communicate without really having knowledge of each other.
 
@@ -128,7 +129,7 @@ Furthermore, the communication is language agnostic, one could for instance writ
 The pattern is also encoded in Rust's type system. All components -- now clients -- implement the `PubSubClient` trait in `bryggio_core::pub_sub`.
 We take further advantage of Rust's generic type system by providing generic implementations for the different component types.
 In Rust it is possible to make a generic implementation for all types that implements a second trait.
-This allows us to reduce code repetition by, for instance, by providing a common implementation of the `PubSubClient` trait for each type that implements the `Sensor` trait.
+This allows us to reduce code repetition by, for instance, providing a common implementation of the `PubSubClient` trait for each type that implements the `Sensor` trait.
 
 For the actual pub-sub system we use a protocol called [NATS](https://nats.io/). NATS is really just a protocol but it also comes with a server implementation that we use in BryggIO.
 A pub-sub server is a complex piece of software so it is nice to use an existing solution.
@@ -141,7 +142,7 @@ A request message can be explicitly responded to, this is vital for messages tha
 ### The supervisor client
 
 Since we use the pub-sub pattern we could in principle have one executable for every client, and run them in separate processes.
-This would not be convenient however, so instead we have a special "Supervisor" client which is run as an executable.
+This would not be convenient however, so instead we have a special `Supervisor` client which is run as an executable.
 The supervisor is responsible for starting and monitoring all our basic clients, like sensors, actors and controllers.
 Via pub-sub messages we can also shut-down and start new clients during the brewing process.
 
@@ -254,8 +255,7 @@ sudo ./bryggio-supervisor <path_to_bryggio_config_file>
 `sudo` is required for GPIO manipulation.
 
 [^python_embedded]:
-  This is not strictly true. Options exist, such as [MicroPython](https://micropython.org/).
-  I have not considered it though since I'm not excited about taking up space with a runtime, especially one which does not satisfy the robustness property.
+    This is not strictly true. Options exist, such as [MicroPython](https://micropython.org/).
+    I have not considered it though since I'm not excited about taking up space with a runtime, especially one which does not satisfy the robustness property.
 
-[^lang_eff]:
-  [Energy Efficiency across Programming Languages](https://sites.google.com/view/energy-efficiency-languages/home)
+[^lang_eff]: [Energy Efficiency across Programming Languages](https://sites.google.com/view/energy-efficiency-languages/home)
