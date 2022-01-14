@@ -49,7 +49,7 @@ impl PubSubClient for ControllerClient {
                     .request(&actor_msg.subject(&self.actor_id), &PubSubMsg::empty())
                 {
                     Ok(_) => format!("{}", self.controller.get_target()),
-                    Err(err) => format!("Failed turning actor off {}", err.to_string()),
+                    Err(err) => format!("Failed turning actor off {}", err),
                 };
                 msg.respond(response).map_err(|err| PubSubError::Reply {
                     task: "kill contr.",
@@ -146,10 +146,7 @@ impl ControllerClient {
             type_: self.type_.clone(),
         };
         if let Err(err) = self.publish(&status_update.subject(&self.id), &status_update.into()) {
-            log_error(
-                self,
-                &format!("Could not publish status update: {}", err.to_string()),
-            );
+            log_error(self, &format!("Could not publish status update: {}", err));
         };
     }
 }

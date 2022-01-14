@@ -50,16 +50,15 @@ impl PubSubClient for ActorClient {
                     error(&self, err.to_string(), &format!("actor.{}", self.id));
                 }
             };
-            match self.actor.set_signal() {
-                Err(err) => match err {
+            if let Err(err) = self.actor.set_signal() {
+                match err {
                     ActorError::ChangingToAlreadyActiveState => {}
                     _ => error(
                         &self,
-                        format!("Failed setting signal: '{}'", err.to_string()),
+                        format!("Failed setting signal: '{}'", err),
                         &format!("actor.{}", self.id),
                     ),
-                },
-                _ => {}
+                }
             };
             sleep(LOOP_PAUSE_TIME);
         }
@@ -95,13 +94,11 @@ impl ActorClient {
                                 &actor_current_signal_subject(&self.id),
                                 &ActorPubMsg::CurrentSignal(new_signal).into(),
                             ),
-                            _ => Err(err)?,
+                            _ => Err(err.into()),
                         },
                     }
                 }
-                _ => Err(MessageParseError::InvalidSubject(Subject(
-                    contr_message.subject,
-                )))?,
+                _ => Err(MessageParseError::InvalidSubject(Subject(contr_message.subject)).into()),
             },
             Err(err) => Err(err.into()),
         }
@@ -134,9 +131,7 @@ impl ActorClient {
                             source: err,
                         }),
                 },
-                _ => Err(MessageParseError::InvalidSubject(Subject(
-                    contr_message.subject,
-                )))?,
+                _ => Err(MessageParseError::InvalidSubject(Subject(contr_message.subject)).into()),
             },
             Err(err) => Err(err.into()),
         }

@@ -5,9 +5,7 @@
 //! (downloaded executable) to relay communication between clients.
 //!
 //! <https://docs.nats.io/>
-use crate::logger::LogLevel;
 use crate::pub_sub::{MessageParseError, PubSubError, PubSubMsg, Subject};
-use crate::supervisor::config::SupervisorConfig;
 use nats::{Connection, Options, Subscription};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fs::write;

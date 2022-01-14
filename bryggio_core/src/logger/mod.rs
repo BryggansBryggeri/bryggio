@@ -36,7 +36,7 @@ fn log<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str, 
     //.map_err(|err| PubSubError::MessageParse(err.to_string()))?,
     match client.publish(&subj, &msg) {
         Ok(_) => {}
-        Err(err) => println!("Log error: {}", err.to_string()),
+        Err(err) => println!("Log error: {}", err),
     };
 }
 

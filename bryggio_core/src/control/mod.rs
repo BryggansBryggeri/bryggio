@@ -26,7 +26,6 @@ pub enum State {
 
 #[non_exhaustive]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[non_exhaustive]
 pub enum ControllerType {
     #[serde(rename = "hysteresis")]
     Hysteresis { offset_on: f32, offset_off: f32 },

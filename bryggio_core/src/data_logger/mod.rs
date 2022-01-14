@@ -1,9 +1,8 @@
 //! Data logger
-use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::thread::sleep;
 
-use crate::actor::pub_sub::{actor_current_signal_subject, ActorPubMsg, SignalMsg};
+use crate::actor::pub_sub::{actor_current_signal_subject, SignalMsg};
 use crate::pub_sub::ClientId;
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig,
@@ -14,7 +13,6 @@ use crate::time::{TimeStamp, LOOP_PAUSE_TIME};
 use csv::WriterBuilder;
 use nats::Subscription;
 use serde::{Deserialize, Serialize};
-use std::io::prelude::*;
 
 pub struct DataLogger {
     id: ClientId,
