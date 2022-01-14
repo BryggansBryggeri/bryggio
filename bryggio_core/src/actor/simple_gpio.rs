@@ -96,7 +96,7 @@ mod tests {
     use assert_approx_eq::assert_approx_eq;
 
     #[test]
-    fn test_duty_cycle() {
+    fn duty_cycle() {
         assert_approx_eq!(calculate_cycle_ratio(17.0, 10.0), 0.7);
         assert_approx_eq!(calculate_cycle_ratio(27.0, 10.0), 0.7);
     }
