@@ -9,6 +9,7 @@
 use super::{bin_gpio::BinaryGpioActor, ActorSignal};
 use crate::{
     actor::{Actor, ActorError},
+    logger::debug,
     time::TimeStamp,
 };
 use embedded_hal::digital::blocking::OutputPin;
@@ -63,6 +64,7 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
             id: self.id.clone().into(),
             signal: bin_signal,
         };
+        println!("Bin signal: {:?}", bin_signal);
         self.bin_gpio.update_signal(&bin_signal)?;
         self.bin_gpio.set_signal()?;
         Ok(())
