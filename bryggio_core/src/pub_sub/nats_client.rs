@@ -38,7 +38,7 @@ pub fn run_nats_server(config: &NatsServerConfig, bin_path: &Path) -> Result<Chi
         PubSubError::Configuration(format!(
             "Unable to write NATS config to {}: '{}'",
             &config_name.to_string_lossy(),
-            err.to_string()
+            err
         ))
     })?;
 
