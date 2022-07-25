@@ -9,6 +9,7 @@
 use super::{bin_gpio::BinaryGpioActor, ActorSignal};
 use crate::{
     actor::{Actor, ActorError},
+    logger::debug,
     time::TimeStamp,
 };
 use embedded_hal::digital::blocking::OutputPin;
@@ -63,6 +64,7 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
             id: self.id.clone().into(),
             signal: bin_signal,
         };
+        // println!("Bin signal: {:?}", bin_signal);
         self.bin_gpio.update_signal(&bin_signal)?;
         self.bin_gpio.set_signal()?;
         Ok(())
@@ -96,7 +98,7 @@ mod tests {
     use assert_approx_eq::assert_approx_eq;
 
     #[test]
-    fn test_duty_cycle() {
+    fn duty_cycle() {
         assert_approx_eq!(calculate_cycle_ratio(17.0, 10.0), 0.7);
         assert_approx_eq!(calculate_cycle_ratio(27.0, 10.0), 0.7);
     }
