@@ -153,6 +153,28 @@ The beauty of pub-sub is that any external application, like a UI, with a workin
 We are developing a web-based UI, [BryggUI](https://github.com/BryggansBryggeri/bryggui), but whereas BryggIO is general and configurable,
 the web UI is tailored to a specific brewery setup (our own).
 
+### Hardware agnosticism
+
+The goal is to make BryggIO run independently of the underlying hardware.
+The motivation for this is two-fold:
+Firstly: the actual hardware (an rbpi) is not set in stone and we want to design for flexibility from the get go.
+Secondly, we want BryggIO to run as close as possible on ordinary computers, which lack the hardware requirements.
+This makes the development experience much better since it is tedious to work directly on the actual hardware when prototyping.
+
+We achieve this by conforming to the excellent [embedded-hal](https://github.com/rust-embedded/embedded-hal) (hardware abstraction layer) crate,
+which defines a set of traits that describes the general behaviour of the hardware we want to use.
+The BryggIO logic only interacts with the embedded-hal traits, while each hardware target that we want to support provides concrete imlementations of the traits,
+enabling a separation between hardware interface and logic.
+
+Currently, we have a hardware implementation for the rbpi.
+This is almost completely third-party code, an extra benefit of conforming to the semi-official embedded-hal standard,
+adding more boards and microcontrollers will be made significantly easier because of this.
+
+We also have a dummy hardware implementation for developing on ordinary computers.
+This "hardware" uses random number generators (rng's) for sensors and no-ops for GPIO pins, thus requiring no physical hardware.
+As a side not, it would be a fun project to build a hardware emulator, that is a more advanced dummy hardware implementation,
+that keeps track of an internal state which can be queried.
+
 ## Issues/Road map
 
 - **Asynchronicity:** This application is async. in nature; sensors publish measurements at semi-random interval, triggering controllers to compute a new signal, which actors react to.
