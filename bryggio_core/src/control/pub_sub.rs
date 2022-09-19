@@ -36,7 +36,14 @@ impl PubSubClient for ControllerClient {
         let sensor = self.subscribe(&SensorMsg::subject(&self.sensor_id))?;
         log_info(
             &self,
-            &format!("starting contr. client: {}: {:?}", &self.id, &self.type_),
+            &format!(
+                "Starting contr. client: {}\n\tMode: {:?}\n\tActor: {}\n\tSensor: {}\n\tTarget: {}",
+                &self.id,
+                &self.type_,
+                &self.actor_id,
+                &self.sensor_id,
+                &self.controller.get_target()
+            ),
         );
         self.status_update();
         loop {

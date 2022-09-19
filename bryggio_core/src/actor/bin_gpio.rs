@@ -17,7 +17,7 @@ pub struct BinaryGpioActor<T: OutputPin + Send> {
     pub id: String,
     pub(crate) handle: T,
     pub(crate) state: GpioState,
-    current_signal: ActorSignal,
+    pub(crate) current_signal: ActorSignal,
     time_out: Option<TimeStamp>,
     internal_clock: TimeStamp,
 }

@@ -41,7 +41,7 @@ impl Supervisor {
         config: config::SupervisorConfig,
     ) -> Result<Supervisor, SupervisorError> {
         println!("Starting supervisor");
-        let nats_config = NatsClientConfig::from(config.clone());
+        let nats_config = NatsClientConfig::from(config.nats.server.clone());
         let client = NatsClient::try_new(&nats_config)?;
         let mut supervisor = Supervisor {
             client,
@@ -147,7 +147,7 @@ impl Supervisor {
                     contr_config.actor_id.clone(),
                     contr_config.sensor_id.clone(),
                     contr_config.get_controller(target)?,
-                    &NatsClientConfig::from(self.config.clone()),
+                    &NatsClientConfig::from(self.config.nats.server.clone()),
                     contr_config.type_.clone(),
                 );
                 let control_handle =
@@ -270,7 +270,7 @@ impl Supervisor {
 
     fn add_logger(&mut self, config: &config::SupervisorConfig) -> Result<(), SupervisorError> {
         let log = Log::new(
-            &NatsClientConfig::from(config.clone()),
+            &NatsClientConfig::from(config.nats.server.clone()),
             config.general.log_level,
         );
         let log_handle = thread::spawn(|| log.client_loop().map_err(|err| err.into()));
@@ -284,7 +284,7 @@ impl Supervisor {
         let id = ClientId(String::from("data_logger"));
         let log = DataLogger::new(
             id.clone(),
-            &NatsClientConfig::from(config.clone()),
+            &NatsClientConfig::from(config.nats.server.clone()),
             PathBuf::from("log_file.csv"),
         );
         let log_handle = thread::spawn(|| log.client_loop().map_err(|err| err.into()));

@@ -5,4 +5,5 @@ members = [
     "bryggio_cli",
     "bryggio_supervisor",
     "bryggio_sensor_box",
+    "tests"
 ]

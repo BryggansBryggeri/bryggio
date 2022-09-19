@@ -23,7 +23,7 @@ pub trait Actor: Send {
     fn turn_off(&mut self) -> Result<(), ActorError>;
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ActorSignal {
     // TODO: Deserialization
     pub(crate) id: ClientId,
@@ -57,7 +57,7 @@ pub enum ActorType {
 pub struct ActorConfig {
     pub id: ClientId,
     #[serde(rename = "type")]
-    pub(crate) type_: ActorType,
+    pub type_: ActorType,
 }
 
 impl ActorConfig {

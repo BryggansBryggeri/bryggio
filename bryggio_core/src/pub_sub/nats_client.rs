@@ -144,7 +144,7 @@ impl NatsServerConfig {
             String::from("localhost"),
             4222,
             8888,
-            true,
+            false,
             Authorization::dummy(),
             WebSocket::dummy(),
         )
@@ -154,11 +154,17 @@ impl NatsServerConfig {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NatsClientConfig {
     /// Host for client connections.
-    host: String,
+    pub host: String,
     /// Port for client connections.
-    port: u32,
+    pub port: u32,
     /// Authorisation credentials, currently user and passwd.
-    authorization: Authorization,
+    pub authorization: Authorization,
+}
+
+impl From<NatsServerConfig> for NatsClientConfig {
+    fn from(conf: NatsServerConfig) -> Self {
+        NatsClientConfig::new(conf.host, conf.port, conf.authorization)
+    }
 }
 
 impl NatsClientConfig {
@@ -204,7 +210,7 @@ pub struct WebSocket {
 impl WebSocket {
     pub fn dummy() -> Self {
         Self {
-            port: 9222,
+            port: 9223,
             no_tls: true,
         }
     }

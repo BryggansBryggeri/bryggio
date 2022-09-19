@@ -64,9 +64,14 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
             id: self.id.clone().into(),
             signal: bin_signal,
         };
-        // println!("Bin signal: {:?}", bin_signal);
-        self.bin_gpio.update_signal(&bin_signal)?;
-        self.bin_gpio.set_signal()?;
+        println!(
+            "Duty cycle signal: {}, Bin-GPIO signal: {}",
+            self.current_signal.signal, self.bin_gpio.current_signal.signal
+        );
+        if self.bin_gpio.current_signal != bin_signal {
+            self.bin_gpio.update_signal(&bin_signal)?;
+            self.bin_gpio.set_signal()?;
+        }
         Ok(())
     }
 

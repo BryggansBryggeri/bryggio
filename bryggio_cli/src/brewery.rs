@@ -6,7 +6,7 @@ use bryggio_core::supervisor::config::SupervisorConfig;
 fn get_client(opt: &PubSubOpt) -> Result<NatsClient, PubSubError> {
     let config = SupervisorConfig::try_new(&opt.config)
         .map_err(|err| PubSubError::Configuration(err.to_string()))?;
-    NatsClient::try_new(&NatsClientConfig::from(config))
+    NatsClient::try_new(&NatsClientConfig::from(config.nats.server))
 }
 
 pub fn request(opt: &PubSubOpt) -> Result<(), PubSubError> {

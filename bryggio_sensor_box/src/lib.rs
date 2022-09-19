@@ -1,13 +1,13 @@
 use crate::pub_sub::SensorBoxSubMsg;
 use bryggio_core::actor::{ActorClient, ActorConfig, ActorError};
 use bryggio_core::pub_sub::{
-    nats_client::{Authorization, NatsClient, NatsClientConfig},
+    nats_client::{NatsClient, NatsClientConfig},
     ClientId, ClientState, PubSubClient, PubSubError,
 };
 use bryggio_core::sensor::{SensorClient, SensorConfig, SensorError};
 use bryggio_core::{
     logger::{error, LogLevel},
-    supervisor::config::{Hardware, ParseNatsClientConfig},
+    supervisor::config::Hardware,
 };
 use nats::Message;
 use serde::{Deserialize, Serialize};
@@ -26,7 +26,7 @@ pub struct SensorBox {
 
 impl SensorBox {
     pub fn init_from_config(config: SensorBoxConfig) -> Result<SensorBox, SensorBoxError> {
-        let nats_config = NatsClientConfig::from(config.clone());
+        let nats_config = NatsClientConfig::from(config.nats.clone());
         println!("{:?}", nats_config);
         let client = NatsClient::try_new(&nats_config)?;
         let mut sensor_box = SensorBox {
@@ -106,7 +106,7 @@ impl SensorBox {
 pub struct SensorBoxConfig {
     pub general: General,
     pub hardware: Hardware,
-    pub nats: ParseNatsClientConfig,
+    pub nats: NatsClientConfig,
 }
 
 impl SensorBoxConfig {
@@ -114,7 +114,7 @@ impl SensorBoxConfig {
         SensorBoxConfig {
             general: General::default(),
             hardware: Hardware::dummy(),
-            nats: ParseNatsClientConfig::dummy(),
+            nats: NatsClientConfig::dummy(),
         }
     }
 
@@ -139,17 +139,6 @@ impl SensorBoxConfig {
                 "Non-unique client IDs",
             )))
         }
-    }
-}
-
-impl From<SensorBoxConfig> for NatsClientConfig {
-    fn from(config: SensorBoxConfig) -> Self {
-        let nats = config.nats;
-        Self::new(
-            nats.host,
-            nats.port,
-            Authorization::new(nats.user, nats.pass),
-        )
     }
 }
 

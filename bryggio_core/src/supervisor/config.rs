@@ -1,4 +1,4 @@
-use crate::actor::ActorConfig;
+use crate::actor::{ActorConfig, ActorType};
 use crate::logger::LogLevel;
 use crate::pub_sub::nats_client::{Authorization, NatsClientConfig, NatsServerConfig, WebSocket};
 use crate::pub_sub::ClientId;
@@ -11,12 +11,13 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
+// TODO: Fix Parse struct.
 /// Main supervisor configuration
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SupervisorConfig {
     pub general: General,
     pub hardware: Hardware,
-    pub nats: ParseNatsServerConfig,
+    pub nats: NatsConfig,
 }
 
 impl SupervisorConfig {
@@ -32,13 +33,14 @@ impl SupervisorConfig {
         };
         let conf_presumptive = serde_json::from_str(&config_string)
             .map_err(|err| SupervisorConfigError::Parse(err.to_string()))?;
+        let conf_presumptive = SupervisorConfig::from(conf_presumptive);
         SupervisorConfig::validate(conf_presumptive)
     }
 
     pub fn dummy() -> SupervisorConfig {
         SupervisorConfig {
             general: General::default(),
-            nats: ParseNatsServerConfig::dummy(),
+            nats: NatsConfig::dummy(),
             hardware: Hardware::dummy(),
         }
     }
@@ -56,33 +58,6 @@ impl SupervisorConfig {
             )));
         };
         Ok(pres)
-    }
-}
-
-impl From<SupervisorConfig> for NatsServerConfig {
-    fn from(config: SupervisorConfig) -> Self {
-        let debug = config.general.log_level <= LogLevel::Debug;
-        let nats = config.nats;
-        Self::new(
-            nats.server_name,
-            nats.host,
-            nats.port,
-            nats.http_port,
-            debug,
-            Authorization::new(nats.user, nats.pass),
-            nats.websocket,
-        )
-    }
-}
-
-impl From<SupervisorConfig> for NatsClientConfig {
-    fn from(config: SupervisorConfig) -> Self {
-        let nats = config.nats;
-        Self::new(
-            nats.host,
-            nats.port,
-            Authorization::new(nats.user, nats.pass),
-        )
     }
 }
 
@@ -112,10 +87,16 @@ impl Hardware {
     pub fn dummy() -> Self {
         Hardware {
             sensors: vec![SensorConfig {
-                id: ClientId("dummy".into()),
+                id: ClientId("dummy_sensor".into()),
                 type_: SensorType::Dsb(Ds18b20Address::dummy()),
             }],
-            actors: Vec::new(),
+            actors: vec![ActorConfig {
+                id: ClientId("dummy_actor".into()),
+                type_: ActorType::SimpleGpio {
+                    pin_number: 0,
+                    time_out: None,
+                },
+            }],
         }
     }
 
@@ -131,31 +112,46 @@ impl Hardware {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ParseNatsServerConfig {
-    pub server_name: String,
-    pub host: String,
-    pub port: u32,
-    pub user: String,
-    pub pass: String,
-    pub http_port: u32,
-    pub websocket: WebSocket,
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NatsConfig {
     pub bin_path: PathBuf,
+    pub server: NatsServerConfig,
 }
 
-impl ParseNatsServerConfig {
+impl NatsConfig {
     pub fn dummy() -> Self {
-        Self {
-            bin_path: PathBuf::new(),
-            server_name: String::from("server-name"),
-            user: String::from("user"),
-            pass: String::from("passwd"),
-            host: String::from("localhost"),
-            port: 8888,
-            http_port: 8888,
-            websocket: WebSocket::dummy(),
+        NatsConfig {
+            bin_path: PathBuf::from("target/nats-server"),
+            server: NatsServerConfig::dummy(),
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct ParseSupervisorConfig {
+    pub general: General,
+    pub hardware: Hardware,
+    pub nats: ParseNatsServerConfig,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct ParseNatsServerConfig {
+    /// Arbitrary server identifier
+    pub server_name: String,
+    /// NATS host
+    pub host: String,
+    /// NATS port
+    pub port: u32,
+    /// Username
+    pub user: String,
+    /// Password
+    pub pass: String,
+    /// Port for NATS web server monitor
+    pub http_port: u32,
+    /// Web socket config
+    pub websocket: WebSocket,
+    /// Path to NATS binary
+    pub bin_path: PathBuf,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -164,17 +160,6 @@ pub struct ParseNatsClientConfig {
     pub port: u32,
     pub user: String,
     pub pass: String,
-}
-
-impl ParseNatsClientConfig {
-    pub fn dummy() -> Self {
-        Self {
-            host: String::from("localhost"),
-            port: 8888,
-            user: String::from("user"),
-            pass: String::from("passwd"),
-        }
-    }
 }
 
 #[derive(Error, Debug)]
@@ -193,7 +178,7 @@ mod supervisor_config_tests {
 
     #[test]
     fn test_parse() {
-        let _config: SupervisorConfig = serde_json::from_str(
+        let _config: ParseSupervisorConfig = serde_json::from_str(
             r#"
                 {
                   "general": {

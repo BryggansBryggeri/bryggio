@@ -17,7 +17,7 @@ impl TimeStamp {
     }
 }
 
-pub(crate) const LOOP_PAUSE_TIME: Duration = Duration::from_millis(100);
+pub(crate) const LOOP_PAUSE_TIME: Duration = Duration::from_millis(1000);
 
 #[cfg(test)]
 mod test {
