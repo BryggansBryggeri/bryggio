@@ -1,0 +1,10 @@
+[package]
+name = "tests"
+version = "0.2.0"
+authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+bryggio-core = { path = "../bryggio_core" }
+structopt = ">=0.3"
+tokio = { version = "1", features = ["full"] }
