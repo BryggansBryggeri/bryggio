@@ -99,7 +99,7 @@ impl Supervisor {
                 };
                 Ok(ClientState::Active)
             }
-            SupervisorSubMsg::Stop => Ok(ClientState::Active),
+            SupervisorSubMsg::Stop => Ok(ClientState::Inactive),
         }
     }
 
@@ -113,11 +113,7 @@ impl Supervisor {
         let start_res = self.common_start_controller(contr_config, target);
         match start_res {
             Ok(()) => msg.respond(format!("Controller '{}' started", id,)),
-            Err(err) => msg.respond(format!(
-                "Failed starting controller '{}': {}",
-                id,
-                err.to_string()
-            )),
+            Err(err) => msg.respond(format!("Failed starting controller '{}': {}", id, err)),
         }
         .map_err(|err| PubSubError::Reply {
             task: "start controller",
@@ -169,8 +165,7 @@ impl Supervisor {
             Ok(()) => msg.respond(format!("Controller '{}' stopped", contr_id,)),
             Err(err) => msg.respond(format!(
                 "Failed stopping controller '{}': {}",
-                contr_id,
-                err.to_string()
+                contr_id, err
             )),
         }
         .map_err(|err| PubSubError::Reply {
@@ -209,8 +204,7 @@ impl Supervisor {
         if let Err(err) = self.common_stop_controller(contr_id) {
             msg.respond(format!(
                 "Failed stopping controller '{}': {}",
-                contr_id,
-                err.to_string()
+                contr_id, err
             ))
             .map_err(|err| PubSubError::Reply {
                 task: "stop contr. when switching contr.",
@@ -241,6 +235,8 @@ impl Supervisor {
         let clients = PubSubMsg::from(SupervisorPubMsg::ActiveClients(ActiveClientsList::from(
             &self.active_clients,
         )));
+        // println!("Clients within function {}", clients.to_string());
+        // println!("Clients within function (struct) {:?}", self.active_clients);
         msg.respond(clients.to_string())
             .map_err(|err| PubSubError::Reply {
                 task: "list active clients",
@@ -383,13 +379,6 @@ impl ActiveClients {
             misc: HashMap::new(),
         }
     }
-
-    fn contains_id(&self, id: &ClientId) -> bool {
-        self.sensors.contains_key(id)
-            || self.actors.contains_key(id)
-            || self.controllers.contains_key(id)
-            || self.misc.contains_key(id)
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -398,6 +387,14 @@ pub struct ActiveClientsList {
     actors: HashMap<ClientId, ActorConfig>,
     controllers: HashMap<ClientId, ControllerConfig>,
     misc: Vec<ClientId>,
+}
+
+impl ActiveClientsList {
+    pub fn contains_id(&self, id: &ClientId) -> bool {
+        self.sensors.contains_key(id)
+            || self.actors.contains_key(id)
+            || self.controllers.contains_key(id)
+    }
 }
 
 impl From<&ActiveClients> for ActiveClientsList {

@@ -1,6 +1,6 @@
 use crate::actor::{ActorConfig, ActorType};
 use crate::logger::LogLevel;
-use crate::pub_sub::nats_client::{Authorization, NatsClientConfig, NatsServerConfig, WebSocket};
+use crate::pub_sub::nats_client::{NatsServerConfig, WebSocket};
 use crate::pub_sub::ClientId;
 use crate::sensor::ds18b20::Ds18b20Address;
 use crate::sensor::{SensorConfig, SensorType};
@@ -31,7 +31,7 @@ impl SupervisorConfig {
             Ok(_) => {}
             Err(err) => return Err(SupervisorConfigError::Io(err)),
         };
-        let conf_presumptive = serde_json::from_str(&config_string)
+        let conf_presumptive: ParseSupervisorConfig = serde_json::from_str(&config_string)
             .map_err(|err| SupervisorConfigError::Parse(err.to_string()))?;
         let conf_presumptive = SupervisorConfig::from(conf_presumptive);
         SupervisorConfig::validate(conf_presumptive)
@@ -58,6 +58,16 @@ impl SupervisorConfig {
             )));
         };
         Ok(pres)
+    }
+}
+
+impl From<ParseSupervisorConfig> for SupervisorConfig {
+    fn from(parse: ParseSupervisorConfig) -> Self {
+        Self {
+            general: parse.general.clone(),
+            hardware: parse.hardware.clone(),
+            nats: NatsConfig::from_parsed(parse),
+        }
     }
 }
 
@@ -88,7 +98,7 @@ impl Hardware {
         Hardware {
             sensors: vec![SensorConfig {
                 id: ClientId("dummy_sensor".into()),
-                type_: SensorType::Dsb(Ds18b20Address::dummy()),
+                type_: SensorType::Dummy(1000),
             }],
             actors: vec![ActorConfig {
                 id: ClientId("dummy_actor".into()),
@@ -125,6 +135,15 @@ impl NatsConfig {
             server: NatsServerConfig::dummy(),
         }
     }
+    fn from_parsed(parse: ParseSupervisorConfig) -> Self {
+        Self {
+            bin_path: parse.nats.bin_path.clone(),
+            server: ParseNatsServerConfig::from_parsed(
+                parse.nats,
+                parse.general.log_level > LogLevel::Debug,
+            ),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -154,6 +173,21 @@ struct ParseNatsServerConfig {
     pub bin_path: PathBuf,
 }
 
+use crate::pub_sub::nats_client::Authorization;
+impl ParseNatsServerConfig {
+    fn from_parsed(parse: ParseNatsServerConfig, debug: bool) -> NatsServerConfig {
+        NatsServerConfig::new(
+            parse.server_name,
+            parse.host,
+            parse.port,
+            parse.http_port,
+            debug,
+            Authorization::new(parse.user, parse.pass),
+            parse.websocket,
+        )
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ParseNatsClientConfig {
     pub host: String,
@@ -176,10 +210,7 @@ pub enum SupervisorConfigError {
 mod supervisor_config_tests {
     use super::*;
 
-    #[test]
-    fn test_parse() {
-        let _config: ParseSupervisorConfig = serde_json::from_str(
-            r#"
+    const PARSE_STRING: &str = r#"
                 {
                   "general": {
                     "brewery_name": "BRYGGANS BRYGGERI BÄRS BB",
@@ -222,8 +253,10 @@ mod supervisor_config_tests {
                     }
                   }
                 }
-            "#,
-        )
-        .unwrap();
+            "#;
+
+    #[test]
+    fn test_parse() {
+        let _config: ParseSupervisorConfig = serde_json::from_str(PARSE_STRING).unwrap();
     }
 }

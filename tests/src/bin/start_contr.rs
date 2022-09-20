@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
 use std::{thread, time::Duration};
+use bryggio_core::supervisor::ActiveClientsList;
+use bryggio_core::pub_sub::nats_client::decode_nats_data;
+use bryggio_core::pub_sub::ClientId;
 
 use bryggio_core::{pub_sub::{
     nats_client::{run_nats_server, NatsClientConfig, NatsClient},
@@ -10,21 +13,30 @@ use bryggio_core::supervisor::{config::SupervisorConfig, Supervisor, SupervisorE
 #[tokio::main]
 async fn main() -> Result<(), SupervisorError>{
     let config = SupervisorConfig::dummy();
+    // println!("{:?}", config);
+    // return Ok(());
     let mut nats_server_child = run_nats_server(
-        &config.nats.server.clone(),
+        &config.nats.server,
         &config.nats.bin_path,
     )?;
     let supervisor = Supervisor::init_from_config(config.clone())?;
     let sup_handle = thread::spawn(move || {supervisor.client_loop()});
     let nats_config = NatsClientConfig::from(config.nats.server);
-    setup(&nats_config)?;
+    let client = setup(&nats_config)?;
+    assert!(evaluate(&client)?);
+    stop_supervisor(&client)?;
     sup_handle.join().unwrap()?;
     nats_server_child
         .kill()
         .map_err(|err| PubSubError::Server(err.to_string()).into())
 }
 
-pub fn setup(nats_config: &NatsClientConfig) -> Result<(), PubSubError> {
+fn stop_supervisor(client: &NatsClient) -> Result<(), SupervisorError> {
+    let msg = SupervisorSubMsg::Stop;
+    Ok(client.publish(&msg.subject(), &msg.into())?)
+}
+
+fn setup(nats_config: &NatsClientConfig) -> Result<NatsClient, PubSubError> {
     println!("Sleeping");
     thread::sleep(Duration::from_millis(5000));
     println!("Starting controller");
@@ -32,9 +44,14 @@ pub fn setup(nats_config: &NatsClientConfig) -> Result<(), PubSubError> {
     let contr_data = NewContrData::new(ControllerConfig::dummy(), 0.7);
     let msg = SupervisorSubMsg::StartController{contr_data};
     client.request(&msg.subject(), &msg.into())?;
-    Ok(())
+    println!("Controller started");
+    Ok(client)
 }
 
-pub fn evaluate(client: &NatsClient) -> bool {
-    todo!()
+fn evaluate(client: &NatsClient) -> Result<bool, SupervisorError> {
+    let msg = SupervisorSubMsg::ListActiveClients;
+    let active_clients = client.request(&msg.subject(), &msg.into())?;
+    let active_clients: ActiveClientsList = decode_nats_data(&active_clients.data).unwrap();
+    let res = active_clients.contains_id(&ClientId("controller".to_string()));
+    Ok(res)
 }

@@ -48,8 +48,8 @@ impl ControllerConfig {
     pub fn dummy() -> Self {
         ControllerConfig {
             controller_id: ClientId("controller".into()),
-            actor_id: ClientId("dummy_sensor".into()),
-            sensor_id: ClientId("dummy_actor".into()),
+            actor_id: ClientId("dummy_actor".into()),
+            sensor_id: ClientId("dummy_sensor".into()),
             type_: ControllerType::Manual,
         }
     }

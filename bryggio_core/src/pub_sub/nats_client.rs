@@ -24,7 +24,11 @@ pub fn run_nats_server(config: &NatsServerConfig, bin_path: &Path) -> Result<Chi
     let config_str = serde_json::to_string_pretty(&config)
         .map_err(|err| PubSubError::Configuration(err.to_string()))?;
 
-    println!("Starting NATS with config:\n{}", &config_str);
+    println!(
+        "Starting NATS server at '{}' with config:\n{}",
+        bin_path.display(),
+        &config_str
+    );
     let config_name = bin_path
         .parent()
         .ok_or_else(|| {

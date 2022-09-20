@@ -74,6 +74,7 @@ impl TryFrom<&Message> for SupervisorSubMsg {
                 Ok(SupervisorSubMsg::SwitchController { contr_data })
             }
             "command.list_active_clients" => Ok(SupervisorSubMsg::ListActiveClients),
+            "command.stop" => Ok(SupervisorSubMsg::Stop),
             _ => Err(MessageParseError::InvalidSubject(Subject(
                 msg.subject.clone(),
             ))),
@@ -90,7 +91,11 @@ impl SupervisorSubMsg {
             SupervisorSubMsg::SwitchController { contr_data: _ } => {
                 Subject::from("command.switch_controller")
             }
-            _ => panic!("No"),
+            SupervisorSubMsg::StopController { contr_id: _ } => {
+                Subject::from("command.stop_controller")
+            }
+            SupervisorSubMsg::ListActiveClients => Subject::from("command.list_active_clients"),
+            SupervisorSubMsg::Stop => Subject::from("command.stop"),
         }
     }
 }
@@ -104,7 +109,13 @@ impl From<SupervisorSubMsg> for PubSubMsg {
             SupervisorSubMsg::SwitchController { contr_data } => PubSubMsg(
                 serde_json::to_string(&contr_data).expect("SupervisorSubMsg serialization error"),
             ),
-            _ => todo!(),
+            // Empty message
+            SupervisorSubMsg::ListActiveClients => PubSubMsg("".into()),
+            SupervisorSubMsg::Stop => PubSubMsg("".into()),
+            _ => todo!(
+                "Supervisor command '{:?}' not implemented yet",
+                msg.subject()
+            ),
         }
     }
 }
