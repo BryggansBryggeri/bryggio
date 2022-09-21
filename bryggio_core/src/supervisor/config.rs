@@ -2,7 +2,6 @@ use crate::actor::{ActorConfig, ActorType};
 use crate::logger::LogLevel;
 use crate::pub_sub::nats_client::{NatsServerConfig, WebSocket};
 use crate::pub_sub::ClientId;
-use crate::sensor::ds18b20::Ds18b20Address;
 use crate::sensor::{SensorConfig, SensorType};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -140,7 +139,7 @@ impl NatsConfig {
             bin_path: parse.nats.bin_path.clone(),
             server: ParseNatsServerConfig::from_parsed(
                 parse.nats,
-                parse.general.log_level > LogLevel::Debug,
+                parse.general.log_level <= LogLevel::Debug,
             ),
         }
     }
@@ -258,5 +257,12 @@ mod supervisor_config_tests {
     #[test]
     fn test_parse() {
         let _config: ParseSupervisorConfig = serde_json::from_str(PARSE_STRING).unwrap();
+    }
+
+    #[test]
+    fn test_nats_debug() {
+        let config: ParseSupervisorConfig = serde_json::from_str(PARSE_STRING).unwrap();
+        let config = SupervisorConfig::from(config);
+        assert!(!config.nats.server.debug);
     }
 }

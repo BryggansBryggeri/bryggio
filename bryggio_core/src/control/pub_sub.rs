@@ -72,14 +72,14 @@ impl PubSubClient for ControllerClient {
                 match ControllerSubMsg::try_from(nats_msg.clone()) {
                     Ok(msg) => match msg {
                         ControllerSubMsg::SetTarget(new_target) => {
-                            log_debug(
+                            self.controller.set_target(new_target);
+                            log_info(
                                 &self,
                                 &format!(
                                     "Setting target '{}' for controller '{}'",
                                     new_target, self.id
                                 ),
                             );
-                            self.controller.set_target(new_target);
                             nats_msg
                                 .respond(format!(
                                     "Target '{}' set for controller '{}'",

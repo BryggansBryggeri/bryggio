@@ -1,4 +1,4 @@
-use crate::logger::{debug, info};
+use crate::logger::info;
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig,
     ClientId, MessageParseError, PubSubClient, PubSubError, PubSubMsg, Subject,

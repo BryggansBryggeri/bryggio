@@ -112,15 +112,23 @@ impl Supervisor {
         let id = contr_config.controller_id.clone();
         let start_res = self.common_start_controller(contr_config, target);
         match start_res {
-            Ok(()) => msg.respond(format!("Controller '{}' started", id,)),
-            Err(err) => msg.respond(format!("Failed starting controller '{}': {}", id, err)),
+            Ok(()) => Ok(msg
+                .respond(format!("Controller '{}' started", id,))
+                .map_err(|err| PubSubError::Reply {
+                    task: "start controller",
+                    msg: msg.clone(),
+                    source: err,
+                })?),
+            Err(err) => {
+                msg.respond(format!("Failed starting controller '{}': {}", id, err))
+                    .map_err(|err| PubSubError::Reply {
+                        task: "start controller",
+                        msg: msg.clone(),
+                        source: err,
+                    })?;
+                Err(err)
+            }
         }
-        .map_err(|err| PubSubError::Reply {
-            task: "start controller",
-            msg: msg.clone(),
-            source: err,
-        })
-        .map_err(SupervisorError::from)
     }
 
     fn common_start_controller(
@@ -129,10 +137,16 @@ impl Supervisor {
         target: f32,
     ) -> Result<(), SupervisorError> {
         // TODO: Disabled checks pga SensorBox
-        // contr_config
-        //     .client_ids()
-        //     .map(|id| self.client_is_active(id))
-        //     .collect::<Result<Vec<_>, SupervisorError>>()?;
+        let missing_ids = contr_config
+            .client_ids()
+            .map(|id| (id, self.client_is_active(id)))
+            .filter(|(_, exists)| !*exists)
+            .map(|(id, _)| String::from(id.clone()))
+            .reduce(|acc, id| format!("{}, {}", acc, id));
+
+        if let Some(ids) = missing_ids {
+            return Err(SupervisorError::Missing(ClientId(ids)));
+        }
 
         let id = contr_config.controller_id.clone();
         match self.active_clients.controllers.get(&id) {
@@ -329,9 +343,9 @@ impl Supervisor {
         }
     }
 
-    // fn client_is_active(&self, id: &ClientId) -> bool {
-    //     self.active_clients.contains_id(id)
-    // }
+    fn client_is_active(&self, id: &ClientId) -> bool {
+        self.active_clients.contains_id(id)
+    }
 
     fn add_misc_client(
         &mut self,
@@ -378,6 +392,12 @@ impl ActiveClients {
             controllers: HashMap::new(),
             misc: HashMap::new(),
         }
+    }
+
+    pub fn contains_id(&self, id: &ClientId) -> bool {
+        self.sensors.contains_key(id)
+            || self.actors.contains_key(id)
+            || self.controllers.contains_key(id)
     }
 }
 

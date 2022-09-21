@@ -115,7 +115,7 @@ pub struct NatsServerConfig {
     /// http port for server monitoring.
     http_port: u32,
     /// Binary log level.
-    debug: bool,
+    pub(crate) debug: bool,
     /// Authorisation credentials, currently user and passwd.
     authorization: Authorization,
     /// Websocket config, allows web client communication.
