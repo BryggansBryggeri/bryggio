@@ -139,7 +139,7 @@ impl NatsConfig {
             bin_path: parse.nats.bin_path.clone(),
             server: ParseNatsServerConfig::from_parsed(
                 parse.nats,
-                parse.general.log_level <= LogLevel::Debug,
+                parse.general.log_level.is_debug(),
             ),
         }
     }

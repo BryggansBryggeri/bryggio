@@ -137,6 +137,10 @@ impl TryFrom<&str> for LogLevel {
 }
 
 impl LogLevel {
+    pub fn is_debug(&self) -> bool {
+        self <= &LogLevel::Debug
+    }
+
     fn from_msg_subject(subject: &str) -> Result<Self, MessageParseError> {
         let mut tmp = subject.split('.');
         tmp.next();
