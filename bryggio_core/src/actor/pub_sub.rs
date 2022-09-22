@@ -105,6 +105,7 @@ impl ActorClient {
     }
 
     fn turn_off(&mut self, contr_message: Message) -> Result<(), PubSubError> {
+        println!("contr_message: {:?}", contr_message);
         match self.actor.turn_off() {
             Ok(()) => {
                 let shut_off_signal =

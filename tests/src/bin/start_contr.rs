@@ -1,26 +1,27 @@
 #![forbid(unsafe_code)]
-use std::{thread, time::Duration};
-use bryggio_core::supervisor::ActiveClientsList;
 use bryggio_core::pub_sub::nats_client::decode_nats_data;
 use bryggio_core::pub_sub::ClientId;
+use bryggio_core::supervisor::ActiveClientsList;
+use std::{thread, time::Duration};
 
-use bryggio_core::{pub_sub::{
-    nats_client::{run_nats_server, NatsClientConfig, NatsClient},
-    PubSubClient, PubSubError,
-}, supervisor::pub_sub::{NewContrData, SupervisorSubMsg}, control::ControllerConfig};
 use bryggio_core::supervisor::{config::SupervisorConfig, Supervisor, SupervisorError};
+use bryggio_core::{
+    control::ControllerConfig,
+    pub_sub::{
+        nats_client::{run_nats_server, NatsClient, NatsClientConfig},
+        PubSubClient, PubSubError,
+    },
+    supervisor::pub_sub::{NewContrData, SupervisorSubMsg},
+};
 
 #[tokio::main]
-async fn main() -> Result<(), SupervisorError>{
+async fn main() -> Result<(), SupervisorError> {
     let config = SupervisorConfig::dummy();
     // println!("{:?}", config);
     // return Ok(());
-    let mut nats_server_child = run_nats_server(
-        &config.nats.server,
-        &config.nats.bin_path,
-    )?;
+    let mut nats_server_child = run_nats_server(&config.nats.server, &config.nats.bin_path)?;
     let supervisor = Supervisor::init_from_config(config.clone())?;
-    let sup_handle = thread::spawn(move || {supervisor.client_loop()});
+    let sup_handle = thread::spawn(move || supervisor.client_loop());
     let nats_config = NatsClientConfig::from(config.nats.server);
     let client = setup(&nats_config)?;
     assert!(evaluate(&client)?);
@@ -42,7 +43,7 @@ fn setup(nats_config: &NatsClientConfig) -> Result<NatsClient, PubSubError> {
     println!("Starting controller");
     let client = NatsClient::try_new(nats_config)?;
     let contr_data = NewContrData::new(ControllerConfig::dummy(), 0.7);
-    let msg = SupervisorSubMsg::StartController{contr_data};
+    let msg = SupervisorSubMsg::StartController { contr_data };
     client.request(&msg.subject(), &msg.into())?;
     println!("Controller started");
     Ok(client)

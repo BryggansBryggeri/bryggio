@@ -37,7 +37,7 @@ pub enum ControllerType {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ControllerConfig {
-    pub(crate) controller_id: ClientId,
+    pub controller_id: ClientId,
     pub(crate) actor_id: ClientId,
     pub(crate) sensor_id: ClientId,
     #[serde(rename = "type")]

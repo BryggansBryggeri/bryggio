@@ -49,12 +49,11 @@ impl PubSubClient for ControllerClient {
         loop {
             if let Some(msg) = kill_cmd.try_next() {
                 // TODO: Proper Status PubMsg.
-                log_info(&self, "killing contr. client");
                 let actor_msg = ControllerPubMsg::TurnOffActor;
-                let response = match self
-                    .client
-                    .request(&actor_msg.subject(&self.actor_id), &PubSubMsg::empty())
-                {
+                let response = match self.client.request(
+                    &actor_msg.subject(&self.actor_id),
+                    &PubSubMsg("turn_off".into()),
+                ) {
                     Ok(_) => format!("{}", self.controller.get_target()),
                     Err(err) => format!("Failed turning actor off {}", err),
                 };
@@ -64,6 +63,7 @@ impl PubSubClient for ControllerClient {
                     source: err,
                 })?;
                 self.status_update();
+                log_info(&self, "Contr. client killed.");
                 return Ok(());
             }
 
@@ -199,6 +199,14 @@ impl TryFrom<Message> for ControllerSubMsg {
     fn try_from(msg: Message) -> Result<Self, Self::Error> {
         let new_target: f32 = decode_nats_data(&msg.data)?;
         Ok(ControllerSubMsg::SetTarget(new_target))
+    }
+}
+
+impl From<ControllerSubMsg> for PubSubMsg {
+    fn from(msg: ControllerSubMsg) -> PubSubMsg {
+        match msg {
+            ControllerSubMsg::SetTarget(new_target) => PubSubMsg(new_target.to_string()),
+        }
     }
 }
 
