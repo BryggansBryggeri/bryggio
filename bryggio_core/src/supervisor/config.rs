@@ -1,5 +1,6 @@
 use crate::actor::{ActorConfig, ActorType};
 use crate::logger::LogLevel;
+use crate::pub_sub::nats_client::Authorization;
 use crate::pub_sub::nats_client::{NatsServerConfig, WebSocket};
 use crate::pub_sub::ClientId;
 use crate::sensor::{SensorConfig, SensorType};
@@ -172,27 +173,18 @@ struct ParseNatsServerConfig {
     pub bin_path: PathBuf,
 }
 
-use crate::pub_sub::nats_client::Authorization;
 impl ParseNatsServerConfig {
-    fn from_parsed(parse: ParseNatsServerConfig, debug: bool) -> NatsServerConfig {
+    fn from_parsed(self, debug: bool) -> NatsServerConfig {
         NatsServerConfig::new(
-            parse.server_name,
-            parse.host,
-            parse.port,
-            parse.http_port,
+            self.server_name,
+            self.host,
+            self.port,
+            self.http_port,
             debug,
-            Authorization::new(parse.user, parse.pass),
-            parse.websocket,
+            Authorization::new(self.user, self.pass),
+            self.websocket,
         )
     }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ParseNatsClientConfig {
-    pub host: String,
-    pub port: u32,
-    pub user: String,
-    pub pass: String,
 }
 
 #[derive(Error, Debug)]
