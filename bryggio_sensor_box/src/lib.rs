@@ -1,5 +1,6 @@
 use crate::pub_sub::SensorBoxSubMsg;
 use bryggio_core::actor::{ActorClient, ActorConfig, ActorError};
+use bryggio_core::pub_sub::nats_client::Authorization;
 use bryggio_core::pub_sub::{
     nats_client::{NatsClient, NatsClientConfig},
     ClientId, ClientState, PubSubClient, PubSubError,
@@ -109,15 +110,42 @@ pub struct SensorBoxConfig {
     pub nats: NatsClientConfig,
 }
 
-impl SensorBoxConfig {
-    pub fn dummy() -> SensorBoxConfig {
-        SensorBoxConfig {
-            general: General::default(),
-            hardware: Hardware::dummy(),
-            nats: NatsClientConfig::dummy(),
+#[derive(Deserialize, Debug, Clone)]
+struct ParseSensorBoxConfig {
+    general: General,
+    hardware: Hardware,
+    nats: ParseNatsClientConfig,
+}
+
+impl From<ParseSensorBoxConfig> for SensorBoxConfig {
+    fn from(parse: ParseSensorBoxConfig) -> Self {
+        Self {
+            general: parse.general,
+            hardware: parse.hardware,
+            nats: NatsClientConfig::from(parse.nats),
         }
     }
+}
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ParseNatsClientConfig {
+    host: String,
+    port: u32,
+    user: String,
+    pass: String,
+}
+
+impl From<ParseNatsClientConfig> for NatsClientConfig {
+    fn from(parse: ParseNatsClientConfig) -> Self {
+        NatsClientConfig::new(
+            parse.host,
+            parse.port,
+            Authorization::new(parse.user, parse.pass),
+        )
+    }
+}
+
+impl SensorBoxConfig {
     pub fn try_new(config_file: &Path) -> Result<SensorBoxConfig, SensorBoxError> {
         let mut f = match fs::File::open(config_file) {
             Ok(f) => f,
@@ -125,10 +153,19 @@ impl SensorBoxConfig {
         };
         let mut config_string = String::new();
         f.read_to_string(&mut config_string)?;
-        let conf_presumptive = serde_json::from_str(&config_string)
+        let conf_presumptive: ParseSensorBoxConfig = serde_json::from_str(&config_string)
             // TODO: Io --> more relevant error
             .map_err(|err| SensorBoxError::Config(err.to_string()))?;
+        let conf_presumptive = SensorBoxConfig::from(conf_presumptive);
         SensorBoxConfig::validate(conf_presumptive)
+    }
+
+    pub fn dummy() -> SensorBoxConfig {
+        SensorBoxConfig {
+            general: General::default(),
+            hardware: Hardware::dummy(),
+            nats: NatsClientConfig::dummy(),
+        }
     }
 
     fn validate(pres: SensorBoxConfig) -> Result<SensorBoxConfig, SensorBoxError> {
@@ -218,7 +255,7 @@ mod sensor_box_config_tests {
 
     #[test]
     fn parse() {
-        let _config: SensorBoxConfig = serde_json::from_str(
+        let _config: ParseSensorBoxConfig = serde_json::from_str(
             r#"
             {
               "general": {
