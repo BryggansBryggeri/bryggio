@@ -66,7 +66,7 @@ impl SensorBox {
             None => {
                 let sensor = SensorClient::new(
                     sensor_config.id.clone(),
-                    sensor_config.get_sensor()?,
+                    sensor_config.create_sensor()?,
                     config,
                 );
                 let handle = thread::spawn(|| sensor.client_loop().map_err(|err| err.into()));

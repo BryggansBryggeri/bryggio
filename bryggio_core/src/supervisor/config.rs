@@ -124,6 +124,7 @@ impl Hardware {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NatsConfig {
+    /// Path to nats-server executable
     pub bin_path: PathBuf,
     pub server: NatsServerConfig,
 }

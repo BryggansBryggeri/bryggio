@@ -1,3 +1,10 @@
+//! Publish-subscribe for sensors
+//!
+//! This module connects all sensors to the pub-sub network.
+//! It provides a generic type [`SensorClient`] which wraps any type that implements the [`Sensor`]
+//! trait and provides methods for publishing measurments to the pub-sub server and subscribing to
+//! commands from other clients in the network.
+
 use crate::logger::info;
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig,
@@ -9,8 +16,11 @@ use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
+/// Generic pub-sub sensor client
 pub struct SensorClient {
+    /// Unique pub-sub client ID.
     id: ClientId,
+    /// Any type that implements the [`Sensor`] trait.
     sensor: Box<dyn Sensor>,
     client: NatsClient,
 }

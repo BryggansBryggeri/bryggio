@@ -49,7 +49,10 @@ fn reproduce_error(client: &NatsClient) -> Result<(), SupervisorError> {
     )?;
 
     let mut auto_contr_conf = ControllerConfig::dummy();
-    auto_contr_conf.type_ = ControllerType::Hysteresis{offset_on : 10.0, offset_off : 5.0};
+    auto_contr_conf.type_ = ControllerType::Hysteresis {
+        offset_on: 10.0,
+        offset_off: 5.0,
+    };
     let contr_data = NewContrData::new(auto_contr_conf, 0.0);
     let msg = SupervisorSubMsg::SwitchController { contr_data };
     client.request(&msg.subject(), &msg.into())?;

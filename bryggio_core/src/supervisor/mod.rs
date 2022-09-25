@@ -1,3 +1,10 @@
+/// BryggIO Supervisor client
+///
+/// BryggIO uses the pub-sub pattern and could in principle have one executable for every client, and run them in separate processes.
+/// This would not be convenient however, so instead we have this special Supervisor client which
+/// controls other clients.
+/// The supervisor is responsible for starting and monitoring all our basic clients, like sensors, actors and controllers.
+/// Via pub-sub messages we can also shut-down and start new clients during the brewing process.
 use self::config::SupervisorConfigError;
 use crate::actor::{ActorClient, ActorConfig, ActorError};
 use crate::control::{
@@ -22,8 +29,6 @@ use thiserror::Error;
 
 pub mod config;
 pub mod pub_sub;
-
-type Handle = thread::JoinHandle<Result<(), SupervisorError>>;
 
 /// BryggIO supervisor client
 ///
@@ -312,7 +317,7 @@ impl Supervisor {
             None => {
                 let sensor = SensorClient::new(
                     sensor_config.id.clone(),
-                    sensor_config.get_sensor()?,
+                    sensor_config.create_sensor()?,
                     config,
                 );
                 let handle = thread::spawn(|| sensor.client_loop().map_err(|err| err.into()));
@@ -439,6 +444,8 @@ impl From<&ActiveClients> for ActiveClientsList {
         }
     }
 }
+
+type Handle = thread::JoinHandle<Result<(), SupervisorError>>;
 
 #[derive(Error, Debug)]
 pub enum SupervisorError {

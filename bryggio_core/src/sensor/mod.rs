@@ -1,19 +1,24 @@
-// pub mod cool_ds18b20;
+//! General sensor logic
 pub mod cpu_temp;
 pub mod ds18b20;
 pub mod dummy;
 mod pub_sub;
 use crate::pub_sub::{ClientId, PubSubError};
+pub use crate::sensor::pub_sub::{SensorClient, SensorMsg};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub use crate::sensor::pub_sub::{SensorClient, SensorMsg};
-
+/// Common sensor interface
 pub trait Sensor: Send {
+    /// Make a reading from a sensor
     fn get_measurement(&mut self) -> Result<f32, SensorError>;
+    /// Return unique internal ID
     fn get_id(&self) -> String;
 }
 
+/// Sensor type list
+///
+/// Helper type for creating sensors at runtime using [`SensorConfig::get_sensor`]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub enum SensorType {
     #[serde(rename = "dummy")]
@@ -24,15 +29,23 @@ pub enum SensorType {
     RbpiCpu,
 }
 
+/// Sensor config
+///
+/// Helper type for creating sensors at runtime using [`SensorConfig::get_sensor`]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SensorConfig {
+    /// Pub-sub ID, must be unique.
     pub id: ClientId,
     #[serde(rename = "type")]
     pub type_: SensorType,
 }
 
 impl SensorConfig {
-    pub fn get_sensor(&self) -> Result<Box<dyn Sensor>, SensorError> {
+    /// Create sensor at runtime with dynamic dispatch.
+    ///
+    /// The type of the sensors specified in e.g., config files cannot be known at runtime,
+    /// therefore are we forced to use dynamic dispatch.
+    pub fn create_sensor(&self) -> Result<Box<dyn Sensor>, SensorError> {
         match &self.type_ {
             SensorType::Dummy(delay_in_ms) => {
                 let sensor = dummy::DummySensor::new(self.id.as_ref(), *delay_in_ms);
