@@ -4,7 +4,7 @@
 //! Note, everything works, the controller is switched, but the req-rep logic fails.
 #![forbid(unsafe_code)]
 use bryggio_core::control::pub_sub::ControllerSubMsg;
-use bryggio_core::control::ControllerConfig;
+use bryggio_core::control::{ControllerConfig, ControllerType};
 use bryggio_core::supervisor::{config::SupervisorConfig, Supervisor, SupervisorError};
 use bryggio_core::{
     pub_sub::{
@@ -42,8 +42,15 @@ fn reproduce_error(client: &NatsClient) -> Result<(), SupervisorError> {
         &ControllerSubMsg::subject(&contr_conf.controller_id),
         &msg.into(),
     )?;
+    let msg = ControllerSubMsg::SetTarget(0.0);
+    client.request(
+        &ControllerSubMsg::subject(&contr_conf.controller_id),
+        &msg.into(),
+    )?;
 
-    let contr_data = NewContrData::new(contr_conf, 0.0);
+    let mut auto_contr_conf = ControllerConfig::dummy();
+    auto_contr_conf.type_ = ControllerType::Hysteresis{offset_on : 10.0, offset_off : 5.0};
+    let contr_data = NewContrData::new(auto_contr_conf, 0.0);
     let msg = SupervisorSubMsg::SwitchController { contr_data };
     client.request(&msg.subject(), &msg.into())?;
 

@@ -41,7 +41,7 @@ pub struct ControllerConfig {
     pub(crate) actor_id: ClientId,
     pub(crate) sensor_id: ClientId,
     #[serde(rename = "type")]
-    pub(crate) type_: ControllerType,
+    pub type_: ControllerType,
 }
 
 impl ControllerConfig {
