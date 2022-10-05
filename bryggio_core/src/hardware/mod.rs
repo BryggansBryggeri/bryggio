@@ -2,7 +2,9 @@ use thiserror::Error;
 
 #[cfg(target_arch = "x86_64")]
 pub(crate) mod dummy;
-#[cfg(target_arch = "arm")]
+#[cfg(all(target_arch = "arm", target_os = "macos"))]
+pub(crate) mod dummy;
+#[cfg(all(target_arch = "arm", target_os = "linux"))]
 pub(crate) mod rbpi;
 use gpio_cdev::errors::Error as CdevError;
 
