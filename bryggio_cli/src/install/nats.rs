@@ -12,7 +12,10 @@ use url::Url;
 use super::InstallError;
 
 pub(crate) fn setup_nats_server(nats_path: &Path, update: bool) -> Result<(), InstallError> {
-    println!("nats path: {}", nats_path.to_string_lossy());
+    println!(
+        "Setting up NATS server, at '{}'",
+        nats_path.to_string_lossy()
+    );
     let local_version = get_local_version(nats_path);
     if !update && local_version.is_some() {
         info!("Keeping existing NATS server.");
@@ -46,7 +49,7 @@ fn extract_server(zip_path: &Path) {
 }
 
 fn github_meta_data() -> Result<(Version, Url), InstallError> {
-    let latest = latest_github_release(NATS_GITHUB_LATEST);
+    let latest = latest_github_release(NATS_GITHUB_LATEST)?;
 
     #[cfg(target_os = "linux")]
     let os = "linux";

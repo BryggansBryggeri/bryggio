@@ -61,7 +61,7 @@ pub(crate) fn setup_supervisor(supervisor_path: &Path, update: bool) -> Result<(
                 "symlinking '{} -> {}'. {}",
                 supervisor_path.to_string_lossy(),
                 link.to_string_lossy(),
-                err.to_string(),
+                err,
             ))
         })?;
     };
@@ -74,7 +74,7 @@ fn setup_gpio_user() -> Result<(), InstallError> {
 }
 
 fn github_meta_data() -> Result<(Version, Url), InstallError> {
-    let latest = latest_github_release(SUPERVISOR_GITHUB_LATEST);
+    let latest = latest_github_release(SUPERVISOR_GITHUB_LATEST)?;
     let url = latest
         .urls()
         .map(|x| Url::parse(&x.url))

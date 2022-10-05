@@ -9,6 +9,7 @@ use url::Url;
 mod github_api;
 mod nats;
 pub mod supervisor;
+use github_api::GithubError;
 use std::fs::File;
 use std::os::unix::fs::PermissionsExt;
 use std::str;
@@ -72,7 +73,7 @@ fn semver_from_executable(path: &Path) -> Result<Version, InstallError> {
             panic!(
                 "Failed to get version from '{}'. Err: '{}'",
                 path.to_str().unwrap(),
-                err.to_string()
+                err
             )
         })
         .stdout;
@@ -95,7 +96,7 @@ pub(crate) fn semver_from_text_output<S: AsRef<str>>(text: &S) -> Result<Version
 // TODO: Better logging of all possible outcomes.
 fn should_download(update: bool, local_version: Option<Version>, latest_version: Version) -> bool {
     if let Some(local_version) = local_version {
-        info!("Keeping existing version");
+        info!("NATS server exists, with version {}", local_version);
         if update && latest_version > local_version {
             info!("Newer version released ({}), downloading", latest_version);
             true
@@ -128,7 +129,9 @@ pub enum InstallError {
     SemVer(String),
     #[error("Permission denied: {0}")]
     PermissionDenied(String),
-    #[error("Permission denied: {0}")]
+    #[error("Github API: {0}")]
+    Github(#[from] GithubError),
+    #[error("OS error: {0}")]
     OsError(#[from] std::io::Error),
     #[error("Invalid path: {0}")]
     InvalidPath(String),
