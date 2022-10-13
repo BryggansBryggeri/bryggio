@@ -1,0 +1,15 @@
+# See guide: https://www.howtogeek.com/687970/how-to-run-a-linux-program-at-startup-with-systemd/
+[Unit]
+Description=BryggIO Supervisor
+
+Requires=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bryggio/bryggio-supervisr run /usr/local/bryggio/bryggio.json
+Restart=on-failure
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
