@@ -19,6 +19,7 @@ sensor-box.json
 !sample-*.yaml
 !sample-*.json
 nats.conf
+log_file.csv
 
 # Cross
 *.core
