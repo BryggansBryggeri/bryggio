@@ -8,7 +8,6 @@ use bryggio_core::{
     },
     supervisor::pub_sub::{NewContrData, SupervisorSubMsg},
 };
-use std::{thread, time::Duration};
 
 pub fn stop_supervisor(client: &NatsClient) -> Result<(), SupervisorError> {
     let msg = SupervisorSubMsg::Stop;
@@ -16,8 +15,6 @@ pub fn stop_supervisor(client: &NatsClient) -> Result<(), SupervisorError> {
 }
 
 pub fn setup(nats_config: &NatsClientConfig) -> Result<NatsClient, PubSubError> {
-    println!("Sleeping");
-    thread::sleep(Duration::from_millis(5000));
     println!("Starting controller");
     let client = NatsClient::try_new(nats_config)?;
     let contr_data = NewContrData::new(ControllerConfig::dummy(), 0.7);
