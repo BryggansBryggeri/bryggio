@@ -12,7 +12,7 @@ fn get_client(opt: &PubSubOpt) -> Result<NatsClient, PubSubError> {
 pub fn request(opt: &PubSubOpt) -> Result<(), PubSubError> {
     let response =
         get_client(opt)?.request(&Subject(opt.topic.clone()), &PubSubMsg(opt.msg.clone()))?;
-    println!("Response: {}", response.to_string());
+    println!("Response: {}", response);
     Ok(())
 }
 

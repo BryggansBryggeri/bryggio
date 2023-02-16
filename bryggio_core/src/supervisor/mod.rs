@@ -440,7 +440,7 @@ impl From<&ActiveClients> for ActiveClientsList {
                 .iter()
                 .map(|(id, (_, config))| (id.clone(), config.clone()))
                 .collect(),
-            misc: clients.misc.iter().map(|(id, _)| id).cloned().collect(),
+            misc: clients.misc.keys().cloned().collect(),
         }
     }
 }

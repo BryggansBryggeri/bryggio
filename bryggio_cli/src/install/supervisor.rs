@@ -53,7 +53,7 @@ pub(crate) fn setup_supervisor(supervisor_path: &Path, update: bool) -> Result<(
 
     let (latest_supervisor_version, supervisor_url) = github_meta_data()?;
     if should_download(update, local_version, latest_supervisor_version) {
-        download_file(&supervisor_path, &supervisor_url);
+        download_file(supervisor_path, &supervisor_url);
         make_executable(supervisor_path);
         let link = Path::new("/usr/local/bin/bryggio-supervisor");
         symlink(supervisor_path, link).map_err(|err| {

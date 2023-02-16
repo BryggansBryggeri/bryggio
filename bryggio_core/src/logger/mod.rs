@@ -29,7 +29,7 @@ fn log<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str, 
     let msg = match serde_json::to_string(&msg) {
         Ok(msg) => PubSubMsg(msg),
         Err(err) => {
-            println!("Log error: {}", err.to_string());
+            println!("Log error: {}", err);
             return;
         }
     };

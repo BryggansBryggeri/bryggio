@@ -72,7 +72,7 @@ impl NatsClient {
     pub fn try_new(config: &NatsClientConfig) -> Result<NatsClient, PubSubError> {
         let opts =
             Options::with_user_pass(&config.authorization.user, &config.authorization.password);
-        match opts.connect(&config.nats_url()) {
+        match opts.connect(config.nats_url()) {
             Ok(nc) => Ok(NatsClient(nc)),
             Err(err) => Err(PubSubError::Server(err.to_string())),
         }

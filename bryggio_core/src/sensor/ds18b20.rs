@@ -47,7 +47,7 @@ impl Sensor for Ds18b20 {
         let device_path = Path::new(DS18B20_DIR)
             .join(&self.address.0)
             .join("temperature");
-        let meas = match utils::read_file_to_string(&device_path) {
+        let meas = match utils::read_file_to_string(device_path) {
             Ok(raw_read) => parse_temp_measurement(&raw_read),
             Err(err) => Err(SensorError::FileRead(err.to_string())),
         };
@@ -113,7 +113,7 @@ fn parse_temp_measurement(raw_read: &str) -> Result<f32, SensorError> {
             return Err(SensorError::Parse(format!(
                 "Could not parse string '{}' to f32. Err: {}",
                 String::from(raw_read),
-                err.to_string()
+                err
             )));
         }
     };

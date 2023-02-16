@@ -28,7 +28,7 @@ impl CpuTemp {
                 return Err(SensorError::Parse(format!(
                     "Could not parse string '{}' to f32. Err: {}",
                     String::from(raw_read),
-                    err.to_string()
+                    err
                 )));
             }
         };
@@ -49,11 +49,7 @@ impl Sensor for CpuTemp {
         let raw_read = match utils::read_file_to_string(device_path) {
             Ok(raw_read) => raw_read,
             Err(err) => {
-                return Err(SensorError::FileRead(format!(
-                    "'{}'. {}",
-                    device_path,
-                    err.to_string()
-                )));
+                return Err(SensorError::FileRead(format!("'{}'. {}", device_path, err)));
             }
         };
         self.parse_temp_measurement(&raw_read)

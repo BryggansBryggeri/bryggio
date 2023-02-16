@@ -132,17 +132,14 @@ pub struct NatsConfig {
 impl NatsConfig {
     pub fn dummy() -> Self {
         NatsConfig {
-            bin_path: PathBuf::from("target/nats-server"),
+            bin_path: PathBuf::from("nats/nats-server"),
             server: NatsServerConfig::dummy(),
         }
     }
     fn from_parsed(parse: ParseSupervisorConfig) -> Self {
         Self {
             bin_path: parse.nats.bin_path.clone(),
-            server: ParseNatsServerConfig::from_parsed(
-                parse.nats,
-                parse.general.log_level.is_debug(),
-            ),
+            server: ParseNatsServerConfig::init(parse.nats, parse.general.log_level.is_debug()),
         }
     }
 }
@@ -175,7 +172,7 @@ struct ParseNatsServerConfig {
 }
 
 impl ParseNatsServerConfig {
-    fn from_parsed(self, debug: bool) -> NatsServerConfig {
+    fn init(self, debug: bool) -> NatsServerConfig {
         NatsServerConfig::new(
             self.server_name,
             self.host,
@@ -232,7 +229,7 @@ mod supervisor_config_tests {
                     ]
                   },
                   "nats": {
-                    "bin_path": "target/nats-server",
+                    "bin_path": "nats/nats-server",
                     "server_name": "bryggio-nats-server",
                     "host": "localhost",
                     "port": 4222,

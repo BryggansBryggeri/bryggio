@@ -32,7 +32,7 @@ pub(crate) fn setup_nats_server(nats_path: &Path, update: bool) -> Result<(), In
 }
 
 fn extract_server(zip_path: &Path) {
-    let file = fs::File::open(&zip_path).unwrap();
+    let file = fs::File::open(zip_path).unwrap();
     let mut archive = zip::ZipArchive::new(file).unwrap();
     let mut nats_server_name = PathBuf::new();
     for i in 0..archive.len() {
@@ -43,7 +43,7 @@ fn extract_server(zip_path: &Path) {
         }
     }
     let mut extracted_file = archive.by_name(nats_server_name.to_str().unwrap()).unwrap();
-    let mut outfile = fs::File::create(&zip_path.with_file_name("nats-server")).unwrap();
+    let mut outfile = fs::File::create(zip_path.with_file_name("nats-server")).unwrap();
     io::copy(&mut extracted_file, &mut outfile).unwrap();
     fs::remove_file(zip_path).expect("Could not remove zip archive");
 }
