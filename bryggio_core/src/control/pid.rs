@@ -23,7 +23,9 @@ impl Controller {
         let i_limit = i_limit.unwrap_or(100.0);
         let d_limit = d_limit.unwrap_or(100.0);
         let output_limit = 100.0;
-        let pid = ext_pid::Pid::new(kp, ki, kd, p_limit, i_limit, d_limit, output_limit, target);
+        let mut pid = ext_pid::Pid::new(target, output_limit);
+        pid.p(kp, p_limit).i(ki, i_limit).d(kd, d_limit);
+        let pid = pid;
         Controller {
             target: 0.0,
             current_signal: 0.0,
