@@ -2,16 +2,16 @@
 use bryggio_core::pub_sub::nats_client::decode_nats_data;
 use bryggio_core::pub_sub::ClientId;
 use bryggio_core::supervisor::ActiveClientsList;
-use std::{thread, time::Duration};
+use std::thread;
+use tests::{setup, stop_supervisor};
 
 use bryggio_core::supervisor::{config::SupervisorConfig, Supervisor, SupervisorError};
 use bryggio_core::{
-    control::ControllerConfig,
     pub_sub::{
         nats_client::{run_nats_server, NatsClient, NatsClientConfig},
         PubSubClient, PubSubError,
     },
-    supervisor::pub_sub::{NewContrData, SupervisorSubMsg},
+    supervisor::pub_sub::SupervisorSubMsg,
 };
 
 #[tokio::main]
@@ -25,28 +25,14 @@ async fn main() -> Result<(), SupervisorError> {
     let nats_config = NatsClientConfig::from(config.nats.server);
     let client = setup(&nats_config)?;
     assert!(evaluate(&client)?);
+    println!("Test passed.");
+    println!("Stopping supervisor client.");
     stop_supervisor(&client)?;
     sup_handle.join().unwrap()?;
+    println!("Shutting down NATS server.");
     nats_server_child
         .kill()
         .map_err(|err| PubSubError::Server(err.to_string()).into())
-}
-
-fn stop_supervisor(client: &NatsClient) -> Result<(), SupervisorError> {
-    let msg = SupervisorSubMsg::Stop;
-    Ok(client.publish(&msg.subject(), &msg.into())?)
-}
-
-fn setup(nats_config: &NatsClientConfig) -> Result<NatsClient, PubSubError> {
-    println!("Sleeping");
-    thread::sleep(Duration::from_millis(5000));
-    println!("Starting controller");
-    let client = NatsClient::try_new(nats_config)?;
-    let contr_data = NewContrData::new(ControllerConfig::dummy(), 0.7);
-    let msg = SupervisorSubMsg::StartController { contr_data };
-    client.request(&msg.subject(), &msg.into())?;
-    println!("Controller started");
-    Ok(client)
 }
 
 fn evaluate(client: &NatsClient) -> Result<bool, SupervisorError> {

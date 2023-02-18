@@ -27,7 +27,7 @@ pub struct SensorBox {
 
 impl SensorBox {
     pub fn init_from_config(config: SensorBoxConfig) -> Result<SensorBox, SensorBoxError> {
-        let nats_config = NatsClientConfig::from(config.nats.clone());
+        let nats_config = config.nats.clone();
         println!("{:?}", nats_config);
         let client = NatsClient::try_new(&nats_config)?;
         let mut sensor_box = SensorBox {

@@ -1,4 +1,4 @@
-//! This test is used to detect a bug (issue #??),
+//! This test is used to detect a bug (issue #114),
 //! where the switching of controllers will generate a pub-sub error when replying to a "turn off
 //! actor" command.
 //! Note, everything works, the controller is switched, but the req-rep logic fails.
