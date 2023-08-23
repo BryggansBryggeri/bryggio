@@ -258,7 +258,7 @@ Build the required executables
 
 ```bash
 # In the bryggio repo root
-cross build --target=armv7-unknown-linux-musleabihf
+cross build --target=armv7-unknown-linux-musleabihf --release
 ```
 
 Move the resulting executable
