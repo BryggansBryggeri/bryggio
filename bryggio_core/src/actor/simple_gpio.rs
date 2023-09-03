@@ -9,7 +9,6 @@
 use super::{bin_gpio::BinaryGpioActor, ActorSignal};
 use crate::{
     actor::{Actor, ActorError},
-    logger::debug,
     time::TimeStamp,
 };
 use embedded_hal::digital::blocking::OutputPin;
@@ -49,8 +48,6 @@ impl<T: OutputPin + Send> SimpleGpioActor<T> {
     }
 }
 
-const CYCLE_DURATION: TimeStamp = TimeStamp(10000);
-
 impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
     fn update_signal(&mut self, signal: &ActorSignal) -> Result<(), ActorError> {
         self.validate_signal(signal)?;
@@ -88,6 +85,8 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
         }
     }
 }
+
+const CYCLE_DURATION: TimeStamp = TimeStamp(10000);
 
 fn calculate_cycle_ratio(delta: f32, cycle_length: f32) -> f32 {
     (delta % cycle_length) / cycle_length

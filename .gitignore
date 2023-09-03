@@ -21,6 +21,7 @@ sensor-box.json
 nats.conf
 log_file.csv
 nats/nats-server
+dummy_ds18/
 
 # Cross
 *.core
