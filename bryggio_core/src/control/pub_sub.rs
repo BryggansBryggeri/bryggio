@@ -2,7 +2,7 @@ use crate::actor::pub_sub::SignalMsg;
 use crate::actor::ActorSignal;
 use crate::control::Control;
 use crate::control::ControllerType;
-use crate::logger::{debug, error, info};
+use crate::logger::{error, info};
 use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig,
     ClientId, PubSubClient, PubSubError, PubSubMsg, Subject,
@@ -158,13 +158,13 @@ impl ControllerClient {
     }
 }
 
-fn log_debug(client: &ControllerClient, msg: &str) {
-    debug(
-        client,
-        String::from(msg),
-        &format!("controller.{}", &client.id),
-    );
-}
+// fn log_debug(client: &ControllerClient, msg: &str) {
+//     debug(
+//         client,
+//         String::from(msg),
+//         &format!("controller.{}", &client.id),
+//     );
+// }
 
 fn log_info(client: &ControllerClient, msg: &str) {
     info(

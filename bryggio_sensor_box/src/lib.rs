@@ -47,7 +47,7 @@ impl SensorBox {
     fn process_command(
         &mut self,
         cmd: SensorBoxSubMsg,
-        full_msg: &Message,
+        _full_msg: &Message,
     ) -> Result<ClientState, SensorBoxError> {
         match cmd {
             SensorBoxSubMsg::Stop => Ok(ClientState::Active),

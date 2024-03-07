@@ -1,8 +1,7 @@
 use crate::hardware::HardwareError;
-use embedded_hal::delay::blocking::DelayUs;
-use embedded_hal::digital::blocking::{InputPin, OutputPin};
-use embedded_hal::digital::ErrorType;
-use gpio_cdev::errors::Error as CdevError;
+use embedded_hal::delay::DelayNs;
+use embedded_hal::digital::{ErrorKind, ErrorType};
+use embedded_hal::digital::{InputPin, OutputPin};
 
 pub fn get_gpio_pin(pin_number: u32, label: &str) -> Result<GpioPin, HardwareError> {
     Ok(GpioPin::new(pin_number, label))
@@ -25,18 +24,26 @@ impl GpioPin {
 }
 
 impl InputPin for GpioPin {
-    fn is_high(&self) -> Result<bool, Self::Error> {
+    fn is_high(&mut self) -> Result<bool, Self::Error> {
         Ok(self.state.into())
     }
 
-    fn is_low(&self) -> Result<bool, Self::Error> {
+    fn is_low(&mut self) -> Result<bool, Self::Error> {
         let bool_state: bool = self.state.into();
         Ok(!bool_state)
     }
 }
 
+#[derive(Debug)]
+pub struct GpioPinError {}
 impl ErrorType for GpioPin {
-    type Error = CdevError;
+    type Error = GpioPinError;
+}
+
+impl embedded_hal::digital::Error for GpioPinError {
+    fn kind(&self) -> ErrorKind {
+        ErrorKind::Other
+    }
 }
 
 impl OutputPin for GpioPin {
@@ -68,19 +75,6 @@ impl From<GpioState> for bool {
 
 pub struct Delay {}
 
-// impl DelayMs<u16> for Delay {
-//     type Error = CdevError;
-//     fn delay_ms(&mut self, _ms: u16) -> Result<(), Self::Error> {
-//         Ok(())
-//     }
-// }
-
-impl DelayUs for Delay {
-    type Error = CdevError;
-    fn delay_us(&mut self, _us: u32) -> Result<(), Self::Error> {
-        Ok(())
-    }
-    fn delay_ms(&mut self, _ms: u32) -> Result<(), Self::Error> {
-        Ok(())
-    }
+impl DelayNs for Delay {
+    fn delay_ns(&mut self, _ns: u32) {}
 }

@@ -54,7 +54,6 @@ impl control::Control for Controller {
                     self.current_signal = 1.0;
                 } else if diff <= self.offset_off {
                     self.current_signal = 0.0;
-                } else {
                 }
                 self.current_signal
             }

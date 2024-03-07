@@ -134,7 +134,6 @@ pub fn list_available() -> Result<Vec<Ds18b20Address>, SensorError> {
             "DSB path does not exist: '{}'",
             DS18B20_DIR
         )));
-    } else {
     }
     let files = match fs::read_dir(device_path) {
         Ok(files) => files,

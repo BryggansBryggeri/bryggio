@@ -9,7 +9,7 @@ use crate::{
     hardware::{GpioState, HardwareError},
     time::TimeStamp,
 };
-use embedded_hal::digital::blocking::OutputPin;
+use embedded_hal::digital::OutputPin;
 
 use super::ActorSignal;
 

@@ -15,20 +15,13 @@ use nats::Subscription;
 use serde::{Deserialize, Serialize};
 
 pub struct DataLogger {
-    id: ClientId,
+    _id: ClientId,
     client: NatsClient,
     log_file_path: PathBuf,
 }
 
 impl PubSubClient for DataLogger {
     fn client_loop(self) -> Result<(), PubSubError> {
-        // let mut log_file = OpenOptions::new()
-        //     .write(true)
-        //     .append(true)
-        //     .create(true)
-        //     .open(&self.log_file_path)?;
-        // writeln!(log_file, "{}", Record::headers())?;
-
         let mut wtr = WriterBuilder::new()
             // .has_headers(false)
             .from_path(&self.log_file_path)
@@ -66,7 +59,7 @@ impl DataLogger {
     pub fn new(id: ClientId, config: &NatsClientConfig, log_file_path: PathBuf) -> Self {
         let client = NatsClient::try_new(config).unwrap();
         Self {
-            id,
+            _id: id,
             client,
             log_file_path,
         }

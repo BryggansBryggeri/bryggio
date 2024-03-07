@@ -11,7 +11,7 @@ use crate::{
     actor::{Actor, ActorError},
     time::TimeStamp,
 };
-use embedded_hal::digital::blocking::OutputPin;
+use embedded_hal::digital::OutputPin;
 
 pub struct SimpleGpioActor<T: OutputPin + Send> {
     pub id: String,
