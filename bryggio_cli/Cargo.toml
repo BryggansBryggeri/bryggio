@@ -1,15 +1,14 @@
 [package]
 name = "bryggio-cli"
 version = "0.2.0"
-authors = ["Jakob <jakob.lindqvist@chalmers.se>"]
+authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 url = ">=2"
-# Can't use latest version of ureq b/c of ring conflict with rocket
-ureq = ">=0.8"
+ureq = ">=2"
 structopt = ">=0.3"
 # Quote is needed for failure-derive bug fix
 # https://users.rust-lang.org/t/failure-derive-compilation-error/39062
