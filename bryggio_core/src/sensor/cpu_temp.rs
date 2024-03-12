@@ -5,17 +5,23 @@
 //! wich provides a file descriptor from which the temperature is read.
 use crate::sensor::{Sensor, SensorError};
 use crate::utils;
+use std::thread::sleep;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct CpuTemp {
     /// Internal ID, must be unique.
     pub id: String,
+    /// Fake delay to simulate a real measurement.
+    delay: Duration,
 }
 
 impl CpuTemp {
-    pub fn new(id: &str) -> CpuTemp {
-        let id = String::from(id);
-        CpuTemp { id }
+    pub fn new(id: &str, delay_in_ms: u64) -> CpuTemp {
+        CpuTemp {
+            id: id.into(),
+            delay: Duration::from_millis(delay_in_ms),
+        }
     }
 
     /// Parse CPU temperature from file
@@ -52,6 +58,7 @@ impl Sensor for CpuTemp {
                 return Err(SensorError::FileRead(format!("'{}'. {}", device_path, err)));
             }
         };
+        sleep(self.delay);
         self.parse_temp_measurement(&raw_read)
     }
 
@@ -68,7 +75,7 @@ mod tests {
     #[test]
     fn test_address_correct() {
         let temp_string = String::from("50000");
-        let mock_sensor = CpuTemp::new("test");
+        let mock_sensor = CpuTemp::new("test", 1);
         assert_approx_eq!(
             mock_sensor.parse_temp_measurement(&temp_string).unwrap(),
             50.0

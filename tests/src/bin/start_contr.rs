@@ -17,8 +17,6 @@ use bryggio_core::{
 #[tokio::main]
 async fn main() -> Result<(), SupervisorError> {
     let config = SupervisorConfig::dummy();
-    // println!("{:?}", config);
-    // return Ok(());
     let mut nats_server_child = run_nats_server(&config.nats.server, &config.nats.bin_path)?;
     let supervisor = Supervisor::init_from_config(config.clone())?;
     let sup_handle = thread::spawn(move || supervisor.client_loop());

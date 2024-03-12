@@ -42,6 +42,10 @@ pub struct Supervisor {
 }
 
 impl Supervisor {
+    /// Initialise Supervisor instance
+    ///
+    /// NB: This does not start the main loop, it only configures the instance.
+    /// See [`Supervisor::client_loop`] for running the supervisor.
     pub fn init_from_config(
         config: config::SupervisorConfig,
     ) -> Result<Supervisor, SupervisorError> {
@@ -455,11 +459,11 @@ pub enum SupervisorError {
     Missing(ClientId),
     #[error("'{0}' is already an active client")]
     AlreadyActive(ClientId),
-    #[error("Control error")]
+    #[error("Control error: {0}")]
     Controller(#[from] ControllerError),
-    #[error("Sensor error")]
+    #[error("Sensor error: {0}")]
     Sensor(#[from] SensorError),
-    #[error("Actor error")]
+    #[error("Actor error: {0}")]
     Actor(#[from] ActorError),
     #[error("Pubsub error: {0}")]
     PubSub(#[from] PubSubError),

@@ -1,11 +1,12 @@
 [package]
 name = "bryggio-core"
 version = "0.2.0"
-authors = ["Jakob Lindqvist <jakob.lindqvist.92@gmail.com>"]
+authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
 edition = "2021"
 
 [dependencies]
 embedded-hal = "=1.0.0"
+# cdev should only be required for rbpi builds.
 gpio-cdev = "0.6.0"
 rand = ">=0.8"
 rand_distr = ">=0.4"

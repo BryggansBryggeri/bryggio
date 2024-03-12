@@ -18,7 +18,7 @@ pub trait Sensor: Send {
 
 /// Sensor type list
 ///
-/// Helper type for creating sensors at runtime using [`SensorConfig::get_sensor`]
+/// Helper type for creating sensors at runtime using [`SensorConfig::create_sensor`]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub enum SensorType {
     #[serde(rename = "dummy")]
@@ -26,12 +26,12 @@ pub enum SensorType {
     #[serde(rename = "dsb")]
     Dsb(ds18b20::Ds18b20Address),
     #[serde(rename = "rbpi_cpu")]
-    RbpiCpu,
+    RbpiCpu(u64),
 }
 
 /// Sensor config
 ///
-/// Helper type for creating sensors at runtime using [`SensorConfig::get_sensor`]
+/// Helper type for creating sensors at runtime using [`SensorConfig::create_sensor`]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SensorConfig {
     /// Pub-sub ID, must be unique.
@@ -55,8 +55,8 @@ impl SensorConfig {
                 let sensor = ds18b20::Ds18b20::try_new(self.id.as_ref(), addr.as_ref())?;
                 Ok(Box::new(sensor))
             }
-            SensorType::RbpiCpu => {
-                let sensor = cpu_temp::CpuTemp::new(self.id.as_ref());
+            SensorType::RbpiCpu(delay_in_ms) => {
+                let sensor = cpu_temp::CpuTemp::new(self.id.as_ref(), *delay_in_ms);
                 Ok(Box::new(sensor))
             }
         }
