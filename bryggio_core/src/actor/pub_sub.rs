@@ -45,11 +45,13 @@ impl PubSubClient for ActorClient {
                     error(&self, err.to_string(), &format!("actor.{}", self.id));
                 }
             };
+
             if let Some(contr_message) = sub_turn_off.try_next() {
                 if let Err(err) = self.turn_off(contr_message) {
                     error(&self, err.to_string(), &format!("actor.{}", self.id));
                 }
             };
+
             if let Err(err) = self.actor.set_signal() {
                 match err {
                     ActorError::ChangingToAlreadyActiveState => {}
@@ -105,11 +107,12 @@ impl ActorClient {
     }
 
     fn turn_off(&mut self, contr_message: Message) -> Result<(), PubSubError> {
-        println!("contr_message: {:?}", contr_message);
+        // println!(
+        //     "actor pub sub: {:?}",
+        //     decode_nats_data::<String>(&contr_message.data)
+        // );
         match self.actor.turn_off() {
             Ok(()) => {
-                let shut_off_signal =
-                    SignalMsg::new(self.id.clone(), ActorSignal::new(self.id.clone(), 0.0));
                 contr_message
                     .respond(String::from("Actor output set to zero"))
                     .map_err(|err| PubSubError::Reply {
@@ -117,8 +120,10 @@ impl ActorClient {
                         msg: contr_message.clone(),
                         source: err,
                     })?;
+                let shut_off_signal =
+                    SignalMsg::new(self.id.clone(), ActorSignal::new(self.id.clone(), 0.0));
                 self.publish(
-                    &actor_turn_off_subject(&self.id),
+                    &actor_current_signal_subject(&self.id),
                     &ActorPubMsg::CurrentSignal(shut_off_signal).into(),
                 )
             }

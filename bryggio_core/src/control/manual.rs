@@ -1,4 +1,4 @@
-use super::{Control, State};
+use super::{Control, ControllerError, State};
 use std::f32;
 
 pub struct ManualController {
@@ -41,5 +41,16 @@ impl Control for ManualController {
 
     fn get_target(&self) -> f32 {
         self.target
+    }
+
+    fn validate_target(&self, new_target: f32) -> Result<f32, ControllerError> {
+        if (0.0..=1.0).contains(&new_target) {
+            Ok(new_target)
+        } else {
+            Err(ControllerError::InvalidTarget(
+                new_target,
+                String::from("Target must be in [0, 1]."),
+            ))
+        }
     }
 }

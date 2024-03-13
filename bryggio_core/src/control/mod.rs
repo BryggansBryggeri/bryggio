@@ -16,6 +16,7 @@ pub trait Control: Send {
     fn get_control_signal(&self) -> f32;
     fn get_target(&self) -> f32;
     fn set_target(&mut self, new_target: f32);
+    fn validate_target(&self, new_target: f32) -> Result<f32, ControllerError>;
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -80,6 +81,8 @@ impl ControllerConfig {
 pub enum ControllerError {
     #[error("Param. error: {0}")]
     ParamError(String),
+    #[error("Invalid target '{0}': {1}")]
+    InvalidTarget(f32, String),
     #[error("Unknown type: {0}")]
     Type(String),
 }

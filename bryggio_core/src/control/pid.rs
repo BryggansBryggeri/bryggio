@@ -2,6 +2,8 @@ use crate::control;
 use pid as ext_pid;
 use std::f32;
 
+use super::ControllerError;
+
 pub struct Controller {
     pub target: f32,
     pub current_signal: f32,
@@ -67,5 +69,16 @@ impl control::Control for Controller {
 
     fn get_target(&self) -> f32 {
         self.target
+    }
+
+    fn validate_target(&self, new_target: f32) -> Result<f32, ControllerError> {
+        if (0.0..=100.0).contains(&new_target) {
+            Ok(new_target)
+        } else {
+            Err(ControllerError::InvalidTarget(
+                new_target,
+                String::from("You likely want a temp in [0, 100]C"),
+            ))
+        }
     }
 }

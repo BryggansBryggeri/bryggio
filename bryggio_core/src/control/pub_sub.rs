@@ -13,6 +13,7 @@ use crate::time::{TimeStamp, LOOP_PAUSE_TIME};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+use std::io::Write;
 use std::thread::sleep;
 
 pub struct ControllerClient {
@@ -49,6 +50,7 @@ impl PubSubClient for ControllerClient {
         loop {
             if let Some(msg) = kill_cmd.try_next() {
                 // TODO: Proper Status PubMsg.
+                println!("Got kill cmd");
                 let actor_msg = ControllerPubMsg::TurnOffActor;
                 let response = match self.client.request(
                     &actor_msg.subject(&self.actor_id),
@@ -72,19 +74,25 @@ impl PubSubClient for ControllerClient {
                 match ControllerSubMsg::try_from(nats_msg.clone()) {
                     Ok(msg) => match msg {
                         ControllerSubMsg::SetTarget(new_target) => {
-                            self.controller.set_target(new_target);
-                            log_info(
-                                &self,
-                                &format!(
-                                    "Setting target '{}' for controller '{}'",
-                                    new_target, self.id
-                                ),
-                            );
+                            let response = match self.controller.validate_target(new_target) {
+                                Ok(new_target) => {
+                                    self.controller.set_target(new_target);
+                                    log_info(
+                                        &self,
+                                        &format!(
+                                            "Setting target '{}' for controller '{}'",
+                                            new_target, self.id
+                                        ),
+                                    );
+                                    format!(
+                                        "Target '{}' set for controller '{}'",
+                                        new_target, self.id
+                                    )
+                                }
+                                Err(err) => err.to_string(),
+                            };
                             nats_msg
-                                .respond(format!(
-                                    "Target '{}' set for controller '{}'",
-                                    new_target, self.id
-                                ))
+                                .respond(response)
                                 .map_err(|err| PubSubError::Reply {
                                     task: "List active clients",
                                     msg: nats_msg.clone(),
