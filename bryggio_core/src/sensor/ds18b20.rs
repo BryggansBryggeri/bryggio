@@ -45,7 +45,6 @@ impl Ds18b20 {
 /// directory.
 /// Returns a vector with all filenames in that directory that parses as a [`Ds18b20Address`].
 pub fn list_available() -> Result<Vec<Ds18b20Address>, SensorError> {
-    println!("Finding sensors");
     let device_path = Path::new(DS18B20_DIR);
     if !device_path.exists() {
         // TODO: Better error

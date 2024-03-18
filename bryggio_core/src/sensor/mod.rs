@@ -3,10 +3,67 @@ pub mod cpu_temp;
 pub mod ds18b20;
 pub mod dummy;
 mod pub_sub;
+use std::fmt;
+use std::path::Path;
+
 use crate::pub_sub::{ClientId, PubSubError};
 pub use crate::sensor::pub_sub::{SensorClient, SensorMsg};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use ds18b20::Ds18b20Address;
+
+pub struct SensorList {
+    cpu: Vec<u32>,
+    ds18b20: Vec<Ds18b20Address>,
+}
+
+impl SensorList {
+    pub fn list() -> Self {
+        let cpu_path = Path::new("/sys/class/thermal");
+        let mut cpu: Vec<u32> = if let Ok(dir_iter) = cpu_path.read_dir() {
+            dir_iter
+                .filter_map(|x| x.ok())
+                .map(|x| x.path().to_string_lossy().to_string())
+                .filter(|x| x.contains("thermal_zone"))
+                .map(|x| {
+                    x.split("thermal_zone")
+                        .take(2)
+                        .last()
+                        .expect("separator exists")
+                        .parse::<u32>()
+                        .expect("failed parsing cpu file id")
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+        cpu.sort();
+
+        let ds18b20: Vec<Ds18b20Address> = ds18b20::list_available().unwrap_or(Vec::new());
+
+        SensorList { cpu, ds18b20 }
+    }
+}
+
+impl fmt::Display for SensorList {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Sensors:\n\nCPU:\n{}\n\nDS18B20:\n {}",
+            self.cpu
+                .iter()
+                .map(|x| format!("\t - thermal_zone{}", x))
+                .collect::<Vec<_>>()
+                .join("\n"),
+            self.ds18b20
+                .iter()
+                .map(|x| format!("\t - {}", x))
+                .collect::<Vec<_>>()
+                .join("\n")
+        )
+    }
+}
 
 /// Common sensor interface
 pub trait Sensor: Send {
@@ -24,7 +81,7 @@ pub enum SensorType {
     #[serde(rename = "dummy")]
     Dummy(u64),
     #[serde(rename = "dsb")]
-    Dsb(ds18b20::Ds18b20Address),
+    Dsb(Ds18b20Address),
     #[serde(rename = "rbpi_cpu")]
     RbpiCpu(u64),
 }

@@ -43,7 +43,7 @@ impl CpuTemp {
 }
 
 impl Sensor for CpuTemp {
-    /// Get DS18B20 temperature measurement
+    /// Get CPU temperature measurement
     ///
     /// The sensor is available through a file.
     /// By simply reading the contents of the file a measurement is taken,

@@ -13,7 +13,6 @@ use crate::time::{TimeStamp, LOOP_PAUSE_TIME};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-use std::io::Write;
 use std::thread::sleep;
 
 pub struct ControllerClient {
@@ -33,8 +32,8 @@ impl PubSubClient for ControllerClient {
             }
             .subject(),
         )?;
-        let controller = self.subscribe(&ControllerSubMsg::subject(&self.id))?;
-        let sensor = self.subscribe(&SensorMsg::subject(&self.sensor_id))?;
+        let contr_sub = self.subscribe(&ControllerSubMsg::subject(&self.id))?;
+        let sensor_sub = self.subscribe(&SensorMsg::subject(&self.sensor_id))?;
         log_info(
             &self,
             &format!(
@@ -50,7 +49,6 @@ impl PubSubClient for ControllerClient {
         loop {
             if let Some(msg) = kill_cmd.try_next() {
                 // TODO: Proper Status PubMsg.
-                println!("Got kill cmd");
                 let actor_msg = ControllerPubMsg::TurnOffActor;
                 let response = match self.client.request(
                     &actor_msg.subject(&self.actor_id),
@@ -69,7 +67,7 @@ impl PubSubClient for ControllerClient {
                 return Ok(());
             }
 
-            if let Some(nats_msg) = controller.try_next() {
+            if let Some(nats_msg) = contr_sub.try_next() {
                 // TODO: Match and log error
                 match ControllerSubMsg::try_from(nats_msg.clone()) {
                     Ok(msg) => match msg {
@@ -89,7 +87,10 @@ impl PubSubClient for ControllerClient {
                                         new_target, self.id
                                     )
                                 }
-                                Err(err) => err.to_string(),
+                                Err(err) => {
+                                    log_error(&self, &err.to_string());
+                                    err.to_string()
+                                }
                             };
                             nats_msg
                                 .respond(response)
@@ -105,7 +106,7 @@ impl PubSubClient for ControllerClient {
                 self.status_update();
             }
 
-            if let Some(meas_msg) = sensor.try_next() {
+            if let Some(meas_msg) = sensor_sub.try_next() {
                 if let Ok(msg) = SensorMsg::try_from(meas_msg) {
                     self.controller.calculate_signal(msg.meas.ok());
                 }

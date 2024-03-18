@@ -107,10 +107,6 @@ impl ActorClient {
     }
 
     fn turn_off(&mut self, contr_message: Message) -> Result<(), PubSubError> {
-        // println!(
-        //     "actor pub sub: {:?}",
-        //     decode_nats_data::<String>(&contr_message.data)
-        // );
         match self.actor.turn_off() {
             Ok(()) => {
                 contr_message

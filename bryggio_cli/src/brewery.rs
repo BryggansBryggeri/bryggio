@@ -1,6 +1,7 @@
 use crate::opts::PubSubOpt;
 use bryggio_core::pub_sub::nats_client::{NatsClient, NatsClientConfig};
 use bryggio_core::pub_sub::{PubSubError, PubSubMsg, Subject};
+use bryggio_core::sensor::SensorList;
 use bryggio_core::supervisor::config::SupervisorConfig;
 
 fn get_client(opt: &PubSubOpt) -> Result<NatsClient, PubSubError> {
@@ -19,4 +20,8 @@ pub fn request(opt: &PubSubOpt) -> Result<(), PubSubError> {
 pub fn publish_command(opt: &PubSubOpt) -> Result<(), PubSubError> {
     println!("pub");
     get_client(opt)?.publish(&Subject(opt.topic.clone()), &PubSubMsg(opt.msg.clone()))
+}
+
+pub fn list_available_sensors() {
+    println!("{}", SensorList::list());
 }

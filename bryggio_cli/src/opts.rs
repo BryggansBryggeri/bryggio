@@ -17,6 +17,9 @@ pub enum Opt {
     ///Automated raspberry pi setup.
     #[structopt(name = "rbpi-setup")]
     RbPiSetup(RbPiOpt),
+    ///Automated raspberry pi setup.
+    #[structopt(name = "list-sensors")]
+    ListSensors(CliOpt),
 }
 
 impl Opt {
@@ -26,6 +29,7 @@ impl Opt {
             Self::Request(opt) => opt.common.verbose,
             Self::Install(target) => target.verbose(),
             Self::RbPiSetup(opt) => opt.common.verbose,
+            Self::ListSensors(opt) => opt.common.verbose,
         }
     }
 }

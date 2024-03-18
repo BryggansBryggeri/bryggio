@@ -17,6 +17,7 @@ fn run_subcommand(opt: Opt) -> Result<(), CliError> {
             InstallTarget::Cli(_opt) => Err(CliError::UnimplementedFeature("CLI update")),
         },
         Opt::RbPiSetup(_opt) => Err(CliError::UnimplementedFeature("Rbpi setup")),
+        Opt::ListSensors(_opt) => Ok(brewery::list_available_sensors()),
     }
 }
 

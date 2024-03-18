@@ -17,12 +17,12 @@
   ,
     "sensors": [
       {
-        "id": "mash",
+        "id": "mash_temp",
         "type": {"dummy": 1000}
       },
       {
-        "id": "boil",
-        "type": {"dsb": "28-dummy0000000"}
+        "id": "boil_temp",
+        "type": {"dummy": 1000}
       },
       {
         "id": "cpu",
@@ -35,8 +35,8 @@
     "server_name": "bryggio-nats-server",
     "host": "localhost",
     "port": 4222,
-    "user": "user",
-    "pass": "passwd",
+    "user": "jackonelli",
+    "pass": "penna1glas",
     "http_port": 8888,
     "websocket": {
       "port": 9222,

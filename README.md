@@ -9,7 +9,7 @@ See `ARCHITECTURE.md` for a project overview.
 ## Installation
 
 Before the first release we will not publish any binaries, see [Build from source](#build-from-source).
-Note, that the there is a released version on Github, but it is mainly for prototyping the CLI install option.
+Note, there is a released version on Github, but it is mainly for prototyping the CLI install option.
 
 ### Build from source
 
