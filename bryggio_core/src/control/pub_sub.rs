@@ -10,7 +10,7 @@ use crate::pub_sub::{
 use crate::sensor::SensorMsg;
 use crate::supervisor::pub_sub::SupervisorPubMsg;
 use crate::time::{TimeStamp, LOOP_PAUSE_TIME};
-use nats::{Message, Subscription};
+use async_nats::{Message, Subscriber};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::thread::sleep;
@@ -125,7 +125,7 @@ impl PubSubClient for ControllerClient {
         }
     }
 
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
+    fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
         self.client.subscribe(subject)
     }
 

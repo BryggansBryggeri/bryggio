@@ -12,7 +12,7 @@ use crate::pub_sub::{
 };
 use crate::sensor::{Sensor, SensorError};
 use crate::time::TimeStamp;
-use nats::{Message, Subscription};
+use async_nats::{Message, Subscriber};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
@@ -91,7 +91,7 @@ impl PubSubClient for SensorClient {
         }
     }
 
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
+    fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
         self.client.subscribe(subject)
     }
 

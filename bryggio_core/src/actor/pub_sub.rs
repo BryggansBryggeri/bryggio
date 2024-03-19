@@ -5,12 +5,12 @@ use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig,
     ClientId, PubSubClient, PubSubError, PubSubMsg, Subject,
 };
-use crate::time::{TimeStamp, LOOP_PAUSE_TIME};
+use crate::time::TimeStamp;
 use crate::{actor::Actor, pub_sub::MessageParseError};
-use nats::{Message, Subscription};
+use async_nats::{Message, Subscriber};
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-use std::thread::sleep;
 
 pub fn actor_current_signal_subject(id: &ClientId) -> Subject {
     Subject(format!("actor.{}.current_signal", id))
@@ -31,27 +31,23 @@ pub struct ActorClient {
 }
 
 impl PubSubClient for ActorClient {
-    fn client_loop(mut self) -> Result<(), PubSubError> {
+    async fn client_loop(mut self) -> Result<(), PubSubError> {
         info(
             &self,
             format!("Starting actor with id '{}'", self.id),
             &format!("actor.{}", self.id),
         );
-        let sub_set_signal = self.subscribe(&actor_set_signal_subject(&self.id))?;
-        let sub_turn_off = self.subscribe(&actor_turn_off_subject(&self.id))?;
-        loop {
-            if let Some(contr_message) = sub_turn_off.try_next() {
-                if let Err(err) = self.turn_off(contr_message) {
-                    error(&self, err.to_string(), &format!("actor.{}", self.id));
-                }
-            };
+        let sub_set_signal = self.subscribe(&actor_set_signal_subject(&self.id)).await?;
+        let sub_turn_off = self.subscribe(&actor_turn_off_subject(&self.id)).await?;
 
-            if let Some(contr_message) = sub_set_signal.try_next() {
-                if let Err(err) = self.update_signal(contr_message) {
-                    error(&self, err.to_string(), &format!("actor.{}", self.id));
-                }
-            };
+        // This will efficiently wait for any of the above subscriptions to trigger and then handle
+        // the incoming message.
+        // The other possible construct is perhaps to spawn a looped task for every subscription.
+        let mut messages = futures::stream::select(sub_turn_off, sub_set_signal);
+        while let Some(msg) = messages.next().await {
+            self.handle_msg(msg);
 
+            // Always set the signal, if the signal has not changed, then it is a no-op.
             if let Err(err) = self.actor.set_signal() {
                 match err {
                     ActorError::ChangingToAlreadyActiveState => {}
@@ -61,52 +57,109 @@ impl PubSubClient for ActorClient {
                         &format!("actor.{}", self.id),
                     ),
                 }
-            };
-            sleep(LOOP_PAUSE_TIME);
+            }
         }
+        Ok(())
+        // loop {
+        //     if let Some(contr_message) = sub_turn_off.next().await {
+        //         if let Err(err) = self.turn_off(contr_message) {
+        //             error(&self, err.to_string(), &format!("actor.{}", self.id));
+        //         }
+        //     };
+
+        //     if let Some(contr_message) = sub_set_signal.next().await {
+        //         if let Err(err) = self.update_signal(contr_message) {
+        //             error(&self, err.to_string(), &format!("actor.{}", self.id));
+        //         }
+        //     };
+
+        //     if let Err(err) = self.actor.set_signal() {
+        //         match err {
+        //             ActorError::ChangingToAlreadyActiveState => {}
+        //             _ => error(
+        //                 &self,
+        //                 format!("Failed setting signal: '{}'", err),
+        //                 &format!("actor.{}", self.id),
+        //             ),
+        //         }
+        //     };
+        //     sleep(LOOP_PAUSE_TIME);
+        // }
     }
 
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
-        self.client.subscribe(subject)
+    async fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
+        self.client.subscribe(subject).await
     }
 
-    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
-        self.client.publish(subject, msg)
+    async fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg).await
     }
 }
 
 impl ActorClient {
-    pub fn new(id: ClientId, actor: Box<dyn Actor>, config: &NatsClientConfig) -> Self {
-        let client = NatsClient::try_new(config).unwrap();
+    pub async fn new(id: ClientId, actor: Box<dyn Actor>, config: &NatsClientConfig) -> Self {
+        let client = NatsClient::try_new(config).await.unwrap();
         ActorClient { id, actor, client }
     }
 
-    fn update_signal(&mut self, contr_message: Message) -> Result<(), PubSubError> {
+    fn handle_msg(&self, msg: Message) {
+        if msg.subject.contains("turn_off") {
+            if let Err(err) = self.turn_off(msg) {
+                error(self, err.to_string(), &format!("actor.{}", self.id));
+            }
+        } else if msg.subject.contains("set_signal") {
+            if let Err(err) = self.update_signal(msg) {
+                error(self, err.to_string(), &format!("actor.{}", self.id));
+            }
+        }
+
+        if let Err(err) = self.actor.set_signal() {
+            match err {
+                ActorError::ChangingToAlreadyActiveState => {}
+                _ => error(
+                    self,
+                    format!("Failed setting signal: '{}'", err),
+                    &format!("actor.{}", self.id),
+                ),
+            }
+        };
+    }
+
+    async fn update_signal(&mut self, contr_message: Message) -> Result<(), PubSubError> {
         match ActorSubMsg::try_from(contr_message.clone()) {
             Ok(msg) => match msg {
                 ActorSubMsg::SetSignal(new_signal) => {
                     let sign_res = self.actor.update_signal(&new_signal.signal);
                     match sign_res {
-                        Ok(()) => self.publish(
-                            &actor_current_signal_subject(&self.id),
-                            &ActorPubMsg::CurrentSignal(new_signal).into(),
-                        ),
-                        Err(err) => match err {
-                            ActorError::ChangingToAlreadyActiveState => self.publish(
+                        Ok(()) => {
+                            self.publish(
                                 &actor_current_signal_subject(&self.id),
                                 &ActorPubMsg::CurrentSignal(new_signal).into(),
-                            ),
+                            )
+                            .await
+                        }
+                        Err(err) => match err {
+                            ActorError::ChangingToAlreadyActiveState => {
+                                self.publish(
+                                    &actor_current_signal_subject(&self.id),
+                                    &ActorPubMsg::CurrentSignal(new_signal).into(),
+                                )
+                                .await
+                            }
                             _ => Err(err.into()),
                         },
                     }
                 }
-                _ => Err(MessageParseError::InvalidSubject(Subject(contr_message.subject)).into()),
+                _ => Err(MessageParseError::InvalidSubject(Subject(
+                    contr_message.subject.to_string(),
+                ))
+                .into()),
             },
             Err(err) => Err(err.into()),
         }
     }
 
-    fn turn_off(&mut self, contr_message: Message) -> Result<(), PubSubError> {
+    async fn turn_off(&mut self, contr_message: Message) -> Result<(), PubSubError> {
         match self.actor.turn_off() {
             Ok(()) => {
                 contr_message

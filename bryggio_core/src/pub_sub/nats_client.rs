@@ -6,7 +6,7 @@
 //!
 //! <https://docs.nats.io/>
 use crate::pub_sub::{MessageParseError, PubSubError, PubSubMsg, Subject};
-use nats::{Connection, Options, Subscription};
+use async_nats::{Client, ConnectOptions, Message, Subscriber};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fs::write;
 use std::process::{Child, Command};
@@ -66,36 +66,42 @@ pub fn decode_nats_data<T: DeserializeOwned>(data: &[u8]) -> Result<T, MessagePa
 ///
 /// Wraps a [`Connection`] and exposes a minimal API.
 #[derive(Clone)]
-pub struct NatsClient(Connection);
+pub struct NatsClient(Client);
 
 impl NatsClient {
-    pub fn try_new(config: &NatsClientConfig) -> Result<NatsClient, PubSubError> {
-        let opts =
-            Options::with_user_pass(&config.authorization.user, &config.authorization.password);
-        match opts.connect(config.nats_url()) {
+    pub async fn try_new(config: &NatsClientConfig) -> Result<NatsClient, PubSubError> {
+        let opts = ConnectOptions::with_user_and_password(
+            config.authorization.user.clone(),
+            config.authorization.password.clone(),
+        );
+        match opts.connect(config.nats_url()).await {
             Ok(nc) => Ok(NatsClient(nc)),
             Err(err) => Err(PubSubError::Server(err.to_string())),
         }
     }
-    pub fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
+    pub async fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
         self.0
-            .subscribe(&subject.0)
+            .subscribe(subject.0.clone())
+            .await
             .map_err(|err| PubSubError::Subscription(err.to_string()))
     }
 
-    pub fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
+    // TODO: Consume message here, rather than cloning it?
+    pub async fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
         self.0
-            .publish(&subject.0, &msg.0)
+            .publish(subject.0.clone(), msg.0.clone().into())
+            .await
             .map_err(|err| PubSubError::Publish(err.to_string()))
     }
 
-    pub fn request(
+    pub async fn request(
         &self,
         subject: &Subject,
         msg: &PubSubMsg,
-    ) -> Result<nats::Message, PubSubError> {
+    ) -> Result<Message, PubSubError> {
         self.0
-            .request(&subject.0, &msg.0)
+            .request(subject.0.clone(), msg.0.clone().into())
+            .await
             .map_err(|err| PubSubError::Publish(err.to_string()))
     }
 }

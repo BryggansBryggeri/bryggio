@@ -4,7 +4,7 @@ use crate::pub_sub::{
 };
 use crate::supervisor::{ActiveClientsList, Supervisor};
 use crate::{control::ControllerConfig, pub_sub::MessageParseError};
-use nats::{Message, Subscription};
+use async_nats::{Message, Subscriber};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
@@ -34,7 +34,7 @@ impl PubSubClient for Supervisor {
         Ok(())
     }
 
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
+    fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
         self.client.subscribe(subject)
     }
 

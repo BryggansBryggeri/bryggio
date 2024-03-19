@@ -10,8 +10,8 @@ use crate::pub_sub::{
 };
 use crate::sensor::SensorMsg;
 use crate::time::{TimeStamp, LOOP_PAUSE_TIME};
+use async_nats::Subscriber;
 use csv::WriterBuilder;
-use nats::Subscription;
 use serde::{Deserialize, Serialize};
 
 pub struct DataLogger {
@@ -46,7 +46,7 @@ impl PubSubClient for DataLogger {
         }
     }
 
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
+    fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
         self.client.subscribe(subject)
     }
 

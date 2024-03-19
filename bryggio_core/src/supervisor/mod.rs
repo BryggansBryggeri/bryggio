@@ -19,7 +19,7 @@ use crate::pub_sub::{
 use crate::sensor::{SensorClient, SensorConfig, SensorError};
 use crate::supervisor::pub_sub::{SupervisorPubMsg, SupervisorSubMsg};
 use crate::time::TimeStamp;
-use nats::Message;
+use async_nats::Message;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

@@ -2,8 +2,8 @@ use crate::pub_sub::{
     nats_client::decode_nats_data, nats_client::NatsClient, nats_client::NatsClientConfig,
     MessageParseError, PubSubClient, PubSubError, PubSubMsg, Subject,
 };
+use async_nats::Subscriber;
 use derive_more::{Display, From};
-use nats::Subscription;
 use serde::{Deserialize, Serialize};
 
 pub fn debug<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
@@ -60,7 +60,7 @@ impl PubSubClient for Log {
         }
     }
 
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError> {
+    fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
         self.client.subscribe(subject)
     }
 

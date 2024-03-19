@@ -2,7 +2,7 @@ use std::str::Utf8Error;
 
 use derive_more::{Display, From};
 pub mod nats_client;
-use nats::{Message, Subscription};
+use async_nats::{Message, Subscriber};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -16,9 +16,9 @@ pub enum ClientState {
 ///
 /// Every BryggIO client implement this trait.
 pub trait PubSubClient {
-    fn client_loop(self) -> Result<(), PubSubError>;
-    fn subscribe(&self, subject: &Subject) -> Result<Subscription, PubSubError>;
-    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError>;
+    async fn client_loop(self) -> Result<(), PubSubError>;
+    async fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError>;
+    async fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError>;
 }
 
 #[derive(From, Serialize, Deserialize, Display, Debug, Clone, PartialEq, Eq, Hash)]
