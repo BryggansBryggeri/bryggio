@@ -40,14 +40,14 @@ impl PubSubClient for ActorClient {
         let sub_set_signal = self.subscribe(&actor_set_signal_subject(&self.id))?;
         let sub_turn_off = self.subscribe(&actor_turn_off_subject(&self.id))?;
         loop {
-            if let Some(contr_message) = sub_set_signal.try_next() {
-                if let Err(err) = self.update_signal(contr_message) {
+            if let Some(contr_message) = sub_turn_off.try_next() {
+                if let Err(err) = self.turn_off(contr_message) {
                     error(&self, err.to_string(), &format!("actor.{}", self.id));
                 }
             };
 
-            if let Some(contr_message) = sub_turn_off.try_next() {
-                if let Err(err) = self.turn_off(contr_message) {
+            if let Some(contr_message) = sub_set_signal.try_next() {
+                if let Err(err) = self.update_signal(contr_message) {
                     error(&self, err.to_string(), &format!("actor.{}", self.id));
                 }
             };
