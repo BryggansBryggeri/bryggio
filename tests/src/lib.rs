@@ -9,17 +9,15 @@ use bryggio_core::{
     supervisor::pub_sub::{NewContrData, SupervisorSubMsg},
 };
 
-pub fn stop_supervisor(client: &NatsClient) -> Result<(), SupervisorError> {
+pub async fn stop_supervisor(client: &NatsClient) -> Result<(), SupervisorError> {
     let msg = SupervisorSubMsg::Stop;
-    Ok(client.publish(&msg.subject(), &msg.into())?)
+    Ok(client.publish(&msg.subject(), &msg.into()).await?)
 }
 
-pub fn setup(nats_config: &NatsClientConfig) -> Result<NatsClient, PubSubError> {
-    println!("Starting controller");
-    let client = NatsClient::try_new(nats_config)?;
+pub async fn setup(nats_config: &NatsClientConfig) -> Result<NatsClient, PubSubError> {
+    let client = NatsClient::try_new(nats_config).await?;
     let contr_data = NewContrData::new(ControllerConfig::dummy(), 0.7);
     let msg = SupervisorSubMsg::StartController { contr_data };
-    client.request(&msg.subject(), &msg.into())?;
-    println!("Controller started");
+    client.request(&msg.subject(), &msg.into()).await?;
     Ok(client)
 }

@@ -18,6 +18,7 @@ impl PubSubClient for Supervisor {
         let mut state = ClientState::Active;
         while state == ClientState::Active {
             if let Some(msg) = sub.next().await {
+                println!("sup msg {:?}", msg);
                 state = match SupervisorSubMsg::try_from(&msg) {
                     Ok(cmd) => match self.process_command(cmd, &msg).await {
                         Ok(state) => state,
