@@ -16,7 +16,7 @@ pub mod simple_gpio;
 // pub mod xor_gpio;
 pub use pub_sub::ActorClient;
 
-pub trait Actor: Send {
+pub trait Actor: Send + Sync {
     fn validate_signal(&self, signal: &ActorSignal) -> Result<(), ActorError>;
     fn set_signal(&mut self) -> Result<(), ActorError>;
     fn update_signal(&mut self, signal: &ActorSignal) -> Result<(), ActorError>;

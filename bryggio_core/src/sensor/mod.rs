@@ -66,7 +66,7 @@ impl fmt::Display for SensorList {
 }
 
 /// Common sensor interface
-pub trait Sensor: Send {
+pub trait Sensor: Send + Sync {
     /// Make a reading from a sensor
     fn get_measurement(&mut self) -> Result<f32, SensorError>;
     /// Return unique internal ID

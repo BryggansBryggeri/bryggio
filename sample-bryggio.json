@@ -37,7 +37,7 @@
     "port": 4222,
     "user": "jackonelli",
     "pass": "penna1glas",
-    "http_port": 8888,
+    "http_port": 8222,
     "websocket": {
       "port": 9222,
       "no_tls": true

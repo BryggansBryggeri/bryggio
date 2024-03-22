@@ -13,7 +13,7 @@ use embedded_hal::digital::OutputPin;
 
 use super::ActorSignal;
 
-pub struct BinaryGpioActor<T: OutputPin + Send> {
+pub struct BinaryGpioActor<T: OutputPin + Send + Sync> {
     pub id: String,
     pub(crate) handle: T,
     pub(crate) state: GpioState,
@@ -22,7 +22,7 @@ pub struct BinaryGpioActor<T: OutputPin + Send> {
     internal_clock: TimeStamp,
 }
 
-impl<T: OutputPin + Send> BinaryGpioActor<T> {
+impl<T: OutputPin + Send + Sync> BinaryGpioActor<T> {
     pub fn try_new(
         id: &str,
         handle: T,
@@ -55,7 +55,7 @@ impl<T: OutputPin + Send> BinaryGpioActor<T> {
     }
 }
 
-impl<T: OutputPin + Send> Actor for BinaryGpioActor<T> {
+impl<T: OutputPin + Send + Sync> Actor for BinaryGpioActor<T> {
     fn validate_signal(&self, signal: &ActorSignal) -> Result<(), ActorError> {
         if ActorSignal::gpio_state(signal) == self.state {
             return Err(ActorError::ChangingToAlreadyActiveState);

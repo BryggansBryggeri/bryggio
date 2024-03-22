@@ -13,7 +13,7 @@ use crate::{
 };
 use embedded_hal::digital::OutputPin;
 
-pub struct SimpleGpioActor<T: OutputPin + Send> {
+pub struct SimpleGpioActor<T: OutputPin + Send + Sync> {
     pub id: String,
     bin_gpio: BinaryGpioActor<T>,
     current_signal: ActorSignal,
@@ -21,7 +21,7 @@ pub struct SimpleGpioActor<T: OutputPin + Send> {
     start_time: TimeStamp,
 }
 
-impl<T: OutputPin + Send> SimpleGpioActor<T> {
+impl<T: OutputPin + Send + Sync> SimpleGpioActor<T> {
     pub fn try_new(
         id: &str,
         handle: T,
@@ -48,7 +48,7 @@ impl<T: OutputPin + Send> SimpleGpioActor<T> {
     }
 }
 
-impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
+impl<T: OutputPin + Send + Sync> Actor for SimpleGpioActor<T> {
     fn update_signal(&mut self, signal: &ActorSignal) -> Result<(), ActorError> {
         self.validate_signal(signal)?;
         self.current_signal = signal.clone();

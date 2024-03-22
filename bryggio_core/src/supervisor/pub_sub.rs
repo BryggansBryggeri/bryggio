@@ -5,28 +5,31 @@ use crate::pub_sub::{
 use crate::supervisor::{ActiveClientsList, Supervisor};
 use crate::{control::ControllerConfig, pub_sub::MessageParseError};
 use async_nats::{Message, Subscriber};
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
 use super::SupervisorError;
 
 impl PubSubClient for Supervisor {
-    fn client_loop(mut self) -> Result<(), PubSubError> {
+    async fn client_loop(mut self) -> Result<(), PubSubError> {
         let subject = Subject("command.>".into());
-        let sub = self.subscribe(&subject)?;
+        let mut sub = self.subscribe(&subject).await?;
         let mut state = ClientState::Active;
         while state == ClientState::Active {
-            if let Some(msg) = sub.next() {
+            if let Some(msg) = sub.next().await {
                 state = match SupervisorSubMsg::try_from(&msg) {
-                    Ok(cmd) => match self.process_command(cmd, &msg) {
+                    Ok(cmd) => match self.process_command(cmd, &msg).await {
                         Ok(state) => state,
-                        Err(err) => self.handle_err(err),
+                        Err(err) => self.handle_err(err).await,
                     },
                     Err(err) => {
-                        if msg.reply.is_some() {
-                            msg.respond(err.to_string())?;
+                        if let Some(reply_subj) = msg.reply {
+                            self.publish(&reply_subj.into(), &PubSubMsg(err.to_string()))
+                                .await?;
                         }
                         self.handle_err(SupervisorError::from(PubSubError::from(err)))
+                            .await
                     }
                 };
             }
@@ -34,12 +37,12 @@ impl PubSubClient for Supervisor {
         Ok(())
     }
 
-    fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
-        self.client.subscribe(subject)
+    async fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
+        self.client.subscribe(subject).await
     }
 
-    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
-        self.client.publish(subject, msg)
+    async fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg).await
     }
 }
 
@@ -62,21 +65,21 @@ impl TryFrom<&Message> for SupervisorSubMsg {
     fn try_from(msg: &Message) -> Result<Self, MessageParseError> {
         match msg.subject.as_ref() {
             "command.start_controller" => {
-                let contr_data: NewContrData = decode_nats_data(&msg.data)?;
+                let contr_data: NewContrData = decode_nats_data(&msg.payload)?;
                 Ok(SupervisorSubMsg::StartController { contr_data })
             }
             "command.stop_controller" => {
-                let contr_id: ClientId = decode_nats_data(&msg.data)?;
+                let contr_id: ClientId = decode_nats_data(&msg.payload)?;
                 Ok(SupervisorSubMsg::StopController { contr_id })
             }
             "command.switch_controller" => {
-                let contr_data: NewContrData = decode_nats_data(&msg.data)?;
+                let contr_data: NewContrData = decode_nats_data(&msg.payload)?;
                 Ok(SupervisorSubMsg::SwitchController { contr_data })
             }
             "command.list_active_clients" => Ok(SupervisorSubMsg::ListActiveClients),
             "command.stop" => Ok(SupervisorSubMsg::Stop),
             _ => Err(MessageParseError::InvalidSubject(Subject(
-                msg.subject.clone(),
+                msg.subject.to_string(),
             ))),
         }
     }

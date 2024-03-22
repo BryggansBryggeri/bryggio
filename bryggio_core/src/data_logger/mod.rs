@@ -1,6 +1,6 @@
 //! Data logger
+use futures::StreamExt;
 use std::path::PathBuf;
-use std::thread::sleep;
 
 use crate::actor::pub_sub::{actor_current_signal_subject, SignalMsg};
 use crate::pub_sub::ClientId;
@@ -9,7 +9,7 @@ use crate::pub_sub::{
     PubSubClient, PubSubError, PubSubMsg, Subject,
 };
 use crate::sensor::SensorMsg;
-use crate::time::{TimeStamp, LOOP_PAUSE_TIME};
+use crate::time::TimeStamp;
 use async_nats::Subscriber;
 use csv::WriterBuilder;
 use serde::{Deserialize, Serialize};
@@ -21,43 +21,53 @@ pub struct DataLogger {
 }
 
 impl PubSubClient for DataLogger {
-    fn client_loop(self) -> Result<(), PubSubError> {
+    async fn client_loop(self) -> Result<(), PubSubError> {
         let mut wtr = WriterBuilder::new()
             // .has_headers(false)
             .from_path(&self.log_file_path)
             .expect("Could not create CSV writer.");
         let wildcard_id = ClientId::from("*");
-        let sensor_sub = self.subscribe(&Subject(String::from("sensor.*.measurement")))?;
-        let actor_sub = self.subscribe(&actor_current_signal_subject(&wildcard_id))?;
-        loop {
-            if let Some(msg) = sensor_sub.try_next() {
-                let data = decode_nats_data::<SensorMsg>(&msg.data).expect("Failed decoding data");
+        let sensor_sub = self
+            .subscribe(&Subject(String::from("sensor.*.measurement")))
+            .await?;
+        let actor_sub = self
+            .subscribe(&actor_current_signal_subject(&wildcard_id))
+            .await?;
+
+        let mut messages = futures::stream::select_all([sensor_sub, actor_sub]);
+
+        // TODO: Proper handling of messages and failed parses
+        while let Some(msg) = messages.next().await {
+            if msg.subject.contains("sensor") {
+                let data =
+                    decode_nats_data::<SensorMsg>(&msg.payload).expect("Failed decoding data");
                 let rec_str = Record::from(data);
                 wtr.serialize(rec_str).expect("Failed serialising");
                 wtr.flush().expect("Failed flushing");
             }
-            if let Some(msg) = actor_sub.try_next() {
-                let data = decode_nats_data::<SignalMsg>(&msg.data).expect("Failed decoding data");
+            if msg.subject.contains("actor") {
+                let data =
+                    decode_nats_data::<SignalMsg>(&msg.payload).expect("Failed decoding data");
                 let rec_str = Record::from(data);
                 wtr.serialize(rec_str).expect("Failed serialising");
                 wtr.flush().expect("Failed flushing");
             }
-            sleep(LOOP_PAUSE_TIME);
         }
+        Ok(())
     }
 
-    fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
-        self.client.subscribe(subject)
+    async fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
+        self.client.subscribe(subject).await
     }
 
-    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
-        self.client.publish(subject, msg)
+    async fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg).await
     }
 }
 
 impl DataLogger {
-    pub fn new(id: ClientId, config: &NatsClientConfig, log_file_path: PathBuf) -> Self {
-        let client = NatsClient::try_new(config).unwrap();
+    pub async fn new(id: ClientId, config: &NatsClientConfig, log_file_path: PathBuf) -> Self {
+        let client = NatsClient::try_new(config).await.unwrap();
         Self {
             _id: id,
             client,

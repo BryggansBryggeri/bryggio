@@ -2,8 +2,7 @@
 use crate::sensor::{Sensor, SensorError};
 use rand::prelude::*;
 use rand_distr::{Distribution, Normal};
-use std::thread::sleep;
-use std::time::Duration;
+use tokio::time::{sleep, Duration};
 
 /// Generic dummy sensor
 ///
@@ -38,7 +37,6 @@ impl Sensor for DummySensor {
     fn get_measurement(&mut self) -> Result<f32, SensorError> {
         let measurement = self.latest_value + self.rng.sample(&mut thread_rng()) / 10.0;
         self.latest_value = measurement;
-        sleep(self.delay);
         Ok(measurement)
     }
     fn get_id(&self) -> String {

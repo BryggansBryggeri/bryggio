@@ -36,7 +36,8 @@ impl PubSubClient for ActorClient {
             &self,
             format!("Starting actor with id '{}'", self.id),
             &format!("actor.{}", self.id),
-        );
+        )
+        .await;
         let sub_set_signal = self.subscribe(&actor_set_signal_subject(&self.id)).await?;
         let sub_turn_off = self.subscribe(&actor_turn_off_subject(&self.id)).await?;
 
@@ -44,47 +45,32 @@ impl PubSubClient for ActorClient {
         // the incoming message.
         // The other possible construct is perhaps to spawn a looped task for every subscription.
         let mut messages = futures::stream::select(sub_turn_off, sub_set_signal);
-        while let Some(msg) = messages.next().await {
-            self.handle_msg(msg);
+        loop {
+            let msg = messages.select_next_some().await;
+            if let Err(err) = self.handle_msg(msg).await {
+                error(
+                    &self,
+                    format!("Failed handling actor msg: '{}'", err),
+                    &format!("actor.{}", self.id),
+                )
+                .await
+            };
 
             // Always set the signal, if the signal has not changed, then it is a no-op.
             if let Err(err) = self.actor.set_signal() {
                 match err {
                     ActorError::ChangingToAlreadyActiveState => {}
-                    _ => error(
-                        &self,
-                        format!("Failed setting signal: '{}'", err),
-                        &format!("actor.{}", self.id),
-                    ),
+                    _ => {
+                        error(
+                            &self,
+                            format!("Failed setting signal: '{}'", err),
+                            &format!("actor.{}", self.id),
+                        )
+                        .await
+                    }
                 }
             }
         }
-        Ok(())
-        // loop {
-        //     if let Some(contr_message) = sub_turn_off.next().await {
-        //         if let Err(err) = self.turn_off(contr_message) {
-        //             error(&self, err.to_string(), &format!("actor.{}", self.id));
-        //         }
-        //     };
-
-        //     if let Some(contr_message) = sub_set_signal.next().await {
-        //         if let Err(err) = self.update_signal(contr_message) {
-        //             error(&self, err.to_string(), &format!("actor.{}", self.id));
-        //         }
-        //     };
-
-        //     if let Err(err) = self.actor.set_signal() {
-        //         match err {
-        //             ActorError::ChangingToAlreadyActiveState => {}
-        //             _ => error(
-        //                 &self,
-        //                 format!("Failed setting signal: '{}'", err),
-        //                 &format!("actor.{}", self.id),
-        //             ),
-        //         }
-        //     };
-        //     sleep(LOOP_PAUSE_TIME);
-        // }
     }
 
     async fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
@@ -102,87 +88,75 @@ impl ActorClient {
         ActorClient { id, actor, client }
     }
 
-    fn handle_msg(&self, msg: Message) {
-        if msg.subject.contains("turn_off") {
-            if let Err(err) = self.turn_off(msg) {
-                error(self, err.to_string(), &format!("actor.{}", self.id));
+    async fn handle_msg(&mut self, msg: Message) -> Result<(), PubSubError> {
+        match ActorSubMsg::try_from(msg.clone())? {
+            ActorSubMsg::TurnOff => {
+                if let Err(err) = self.turn_off(msg).await {
+                    error(self, err.to_string(), &format!("actor.{}", self.id)).await;
+                    Err(err)
+                } else {
+                    Ok(())
+                }
             }
-        } else if msg.subject.contains("set_signal") {
-            if let Err(err) = self.update_signal(msg) {
-                error(self, err.to_string(), &format!("actor.{}", self.id));
+            ActorSubMsg::SetSignal(new_signal) => {
+                if let Err(err) = self.update_signal(new_signal).await {
+                    error(self, err.to_string(), &format!("actor.{}", self.id)).await;
+                    Err(err)
+                } else {
+                    Ok(())
+                }
             }
         }
-
-        if let Err(err) = self.actor.set_signal() {
-            match err {
-                ActorError::ChangingToAlreadyActiveState => {}
-                _ => error(
-                    self,
-                    format!("Failed setting signal: '{}'", err),
-                    &format!("actor.{}", self.id),
-                ),
-            }
-        };
     }
 
-    async fn update_signal(&mut self, contr_message: Message) -> Result<(), PubSubError> {
-        match ActorSubMsg::try_from(contr_message.clone()) {
-            Ok(msg) => match msg {
-                ActorSubMsg::SetSignal(new_signal) => {
-                    let sign_res = self.actor.update_signal(&new_signal.signal);
-                    match sign_res {
-                        Ok(()) => {
-                            self.publish(
-                                &actor_current_signal_subject(&self.id),
-                                &ActorPubMsg::CurrentSignal(new_signal).into(),
-                            )
-                            .await
-                        }
-                        Err(err) => match err {
-                            ActorError::ChangingToAlreadyActiveState => {
-                                self.publish(
-                                    &actor_current_signal_subject(&self.id),
-                                    &ActorPubMsg::CurrentSignal(new_signal).into(),
-                                )
-                                .await
-                            }
-                            _ => Err(err.into()),
-                        },
-                    }
+    async fn update_signal(&mut self, new_signal: SignalMsg) -> Result<(), PubSubError> {
+        let sign_res = self.actor.update_signal(&new_signal.signal);
+        match sign_res {
+            Ok(()) => {
+                self.publish(
+                    &actor_current_signal_subject(&self.id),
+                    &ActorPubMsg::CurrentSignal(new_signal).into(),
+                )
+                .await
+            }
+            Err(err) => match err {
+                ActorError::ChangingToAlreadyActiveState => {
+                    self.publish(
+                        &actor_current_signal_subject(&self.id),
+                        &ActorPubMsg::CurrentSignal(new_signal).into(),
+                    )
+                    .await
                 }
-                _ => Err(MessageParseError::InvalidSubject(Subject(
-                    contr_message.subject.to_string(),
-                ))
-                .into()),
+                _ => Err(err.into()),
             },
-            Err(err) => Err(err.into()),
         }
     }
 
     async fn turn_off(&mut self, contr_message: Message) -> Result<(), PubSubError> {
         match self.actor.turn_off() {
             Ok(()) => {
-                contr_message
-                    .respond(String::from("Actor output set to zero"))
-                    .map_err(|err| PubSubError::Reply {
-                        task: "turn off actor",
-                        msg: contr_message.clone(),
-                        source: err,
-                    })?;
+                if let Some(reply_subj) = contr_message.reply {
+                    self.publish(&reply_subj.into(), &"Actor output set to zero".into())
+                        .await?
+                } else {
+                    // TODO: Log error missing reply subj
+                };
                 let shut_off_signal =
                     SignalMsg::new(self.id.clone(), ActorSignal::new(self.id.clone(), 0.0));
                 self.publish(
                     &actor_current_signal_subject(&self.id),
                     &ActorPubMsg::CurrentSignal(shut_off_signal).into(),
                 )
+                .await
             }
-            Err(_err) => contr_message
-                .respond(String::from("Error turning off actor"))
-                .map_err(|err| PubSubError::Reply {
-                    task: "turning off actor",
-                    msg: contr_message.clone(),
-                    source: err,
-                }),
+            Err(_err) => {
+                if let Some(reply_subj) = contr_message.reply {
+                    self.publish(&reply_subj.into(), &"Error turning off actor".into())
+                        .await
+                } else {
+                    Ok(())
+                }
+            }
         }
     }
 }
@@ -222,9 +196,9 @@ impl TryFrom<Message> for ActorSubMsg {
         tmp.next();
         let sub_subject = tmp.next().unwrap();
         match sub_subject {
-            "set_signal" => decode_nats_data(&msg.data),
+            "set_signal" => decode_nats_data(&msg.payload),
             "turn_off" => Ok(Self::TurnOff),
-            _ => Err(MessageParseError::InvalidSubject(Subject(msg.subject))),
+            _ => Err(MessageParseError::InvalidSubject(msg.subject.into())),
         }
     }
 }

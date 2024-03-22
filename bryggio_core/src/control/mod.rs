@@ -9,7 +9,7 @@ pub mod pid;
 pub mod pub_sub;
 pub use pub_sub::ControllerClient;
 
-pub trait Control: Send {
+pub trait Control: Send + Sync {
     fn calculate_signal(&mut self, measurement: Option<f32>) -> f32;
     fn get_state(&self) -> State;
     fn set_state(&mut self, new_state: State);

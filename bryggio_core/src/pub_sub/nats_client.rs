@@ -106,6 +106,13 @@ impl NatsClient {
     }
 }
 
+impl From<async_nats::Subject> for Subject {
+    fn from(value: async_nats::Subject) -> Self {
+        Subject(value.to_string())
+    }
+}
+
+// TODO: Move config to separate file
 // TODO: typedefs, e.g. Port
 /// Serialisable NATS config understood by the nats-server executable.
 ///

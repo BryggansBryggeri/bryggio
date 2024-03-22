@@ -66,11 +66,18 @@ impl PubSubMsg {
     }
 }
 
+impl From<&str> for PubSubMsg {
+    fn from(value: &str) -> Self {
+        PubSubMsg(String::from(value))
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum PubSubError {
     #[error("Failed subscribing to NATS server: {0}")]
     Subscription(String),
-    #[error("Error replying during '{task}'. Err: '{source}', msg: {msg}.")]
+    #[error("Error replying during '{task}'. Err: '{source}', msg: .")]
+    // #[error("Error replying during '{task}'. Err: '{source}', msg: {msg.to_string()}.")]
     Reply {
         task: &'static str,
         msg: Message,

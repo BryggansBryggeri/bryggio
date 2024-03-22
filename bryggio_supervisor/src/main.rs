@@ -28,8 +28,8 @@ async fn run_supervisor() -> Result<(), SupervisorError> {
             let mut nats_server_child =
                 run_nats_server(&config.nats.server, &config.nats.bin_path)?;
 
-            let supervisor = Supervisor::init_from_config(config)?;
-            supervisor.client_loop()?;
+            let supervisor = Supervisor::init_from_config(config).await?;
+            supervisor.client_loop().await?;
 
             // If the process exits, kill the NATS subprocess.
             nats_server_child

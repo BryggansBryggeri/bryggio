@@ -4,25 +4,31 @@ use crate::pub_sub::{
 };
 use async_nats::Subscriber;
 use derive_more::{Display, From};
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 
-pub fn debug<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
-    log(client, msg, sub_subject, LogLevel::Debug);
+pub async fn debug<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
+    log(client, msg, sub_subject, LogLevel::Debug).await;
 }
 
-pub fn info<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
-    log(client, msg, sub_subject, LogLevel::Info);
+pub async fn info<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
+    log(client, msg, sub_subject, LogLevel::Info).await;
 }
 
-pub fn _warning<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
-    log(client, msg, sub_subject, LogLevel::Warning);
+pub async fn _warning<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
+    log(client, msg, sub_subject, LogLevel::Warning).await;
 }
 
-pub fn error<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
-    log(client, msg, sub_subject, LogLevel::Error);
+pub async fn error<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str) {
+    log(client, msg, sub_subject, LogLevel::Error).await;
 }
 
-fn log<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str, level: LogLevel) {
+async fn log<T: Into<LogMsg>, C: PubSubClient>(
+    client: &C,
+    msg: T,
+    sub_subject: &str,
+    level: LogLevel,
+) {
     let msg: LogMsg = msg.into();
     let subj = Subject(format!("{}.{}", level.main_subject(), sub_subject));
 
@@ -33,7 +39,7 @@ fn log<T: Into<LogMsg>, C: PubSubClient>(client: &C, msg: T, sub_subject: &str, 
             return;
         }
     };
-    match client.publish(&subj, &msg) {
+    match client.publish(&subj, &msg).await {
         Ok(_) => {}
         Err(err) => println!("Log error: {}", err),
     };
@@ -45,33 +51,32 @@ pub struct Log {
 }
 
 impl PubSubClient for Log {
-    fn client_loop(self) -> Result<(), PubSubError> {
-        let log_sub = self.subscribe(&Subject(String::from("log.>")))?;
-        loop {
-            if let Some(msg) = log_sub.next() {
-                match LogLevel::from_msg_subject(&msg.subject) {
-                    Ok(log_level) => match decode_nats_data::<LogMsg>(&msg.data) {
-                        Ok(msg) => self.log(&msg.0, log_level),
-                        Err(err) => self.error(&err.to_string()),
-                    },
+    async fn client_loop(self) -> Result<(), PubSubError> {
+        let mut log_sub = self.subscribe(&Subject(String::from("log.>"))).await?;
+        while let Some(msg) = log_sub.next().await {
+            match LogLevel::from_msg_subject(&msg.subject) {
+                Ok(log_level) => match decode_nats_data::<LogMsg>(&msg.payload) {
+                    Ok(msg) => self.log(&msg.0, log_level),
                     Err(err) => self.error(&err.to_string()),
-                };
-            }
+                },
+                Err(err) => self.error(&err.to_string()),
+            };
         }
+        Ok(())
     }
 
-    fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
-        self.client.subscribe(subject)
+    async fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
+        self.client.subscribe(subject).await
     }
 
-    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
-        self.client.publish(subject, msg)
+    async fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg).await
     }
 }
 
 impl Log {
-    pub fn new(config: &NatsClientConfig, level: LogLevel) -> Self {
-        let client = NatsClient::try_new(config).unwrap();
+    pub async fn new(config: &NatsClientConfig, level: LogLevel) -> Self {
+        let client = NatsClient::try_new(config).await.unwrap();
         Log { level, client }
     }
 

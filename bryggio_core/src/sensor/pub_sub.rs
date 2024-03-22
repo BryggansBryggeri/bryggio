@@ -26,8 +26,8 @@ pub struct SensorClient {
 }
 
 impl SensorClient {
-    pub fn new(id: ClientId, sensor: Box<dyn Sensor>, config: &NatsClientConfig) -> Self {
-        let client = NatsClient::try_new(config).unwrap();
+    pub async fn new(id: ClientId, sensor: Box<dyn Sensor>, config: &NatsClientConfig) -> Self {
+        let client = NatsClient::try_new(config).await.unwrap();
         SensorClient { id, sensor, client }
     }
 
@@ -58,44 +58,38 @@ impl From<SensorMsg> for PubSubMsg {
 impl TryFrom<Message> for SensorMsg {
     type Error = MessageParseError;
     fn try_from(msg: Message) -> Result<Self, Self::Error> {
-        decode_nats_data(&msg.data)
+        decode_nats_data(&msg.payload)
     }
 }
 
+use tokio::time::{sleep, Duration};
 impl PubSubClient for SensorClient {
-    fn client_loop(mut self) -> Result<(), PubSubError> {
+    async fn client_loop(mut self) -> Result<(), PubSubError> {
         info(
             &self,
             format!("Starting sensor with id '{}'", self.id),
             &format!("sensor.{}", self.id),
-        );
-        let supervisor = self.subscribe(&Subject(format!("command.sensor.{}", self.id)))?;
+        )
+        .await;
         let meas_sub = self.meas_subject();
         loop {
-            for _msg in supervisor.try_iter() {
-                // Deal with supervisor command
-            }
             let meas = self.sensor.get_measurement();
+            sleep(Duration::from_millis(1000)).await;
             let timestamp = TimeStamp::now();
-            // debug(
-            //     &self,
-            //     format!("Sensor {}: {:?}", self.id, &meas),
-            //     &format!("sensor.{}", self.id),
-            // );
             let msg = SensorMsg {
                 id: self.id.clone(),
                 timestamp,
                 meas,
             };
-            self.publish(&meas_sub, &msg.into())?;
+            let _ = self.publish(&meas_sub, &msg.into()).await?;
         }
     }
 
-    fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
-        self.client.subscribe(subject)
+    async fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError> {
+        self.client.subscribe(subject).await
     }
 
-    fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
-        self.client.publish(subject, msg)
+    async fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError> {
+        self.client.publish(subject, msg).await
     }
 }
