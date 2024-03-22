@@ -4,6 +4,7 @@ use derive_more::{Display, From};
 pub mod nats_client;
 use async_nats::{Message, Subscriber};
 use serde::{Deserialize, Serialize};
+use std::future::Future;
 use thiserror::Error;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -16,9 +17,16 @@ pub enum ClientState {
 ///
 /// Every BryggIO client implement this trait.
 pub trait PubSubClient {
-    async fn client_loop(self) -> Result<(), PubSubError>;
-    async fn subscribe(&self, subject: &Subject) -> Result<Subscriber, PubSubError>;
-    async fn publish(&self, subject: &Subject, msg: &PubSubMsg) -> Result<(), PubSubError>;
+    fn client_loop(self) -> impl Future<Output = Result<(), PubSubError>> + Send;
+    fn subscribe(
+        &self,
+        subject: &Subject,
+    ) -> impl Future<Output = Result<Subscriber, PubSubError>> + Send;
+    fn publish(
+        &self,
+        subject: &Subject,
+        msg: &PubSubMsg,
+    ) -> impl Future<Output = Result<(), PubSubError>> + Send;
 }
 
 #[derive(From, Serialize, Deserialize, Display, Debug, Clone, PartialEq, Eq, Hash)]

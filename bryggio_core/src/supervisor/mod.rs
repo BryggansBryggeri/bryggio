@@ -97,7 +97,7 @@ impl Supervisor {
                             &reply_sub.into(),
                             &PubSubMsg(format!("Error replying with active clients. {}", err)),
                         )
-                        .await;
+                        .await?;
                     };
                     error(
                         self,
@@ -128,7 +128,7 @@ impl Supervisor {
                         &reply_subj.into(),
                         &PubSubMsg(format!("controller '{}' started", id)),
                     )
-                    .await;
+                    .await?;
                 };
                 Ok(())
             }
@@ -138,7 +138,7 @@ impl Supervisor {
                         &reply_subj.into(),
                         &PubSubMsg(format!("Failed starting controller '{}': {}", id, err)),
                     )
-                    .await;
+                    .await?;
                 };
                 Err(err)
             }
@@ -415,15 +415,15 @@ impl Supervisor {
 
     async fn handle_err(&self, err: SupervisorError) -> ClientState {
         error(self, err.to_string(), "supervisor").await;
-        // match err {
-        //     SupervisorError::PubSub(pub_err) => match pub_err {
-        //         PubSubError::Io(err) => {
-        //             panic!("{}", err);
-        //         }
-        //         _ => {}
-        //     },
-        //     _ => {}
-        // }
+        match err {
+            SupervisorError::PubSub(pub_err) => match pub_err {
+                PubSubError::Io(err) => {
+                    panic!("{}", err);
+                }
+                _ => {}
+            },
+            _ => {}
+        }
         ClientState::Active
     }
 }

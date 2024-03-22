@@ -2,7 +2,7 @@
 use crate::sensor::{Sensor, SensorError};
 use rand::prelude::*;
 use rand_distr::{Distribution, Normal};
-use tokio::time::{sleep, Duration};
+use tokio::time::Duration;
 
 /// Generic dummy sensor
 ///
@@ -14,7 +14,7 @@ pub struct DummySensor {
     // TODO: Make distribution parametrised.
     //noise_level: f32,
     /// Fake delay to simulate a real measurement.
-    delay: Duration,
+    _delay: Duration,
     rng: Normal<f32>,
 }
 
@@ -27,7 +27,7 @@ impl DummySensor {
         DummySensor {
             id: id.into(),
             latest_value: 50.0,
-            delay: Duration::from_millis(delay_in_ms),
+            _delay: Duration::from_millis(delay_in_ms),
             rng: normal_distr,
         }
     }
