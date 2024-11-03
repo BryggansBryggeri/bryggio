@@ -49,8 +49,14 @@ pub fn run_nats_server(config: &NatsServerConfig, bin_path: &Path) -> Result<Chi
     let child = Command::new(bin_path).arg("-c").arg(config_name).spawn();
     // Sleeps for a short while to ensure that the server is up and running before
     // the first connection comes.
-    sleep(Duration::from_millis(10));
+    check_connection(config);
     child.map_err(|err| PubSubError::Server(err.to_string()))
+}
+
+fn check_connection(config: &NatsServerConfig) {
+    while NatsClient::try_new(&NatsClientConfig::from(config.clone())).is_err() {
+        sleep(Duration::from_millis(1));
+    }
 }
 
 /// Generic deserialisation of NATS messages
