@@ -47,15 +47,14 @@ pub fn run_nats_server(config: &NatsServerConfig, bin_path: &Path) -> Result<Chi
     })?;
 
     let child = Command::new(bin_path).arg("-c").arg(config_name).spawn();
-    // Sleeps for a short while to ensure that the server is up and running before
-    // the first connection comes.
-    check_connection(config);
+    // Try to connect to the newly started NATS server, if fail: sleep for a short while and re-try.
+    check_connection(config, 1);
     child.map_err(|err| PubSubError::Server(err.to_string()))
 }
 
-fn check_connection(config: &NatsServerConfig) {
+fn check_connection(config: &NatsServerConfig, retry_time_ms: u64) {
     while NatsClient::try_new(&NatsClientConfig::from(config.clone())).is_err() {
-        sleep(Duration::from_millis(1));
+        sleep(Duration::from_millis(retry_time_ms));
     }
 }
 
