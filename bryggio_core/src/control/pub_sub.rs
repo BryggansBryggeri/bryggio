@@ -13,7 +13,6 @@ use crate::time::{TimeStamp, LOOP_PAUSE_TIME};
 use nats::{Message, Subscription};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-use std::io::Write;
 use std::thread::sleep;
 
 pub struct ControllerClient {

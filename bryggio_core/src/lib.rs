@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 // Enable clippy if our Cargo.toml file asked us to do so.
 #![cfg_attr(feature = "clippy", feature(plugin))]
+#[feature(clippy:plugin)]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 // Enable as many useful Rust and Clippy warnings as we can stand.  We'd
 // also enable `trivial_casts`, but we're waiting for
