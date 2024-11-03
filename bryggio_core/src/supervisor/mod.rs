@@ -153,9 +153,9 @@ impl Supervisor {
             .map(|(id, _)| String::from(id.clone()))
             .reduce(|acc, id| format!("{}, {}", acc, id));
 
-        if let Some(ids) = missing_ids {
-            return Err(SupervisorError::Missing(ClientId(ids)));
-        }
+        // if let Some(ids) = missing_ids {
+        //     return Err(SupervisorError::Missing(ClientId(ids)));
+        // }
 
         let id = contr_config.controller_id.clone();
         match self.active_clients.controllers.get(&id) {
