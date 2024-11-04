@@ -29,13 +29,13 @@ impl Controller {
                     offset_off,
                 })
             } else {
-                Err(control::ControllerError::ParamError(format!(
+                Err(ControllerError::ParamError(format!(
                     "offset_on must be greater than the offset_off ({} !> {})",
                     offset_on, offset_off,
                 )))
             }
         } else {
-            Err(control::ControllerError::ParamError(format!(
+            Err(ControllerError::ParamError(format!(
                 "offset_off must be non-negative ({} !>= 0.0)",
                 offset_off
             )))
