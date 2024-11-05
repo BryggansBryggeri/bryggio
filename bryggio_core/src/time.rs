@@ -30,11 +30,14 @@ mod test {
         use chrono::Utc;
         let dt = Utc.with_ymd_and_hms(1988, 10, 25, 8, 51, 32).unwrap();
         let ts = TimeStamp(u128::try_from(dt.timestamp()).expect("i64 -> u128 conv failed."));
-        let naive = NaiveDateTime::from_timestamp_opt(
-            i64::try_from(ts.0).expect("u128 -> i64 conv failed."),
-            0,
-        );
-        let new_dt: DateTime<Utc> = DateTime::from_utc(naive.unwrap(), Utc);
+        // let naive = NaiveDateTime::from_timestamp_opt(
+        //     i64::try_from(ts.0).expect("u128 -> i64 conv failed."),
+        //     0,
+        // );
+        // let new_dt: DateTime<Utc> = DateTime::from_utc(naive.unwrap(), Utc);
+        let new_dt =
+            DateTime::from_timestamp(i64::try_from(ts.0).expect("u128 -> i64 conv failed."), 0)
+                .expect("Infallible ts conversion");
         assert!(dt == new_dt);
     }
 }

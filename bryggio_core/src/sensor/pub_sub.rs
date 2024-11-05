@@ -26,8 +26,9 @@ pub struct SensorClient {
 }
 
 impl SensorClient {
+    // TODO: Should be fallible
     pub fn new(id: ClientId, sensor: Box<dyn Sensor>, config: &NatsClientConfig) -> Self {
-        let client = NatsClient::try_new(config).unwrap();
+        let client = NatsClient::try_new(config).expect("Failed creating NATS client");
         SensorClient { id, sensor, client }
     }
 

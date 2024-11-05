@@ -38,6 +38,7 @@ impl<T: OutputPin + Send> SimpleGpioActor<T> {
         })
     }
 
+    /// Map percentage to binary signal based on location in period
     fn pct_to_bin(&self, signal: f32, cycle_duration: TimeStamp) -> f32 {
         let delta = TimeStamp::now() - self.start_time;
         if calculate_cycle_ratio(delta.0 as f32, cycle_duration.0 as f32) > signal {
@@ -86,8 +87,12 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
     }
 }
 
+/// Cycle duration determines the percent to binary conversion.
+///
+/// If the actor is set to 60% power, then in practice it will be in state 1 for 0.6 * CYCLE_DURATION ms and state 0 for (1-0.6) * CYCLE_DURATION ms.
 const CYCLE_DURATION: TimeStamp = TimeStamp(10000);
 
+/// Calculate cycle ratio
 fn calculate_cycle_ratio(delta: f32, cycle_length: f32) -> f32 {
     (delta % cycle_length) / cycle_length
 }

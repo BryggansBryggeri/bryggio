@@ -76,11 +76,12 @@ impl PubSubClient for ActorClient {
 }
 
 impl ActorClient {
+    // TOOD: Should be fallible
     pub fn new(id: ClientId, actor: Box<dyn Actor>, config: &NatsClientConfig) -> Self {
-        let client = NatsClient::try_new(config).unwrap();
+        let client = NatsClient::try_new(config).expect("Could not create NATS client");
         ActorClient { id, actor, client }
     }
-
+    /// Update signal state based on message from controller client.
     fn update_signal(&mut self, contr_message: Message) -> Result<(), PubSubError> {
         match ActorSubMsg::try_from(contr_message.clone()) {
             Ok(msg) => match msg {
@@ -106,6 +107,7 @@ impl ActorClient {
         }
     }
 
+    /// Turn off client
     fn turn_off(&mut self, contr_message: Message) -> Result<(), PubSubError> {
         match self.actor.turn_off() {
             Ok(()) => {
@@ -167,11 +169,14 @@ impl TryFrom<Message> for ActorSubMsg {
         let mut tmp = msg.subject.split('.');
         tmp.next();
         tmp.next();
-        let sub_subject = tmp.next().unwrap();
-        match sub_subject {
-            "set_signal" => decode_nats_data(&msg.data),
-            "turn_off" => Ok(Self::TurnOff),
-            _ => Err(MessageParseError::InvalidSubject(Subject(msg.subject))),
+        if let Some(sub_subject) = tmp.next() {
+            match sub_subject {
+                "set_signal" => decode_nats_data(&msg.data),
+                "turn_off" => Ok(Self::TurnOff),
+                _ => Err(MessageParseError::InvalidSubject(Subject(msg.subject))),
+            }
+        } else {
+            Err(MessageParseError::InvalidSubject(Subject(msg.subject)))
         }
     }
 }

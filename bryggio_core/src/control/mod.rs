@@ -26,7 +26,7 @@ pub enum State {
 }
 
 #[non_exhaustive]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ControllerType {
     #[serde(rename = "hysteresis")]
     Hysteresis { offset_on: f32, offset_off: f32 },
@@ -36,7 +36,7 @@ pub enum ControllerType {
     Manual,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ControllerConfig {
     pub controller_id: ClientId,
     pub(crate) actor_id: ClientId,

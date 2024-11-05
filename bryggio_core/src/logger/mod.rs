@@ -70,8 +70,9 @@ impl PubSubClient for Log {
 }
 
 impl Log {
+    // TODO: Should be fallible
     pub fn new(config: &NatsClientConfig, level: LogLevel) -> Self {
-        let client = NatsClient::try_new(config).unwrap();
+        let client = NatsClient::try_new(config).expect("Failed creating NATS client");
         Log { level, client }
     }
 
@@ -169,7 +170,6 @@ mod tests {
     #[test]
     fn test_ord() {
         assert!(LogLevel::Debug < LogLevel::Info);
-        assert!(!(LogLevel::Debug > LogLevel::Info));
         assert!((LogLevel::Error > LogLevel::Info));
     }
 }

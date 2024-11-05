@@ -40,7 +40,7 @@ impl SensorList {
         };
         cpu.sort();
 
-        let ds18b20: Vec<Ds18b20Address> = ds18b20::list_available().unwrap_or(Vec::new());
+        let ds18b20: Vec<Ds18b20Address> = ds18b20::list_available().unwrap_or_default();
 
         SensorList { cpu, ds18b20 }
     }

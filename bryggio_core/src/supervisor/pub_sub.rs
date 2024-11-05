@@ -120,7 +120,7 @@ impl From<SupervisorSubMsg> for PubSubMsg {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct NewContrData {
     pub(crate) config: ControllerConfig,
     pub(crate) new_target: f32,
@@ -187,6 +187,6 @@ mod test {
             },
             new_target: 16.0,
         };
-        // TODO: assert_eq!(parsed, true_);
+        assert_eq!(parsed, true_);
     }
 }

@@ -56,8 +56,9 @@ impl PubSubClient for DataLogger {
 }
 
 impl DataLogger {
+    // TODO: Should be fallible
     pub fn new(id: ClientId, config: &NatsClientConfig, log_file_path: PathBuf) -> Self {
-        let client = NatsClient::try_new(config).unwrap();
+        let client = NatsClient::try_new(config).expect("Failed creating NATS client");
         Self {
             _id: id,
             client,

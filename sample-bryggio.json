@@ -7,26 +7,25 @@
     "actors": [
       {
         "id": "mash_heater",
-        "type": {"simple_gpio": {"pin_number": 0}}
+        "type": { "simple_gpio": { "pin_number": 0 } }
       },
       {
         "id": "boil_heater",
-        "type": {"simple_gpio": {"pin_number": 1}}
+        "type": { "simple_gpio": { "pin_number": 1 } }
       }
-    ]
-  ,
+    ],
     "sensors": [
       {
         "id": "mash_temp",
-        "type": {"dummy": 1000}
+        "type": { "dummy": 1000 }
       },
       {
         "id": "boil_temp",
-        "type": {"dummy": 1000}
+        "type": { "dummy": 1000 }
       },
       {
         "id": "cpu",
-        "type": {"rbpi_cpu": 1000}
+        "type": { "rbpi_cpu": 1000 }
       }
     ]
   },

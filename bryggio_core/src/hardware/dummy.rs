@@ -8,16 +8,16 @@ pub fn get_gpio_pin(pin_number: u32, label: &str) -> Result<GpioPin, HardwareErr
 }
 
 pub struct GpioPin {
-    pub pin_number: u32,
-    pub label: String,
+    pub _pin_number: u32,
+    pub _label: String,
     state: GpioState,
 }
 
 impl GpioPin {
     pub fn new(pin_number: u32, label: &str) -> Self {
         GpioPin {
-            pin_number,
-            label: label.into(),
+            _pin_number: pin_number,
+            _label: label.into(),
             state: GpioState::Low,
         }
     }

@@ -146,7 +146,7 @@ impl Supervisor {
         target: f32,
     ) -> Result<(), SupervisorError> {
         // TODO: Disabled checks pga SensorBox
-        let missing_ids = contr_config
+        let _missing_ids = contr_config
             .client_ids()
             .map(|id| (id, self.client_is_active(id)))
             .filter(|(_, exists)| !*exists)

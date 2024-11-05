@@ -143,7 +143,8 @@ impl ControllerClient {
         config: &NatsClientConfig,
         type_: ControllerType,
     ) -> Self {
-        let client = NatsClient::try_new(config).unwrap();
+        // TODO: This should be fallible
+        let client = NatsClient::try_new(config).expect("Failed creating NATS client");
         ControllerClient {
             id,
             actor_id,
