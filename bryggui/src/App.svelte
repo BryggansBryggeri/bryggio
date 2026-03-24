@@ -1,5 +1,5 @@
-<script lang="ts">
-interface BreweryState {
+<script lang="ts" module>
+export interface BreweryState {
 	phase: string;
 	vessel_temp_top: number | null;
 	vessel_temp_bottom: number | null;
@@ -8,6 +8,10 @@ interface BreweryState {
 	target_temperature: number | null;
 	timestamp: number;
 }
+</script>
+
+<script lang="ts">
+import TemperatureChart from "./TemperatureChart.svelte";
 
 let brewery: BreweryState = $state({
 	phase: "Idle",
@@ -114,6 +118,8 @@ const phases = [
   <text x="50" y="175" text-anchor="middle" font-family="monospace"
     font-size="10" fill="#888">PUMP</text>
 </svg>
+
+<TemperatureChart {brewery} />
 
 <!-- Phase controls -->
 <div class="controls">
