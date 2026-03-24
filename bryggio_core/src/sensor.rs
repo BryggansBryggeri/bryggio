@@ -1,6 +1,14 @@
 //! Sensor type definitions — no I/O.
+use crate::types::Temperature;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+/// Sensor readings returned by the HAL on each tick.
+#[derive(Debug, Clone, Default)]
+pub struct SensorReadings {
+    pub vessel_temp_top: Option<Temperature>,
+    pub vessel_temp_bottom: Option<Temperature>,
+}
 
 /// Concrete temperature sensor enum.
 #[derive(Debug, Clone, Serialize, Deserialize)]

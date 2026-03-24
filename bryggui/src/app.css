@@ -1,0 +1,60 @@
+:root {
+	font-family: monospace;
+	background: #1a1a2e;
+	color: #e0e0e0;
+}
+
+body {
+	margin: 0;
+	padding: 2rem;
+}
+
+#app {
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+h1 {
+	color: #e8a838;
+	font-size: 1.4rem;
+	margin-bottom: 1rem;
+}
+
+.vessel-svg {
+	display: block;
+	margin: 1rem auto;
+}
+
+.controls {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+	margin: 1rem 0;
+}
+
+.controls button {
+	font-family: monospace;
+	padding: 0.4rem 0.8rem;
+	background: #2a2a4a;
+	color: #e0e0e0;
+	border: 1px solid #444;
+	cursor: pointer;
+}
+
+.controls button:hover {
+	background: #3a3a5a;
+}
+
+.controls button.active {
+	background: #e8a838;
+	color: #1a1a2e;
+	border-color: #e8a838;
+}
+
+.state-panel {
+	background: #2a2a4a;
+	padding: 1rem;
+	border: 1px solid #444;
+	font-size: 0.9rem;
+	line-height: 1.6;
+}

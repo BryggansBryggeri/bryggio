@@ -1,15 +1,8 @@
 //! Hardware abstraction layer trait.
 //!
 //! The tick loop is generic over this trait. Implementations live in bryggio_server.
-use crate::types::{Power, Temperature};
+use crate::{sensor::SensorReadings, types::Power};
 use thiserror::Error;
-
-/// Sensor readings returned by the HAL on each tick.
-#[derive(Debug, Clone, Default)]
-pub struct SensorReadings {
-    pub vessel_temp_top: Option<Temperature>,
-    pub vessel_temp_bottom: Option<Temperature>,
-}
 
 /// Actor outputs to apply to hardware.
 #[derive(Debug, Clone)]
@@ -30,9 +23,7 @@ pub enum HalError {
 ///
 /// Uses static dispatch via generics, not trait objects.
 pub trait Hal: Send + Sync + 'static {
-    fn read_sensors(
-        &self,
-    ) -> impl std::future::Future<Output = SensorReadings> + Send;
+    fn read_sensors(&self) -> impl std::future::Future<Output = SensorReadings> + Send;
 
     fn apply_outputs(
         &self,

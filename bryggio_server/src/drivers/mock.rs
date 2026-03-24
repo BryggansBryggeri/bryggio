@@ -12,8 +12,8 @@ struct BrewerySimulation {
     vessel_temp: f32,
     heater_power: f32,
     ambient_temp: f32,
-    heating_rate: f32,  // °C/s at full power
-    cooling_rate: f32,  // °C/s passive loss coefficient
+    heating_rate: f32, // °C/s at full power
+    cooling_rate: f32, // °C/s passive loss coefficient
     last_update: Instant,
 }
 

@@ -2,7 +2,8 @@
 //!
 //! Pure function: takes state + inputs, returns new state + outputs.
 use crate::command::Command;
-use crate::hal::{ActorOutputs, SensorReadings};
+use crate::hal::ActorOutputs;
+use crate::sensor::SensorReadings;
 use crate::state::BreweryState;
 
 /// Process one tick of the control loop.
