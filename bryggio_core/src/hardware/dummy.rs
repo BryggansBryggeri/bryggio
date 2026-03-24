@@ -1,5 +1,4 @@
 use crate::hardware::HardwareError;
-use embedded_hal::delay::DelayNs;
 use embedded_hal::digital::{ErrorKind, ErrorType};
 use embedded_hal::digital::{InputPin, OutputPin};
 
@@ -8,8 +7,8 @@ pub fn get_gpio_pin(pin_number: u32, label: &str) -> Result<GpioPin, HardwareErr
 }
 
 pub struct GpioPin {
-    pub _pin_number: u32,
-    pub _label: String,
+    _pin_number: u32,
+    _label: String,
     state: GpioState,
 }
 
@@ -36,6 +35,7 @@ impl InputPin for GpioPin {
 
 #[derive(Debug)]
 pub struct GpioPinError {}
+
 impl ErrorType for GpioPin {
     type Error = GpioPinError;
 }
@@ -71,10 +71,4 @@ impl From<GpioState> for bool {
             GpioState::Low => false,
         }
     }
-}
-
-pub struct Delay {}
-
-impl DelayNs for Delay {
-    fn delay_ns(&mut self, _ns: u32) {}
 }

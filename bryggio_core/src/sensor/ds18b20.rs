@@ -1,35 +1,23 @@
 //! DS18B20 temperature sensor driver
 //!
-//! This driver is not embedded; it relies on the presence of a 1-wire compatible OS,
-//! and simply gets measurements by reading from a file descriptor provided by the OS.
-// TODO: Clarify the relation between 1-wire (the protocol) and DS18B20 the actual sensor
-use crate::sensor::{Sensor, SensorError};
+//! Reads measurements via the 1-wire sysfs interface provided by the OS.
+use crate::sensor::SensorError;
 use crate::utils;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::thread::sleep;
-use std::time::Duration;
 
 /// DS18B20 temperature sensor
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ds18b20 {
-    /// User-specified ID, must be unique.
-    pub id: String,
-    /// 1-wire address, fixed for each sensor
     address: Ds18b20Address,
 }
 
 impl Ds18b20 {
-    /// Create DS18B20 sensor
-    ///
-    /// NB: We do not check that the file descriptor actually exists,
-    /// since it is better to log an error message than to fail the entire supervisor start-up.
-    pub fn try_new(id: &str, address: &str) -> Result<Ds18b20, SensorError> {
+    pub fn try_new(address: &str) -> Result<Ds18b20, SensorError> {
         let address = Ds18b20Address::try_new(address)?;
-        let id = String::from(id);
-        Ok(Ds18b20 { id, address })
+        Ok(Ds18b20 { address })
     }
 
     fn device_path(&self) -> PathBuf {
@@ -37,92 +25,55 @@ impl Ds18b20 {
             .join(&self.address.0)
             .join("temperature")
     }
+
+    /// Take a temperature measurement. Returns degrees Celsius.
+    pub fn get_measurement(&self) -> Result<f32, SensorError> {
+        let raw_read = utils::read_file_to_string(self.device_path())
+            .map_err(|err| SensorError::FileRead(err.to_string()))?;
+        parse_temp_measurement(&raw_read)
+    }
 }
 
-/// List available [`Ds18b20`] sensors
-///
-/// Each sensor connected to the 1-wire bus is listed with its unique address in the same
-/// directory.
-/// Returns a vector with all filenames in that directory that parses as a [`Ds18b20Address`].
+/// List available DS18B20 sensors on the 1-wire bus.
 pub fn list_available() -> Result<Vec<Ds18b20Address>, SensorError> {
     let device_path = Path::new(DS18B20_DIR);
     if !device_path.exists() {
-        // TODO: Better error
         return Err(SensorError::FileRead(format!(
             "DSB path does not exist: '{}'",
             DS18B20_DIR
         )));
     }
-    let files = match fs::read_dir(device_path) {
-        Ok(files) => files,
-        Err(_error) => {
-            return Err(SensorError::FileRead(format!(
-                "Unable to list DSB files {}.",
-                DS18B20_DIR
-            )))
-        }
-    };
+    let files = fs::read_dir(device_path).map_err(|_| {
+        SensorError::FileRead(format!("Unable to list DSB files {}.", DS18B20_DIR))
+    })?;
     Ok(files
         .filter_map(Result::ok)
         .flat_map(ds18b20_address_from_filename)
         .collect())
 }
 
-impl Sensor for Ds18b20 {
-    /// Get DS18B20 temperature measurement
-    ///
-    /// The sensor is available through a file located in [`DS18B20_DIR`].
-    /// By simply reading the contents of the file a measurement is taken,
-    /// from which a float value is parsed.
-    ///
-    /// The returned value is the temperature in Celsius.
-    fn get_measurement(&mut self) -> Result<f32, SensorError> {
-        let meas = match utils::read_file_to_string(self.device_path()) {
-            Ok(raw_read) => parse_temp_measurement(&raw_read),
-            Err(err) => Err(SensorError::FileRead(err.to_string())),
-        };
-        sleep(Duration::from_millis(1000));
-        meas
-    }
-
-    fn get_id(&self) -> String {
-        self.id.clone()
-    }
-}
-
-// TODO: Fallible serde
 /// Temperature sensor address
 ///
-/// The address is a string with 15 characters,
-/// all beginning with "28".
+/// The address is a string with 15 characters, beginning with "28".
 #[derive(Deserialize, Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct Ds18b20Address(String);
 
 impl Ds18b20Address {
-    /// Fallible constructor
-    ///
-    /// Constructs a new address if it is succesfully verified returns error otherwise.
     pub fn try_new(address: &str) -> Result<Ds18b20Address, SensorError> {
         Ds18b20Address::verify(address)?;
         Ok(Ds18b20Address(String::from(address)))
     }
 
-    /// Verify address
-    ///
-    /// Checks that the address starts with "28" and is exactly 15 characters.
     fn verify(address: &str) -> Result<(), SensorError> {
-        match &address[0..2] {
-            "28" => {}
-            _ => return Err(SensorError::InvalidAddressStart(String::from(address))),
+        if !address.starts_with("28") {
+            return Err(SensorError::InvalidAddressStart(String::from(address)));
         }
-        match address.len() {
-            15 => {}
-            _ => return Err(SensorError::InvalidAddressLength(address.len())),
+        if address.len() != 15 {
+            return Err(SensorError::InvalidAddressLength(address.len()));
         }
         Ok(())
     }
 
-    /// Dummy address for debug
     pub fn dummy() -> Self {
         Ds18b20Address(String::from("28-dummy02230ff"))
     }
@@ -140,43 +91,29 @@ impl fmt::Display for Ds18b20Address {
     }
 }
 
-/// Parse float value from raw output generated by [`Ds18b20`] file read.
 fn parse_temp_measurement(raw_read: &str) -> Result<f32, SensorError> {
-    let value: f32 = match raw_read.trim().parse() {
-        Ok(value) => value,
-        Err(err) => {
-            return Err(SensorError::Parse(format!(
-                "Could not parse string '{}' to f32. Err: {}",
-                String::from(raw_read),
-                err
-            )));
-        }
-    };
+    let value: f32 = raw_read.trim().parse().map_err(|err| {
+        SensorError::Parse(format!(
+            "Could not parse string '{}' to f32. Err: {}",
+            raw_read, err
+        ))
+    })?;
     Ok(value / 1000.0)
 }
 
-/// Parse potential address from filename
-///
-/// Helper function for [`list_available`]
 fn ds18b20_address_from_filename(file: fs::DirEntry) -> Option<Ds18b20Address> {
     let tmp = file.path();
     let file_name = tmp.file_name()?.to_str()?;
-    match Ds18b20Address::try_new(file_name) {
-        Ok(address) => Some(address),
-        Err(_) => None,
-    }
+    Ds18b20Address::try_new(file_name).ok()
 }
 
 /// Directory where the filesystem API registers DS18B20 sensors.
-/// This is true for RbPi and probably for most linux systems.
 pub const DS18B20_DIR: &str = "/sys/bus/w1/devices/";
-// const DS18B20_DIR: &str = "./dummy_ds18";
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use assert_approx_eq::assert_approx_eq;
-    use std::matches;
 
     #[test]
     fn test_address_correct() {
@@ -229,6 +166,6 @@ mod tests {
     #[test]
     fn test_parse_temp_measurement_no_match() {
         let temp_string = String::from("nonsense");
-        assert!(parse_temp_measurement(&temp_string).is_err(),);
+        assert!(parse_temp_measurement(&temp_string).is_err());
     }
 }

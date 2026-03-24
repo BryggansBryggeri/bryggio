@@ -1,20 +1,12 @@
-//! Emulates a slow pseudo-pwm GPIO pin.
+//! Emulates a slow pseudo-PWM GPIO pin via duty-cycle.
 //!
-//! This actor can set a power-level for a GPIO pin.
-//! It wraps a [`super::bin_gpio::BinaryGpioActor`] and emulates a power-level via a duty-cycle.
-//! For instance a power-level 70% is created with a 10s duty-cycle by turning on the GPIO for 7s
-//! and off for 3s and then looping this cycle.
-//! On average the power output will be 70%.
+//! For instance 70% power on a 10s cycle = 7s on, 3s off.
 
-use super::{bin_gpio::BinaryGpioActor, ActorSignal};
-use crate::{
-    actor::{Actor, ActorError},
-    time::TimeStamp,
-};
+use super::bin_gpio::BinaryGpioActor;
+use crate::{actor::ActorError, actor::ActorSignal, time::TimeStamp};
 use embedded_hal::digital::OutputPin;
 
 pub struct SimpleGpioActor<T: OutputPin + Send> {
-    pub id: String,
     bin_gpio: BinaryGpioActor<T>,
     current_signal: ActorSignal,
     cycle_duration: TimeStamp,
@@ -23,16 +15,13 @@ pub struct SimpleGpioActor<T: OutputPin + Send> {
 
 impl<T: OutputPin + Send> SimpleGpioActor<T> {
     pub fn try_new(
-        id: &str,
         handle: T,
         time_out: Option<TimeStamp>,
     ) -> Result<SimpleGpioActor<T>, ActorError> {
-        let bin_id = format!("{}_bin_gpio", id);
-        let bin_gpio = BinaryGpioActor::try_new(&bin_id, handle, time_out)?;
+        let bin_gpio = BinaryGpioActor::try_new(handle, time_out)?;
         Ok(SimpleGpioActor {
-            id: id.into(),
             bin_gpio,
-            current_signal: ActorSignal::new(id.into(), 0.0),
+            current_signal: ActorSignal::new(0.0),
             cycle_duration: CYCLE_DURATION,
             start_time: TimeStamp::now(),
         })
@@ -47,34 +36,8 @@ impl<T: OutputPin + Send> SimpleGpioActor<T> {
             1.0
         }
     }
-}
 
-impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
-    fn update_signal(&mut self, signal: &ActorSignal) -> Result<(), ActorError> {
-        self.validate_signal(signal)?;
-        self.current_signal = signal.clone();
-        Ok(())
-    }
-
-    fn set_signal(&mut self) -> Result<(), ActorError> {
-        let bin_signal = self.pct_to_bin(self.current_signal.signal, self.cycle_duration);
-        let bin_signal = ActorSignal {
-            id: self.id.clone().into(),
-            signal: bin_signal,
-        };
-        if self.bin_gpio.current_signal != bin_signal {
-            self.bin_gpio.update_signal(&bin_signal)?;
-            self.bin_gpio.set_signal()?;
-        }
-        Ok(())
-    }
-
-    fn turn_off(&mut self) -> Result<(), ActorError> {
-        self.update_signal(&ActorSignal::new(self.id.clone().into(), 0.0))?;
-        self.set_signal()
-    }
-
-    fn validate_signal(&self, signal: &ActorSignal) -> Result<(), ActorError> {
+    pub fn validate_signal(&self, signal: &ActorSignal) -> Result<(), ActorError> {
         if signal.signal >= 0.0 && signal.signal <= 1.0 {
             Ok(())
         } else {
@@ -85,14 +48,31 @@ impl<T: OutputPin + Send> Actor for SimpleGpioActor<T> {
             })
         }
     }
+
+    pub fn update_signal(&mut self, signal: &ActorSignal) -> Result<(), ActorError> {
+        self.validate_signal(signal)?;
+        self.current_signal = signal.clone();
+        Ok(())
+    }
+
+    pub fn set_signal(&mut self) -> Result<(), ActorError> {
+        let bin_signal = self.pct_to_bin(self.current_signal.signal, self.cycle_duration);
+        let bin_signal = ActorSignal::new(bin_signal);
+        if self.bin_gpio.current_signal != bin_signal {
+            self.bin_gpio.update_signal(&bin_signal)?;
+            self.bin_gpio.set_signal()?;
+        }
+        Ok(())
+    }
+
+    pub fn turn_off(&mut self) -> Result<(), ActorError> {
+        self.update_signal(&ActorSignal::new(0.0))?;
+        self.set_signal()
+    }
 }
 
-/// Cycle duration determines the percent to binary conversion.
-///
-/// If the actor is set to 60% power, then in practice it will be in state 1 for 0.6 * CYCLE_DURATION ms and state 0 for (1-0.6) * CYCLE_DURATION ms.
 const CYCLE_DURATION: TimeStamp = TimeStamp(10000);
 
-/// Calculate cycle ratio
 fn calculate_cycle_ratio(delta: f32, cycle_length: f32) -> f32 {
     (delta % cycle_length) / cycle_length
 }

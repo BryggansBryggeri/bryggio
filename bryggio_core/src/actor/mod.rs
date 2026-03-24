@@ -1,38 +1,21 @@
-#[cfg(target_arch = "x86_64")]
-use crate::hardware::dummy as hardware_impl;
-#[cfg(target_arch = "arm")]
-use crate::hardware::rbpi as hardware_impl;
-use crate::{
-    hardware::GpioState,
-    pub_sub::{ClientId, PubSubError},
-};
-use crate::{hardware::HardwareError, time::TimeStamp};
-use serde::{Deserialize, Serialize};
+//! Actor (heater/pump) driver logic.
+pub mod bin_gpio;
+pub mod simple_gpio;
+
+use crate::hardware::HardwareError;
+use crate::time::TimeStamp;
+use crate::hardware::GpioState;
 use thiserror::Error;
 
-pub mod bin_gpio;
-pub mod pub_sub;
-pub mod simple_gpio;
-// pub mod xor_gpio;
-pub use pub_sub::ActorClient;
-
-pub trait Actor: Send {
-    fn validate_signal(&self, signal: &ActorSignal) -> Result<(), ActorError>;
-    fn set_signal(&mut self) -> Result<(), ActorError>;
-    fn update_signal(&mut self, signal: &ActorSignal) -> Result<(), ActorError>;
-    fn turn_off(&mut self) -> Result<(), ActorError>;
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+/// Signal commanding an actor to a specific power level.
+#[derive(Debug, Clone, PartialEq)]
 pub struct ActorSignal {
-    // TODO: Deserialization
-    pub(crate) id: ClientId,
-    pub(crate) signal: f32,
+    pub signal: f32, // [0, 1] normalized
 }
 
 impl ActorSignal {
-    pub fn new(id: ClientId, signal: f32) -> Self {
-        ActorSignal { id, signal }
+    pub fn new(signal: f32) -> Self {
+        ActorSignal { signal }
     }
 
     pub fn gpio_state(&self) -> GpioState {
@@ -40,39 +23,6 @@ impl ActorSignal {
             GpioState::High
         } else {
             GpioState::Low
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub enum ActorType {
-    #[serde(rename = "simple_gpio")]
-    SimpleGpio {
-        pin_number: u32,
-        time_out: Option<TimeStamp>,
-    },
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ActorConfig {
-    pub id: ClientId,
-    #[serde(rename = "type")]
-    pub type_: ActorType,
-}
-
-impl ActorConfig {
-    pub fn get_actor(&self) -> Result<Box<dyn Actor>, ActorError> {
-        match &self.type_ {
-            ActorType::SimpleGpio {
-                pin_number,
-                time_out,
-            } => {
-                let gpio_pin = hardware_impl::get_gpio_pin(*pin_number, self.id.as_ref())
-                    .map_err(HardwareError::from)?;
-                let actor =
-                    simple_gpio::SimpleGpioActor::try_new(self.id.as_ref(), gpio_pin, *time_out)?;
-                Ok(Box::new(actor))
-            }
         }
     }
 }
@@ -93,12 +43,6 @@ pub enum ActorError {
     Generic(String),
     #[error("Hardware: {0}")]
     Hardware(#[from] HardwareError),
-    #[error("Faild turning off actor")]
+    #[error("Failed turning off actor")]
     TurnOff,
-}
-
-impl From<ActorError> for PubSubError {
-    fn from(err: ActorError) -> PubSubError {
-        PubSubError::Client(format!("Actor error: '{}'", err))
-    }
 }

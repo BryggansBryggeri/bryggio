@@ -1,17 +1,14 @@
-use crate::control;
 use pid as ext_pid;
-use std::f32;
 
 use super::ControllerError;
 
-pub struct Controller {
+pub struct PidController {
     pub target: f32,
     pub current_signal: f32,
-    state: control::State,
     pid: ext_pid::Pid<f32>,
 }
 
-impl Controller {
+impl PidController {
     pub fn new(
         target: f32,
         kp: f32,
@@ -20,25 +17,23 @@ impl Controller {
         p_limit: Option<f32>,
         i_limit: Option<f32>,
         d_limit: Option<f32>,
-    ) -> Controller {
+    ) -> PidController {
         let p_limit = p_limit.unwrap_or(100.0);
         let i_limit = i_limit.unwrap_or(100.0);
         let d_limit = d_limit.unwrap_or(100.0);
         let output_limit = 100.0;
         let mut pid = ext_pid::Pid::new(target, output_limit);
         pid.p(kp, p_limit).i(ki, i_limit).d(kd, d_limit);
-        let pid = pid;
-        Controller {
-            target: 0.0,
+        PidController {
+            target,
             current_signal: 0.0,
-            state: control::State::Active,
             pid,
         }
     }
-}
 
-impl control::Control for Controller {
-    fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {
+    /// Calculate control signal from measurement.
+    /// Returns a value in [0, 1] representing heater power.
+    pub fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {
         let new_signal = if let Some(measurement) = measurement {
             let pid_output = self.pid.next_control_output(measurement).output;
             // Map PID output \in [-output_limit, output_limit] --> [0, 1]
@@ -50,28 +45,12 @@ impl control::Control for Controller {
         new_signal
     }
 
-    fn get_state(&self) -> control::State {
-        self.state
-    }
-
-    fn get_control_signal(&self) -> f32 {
-        self.current_signal
-    }
-
-    fn set_state(&mut self, new_state: control::State) {
-        self.state = new_state;
-    }
-
-    fn set_target(&mut self, new_target: f32) {
+    pub fn set_target(&mut self, new_target: f32) {
         self.target = new_target;
         self.pid.setpoint = new_target;
     }
 
-    fn get_target(&self) -> f32 {
-        self.target
-    }
-
-    fn validate_target(&self, new_target: f32) -> Result<f32, ControllerError> {
+    pub fn validate_target(&self, new_target: f32) -> Result<f32, ControllerError> {
         if (0.0..=100.0).contains(&new_target) {
             Ok(new_target)
         } else {
