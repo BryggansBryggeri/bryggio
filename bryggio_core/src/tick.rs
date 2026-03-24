@@ -2,9 +2,11 @@
 //!
 //! Pure function: takes state + inputs, returns new state + outputs.
 use crate::command::Command;
+use crate::control::hysteresis::HysteresisController;
 use crate::hal::ActorOutputs;
 use crate::sensor::SensorReadings;
 use crate::state::BreweryState;
+use crate::types::Power;
 
 /// Process one tick of the control loop.
 ///
@@ -15,6 +17,7 @@ pub fn tick(
     readings: &SensorReadings,
     commands: &[Command],
     now: u64,
+    controller: &mut HysteresisController,
 ) -> (BreweryState, ActorOutputs) {
     let mut new_state = state.clone();
     new_state.timestamp = now;
@@ -23,8 +26,8 @@ pub fn tick(
     for cmd in commands {
         match cmd {
             Command::SetTarget { temperature } => {
-                // TODO: feed into active controller
-                let _ = temperature;
+                controller.set_target(temperature.0);
+                new_state.target_temperature = Some(*temperature);
             }
             Command::SetPhase(phase) => {
                 new_state.phase = *phase;
@@ -39,7 +42,11 @@ pub fn tick(
     new_state.vessel_temp_top = readings.vessel_temp_top;
     new_state.vessel_temp_bottom = readings.vessel_temp_bottom;
 
-    // TODO: run active controller to compute heater power
+    // Run controller to compute heater power
+    let measurement = new_state.vessel_temp_top.map(|t| t.0);
+    let signal = controller.calculate_signal(measurement);
+    new_state.heater_power = Power::new(signal);
+
     let outputs = ActorOutputs {
         heater_power: new_state.heater_power,
         pump_on: new_state.pump_on,

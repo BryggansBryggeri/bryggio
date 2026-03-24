@@ -5,6 +5,7 @@ interface BreweryState {
 	vessel_temp_bottom: number | null;
 	heater_power: number;
 	pump_on: boolean;
+	target_temperature: number | null;
 	timestamp: number;
 }
 
@@ -14,6 +15,7 @@ let brewery: BreweryState = $state({
 	vessel_temp_bottom: null,
 	heater_power: 0,
 	pump_on: false,
+	target_temperature: null,
 	timestamp: 0,
 });
 
@@ -45,6 +47,12 @@ function setPhase(phase: string) {
 
 function togglePump() {
 	sendCommand({ SetPump: !brewery.pump_on });
+}
+
+let targetInput = $state(65);
+
+function setTarget() {
+	sendCommand({ SetTarget: { temperature: targetInput } });
 }
 
 function formatTemp(t: number | null): string {
@@ -91,6 +99,11 @@ const phases = [
     {formatTemp(brewery.vessel_temp_bottom)}
   </text>
 
+  <!-- Target temperature -->
+  <text x="310" y="140" font-family="monospace" font-size="12" fill="#aaa">
+    Target: {brewery.target_temperature !== null ? `${brewery.target_temperature.toFixed(1)} °C` : 'not set'}
+  </text>
+
   <!-- Labels -->
   <text x="200" y="30" text-anchor="middle" font-family="monospace"
     font-size="12" fill="#888">VESSEL</text>
@@ -110,6 +123,10 @@ const phases = [
   {/each}
   <button class:active={brewery.pump_on}
     onclick={togglePump}>Pump {brewery.pump_on ? 'ON' : 'OFF'}</button>
+  <span class="target-input">
+    <input type="number" bind:value={targetInput} min="0" max="100" step="0.5" />
+    <button onclick={setTarget}>Set Target</button>
+  </span>
 </div>
 
 <!-- Raw state -->

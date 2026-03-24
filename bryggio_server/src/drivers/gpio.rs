@@ -8,6 +8,8 @@ use std::time::Instant;
 
 /// Duty-cycle period in milliseconds.
 const CYCLE_DURATION_MS: u128 = 10_000;
+const CYCLE_DURATION_MS_F32: f32 = CYCLE_DURATION_MS as f32;
+const _: () = assert!(CYCLE_DURATION_MS_F32 as u128 == CYCLE_DURATION_MS);
 
 /// PWM-emulating GPIO actor.
 pub struct PwmGpio {
@@ -33,12 +35,10 @@ impl PwmGpio {
     /// Call this on each tick to update the GPIO state based on duty cycle.
     /// Returns whether the pin should be high or low.
     pub fn tick(&mut self) -> bool {
-        let elapsed_ms = self.start_time.elapsed().as_millis();
-        let cycle_ratio = (elapsed_ms % CYCLE_DURATION_MS) as f32 / CYCLE_DURATION_MS as f32;
-        let should_be_high = cycle_ratio < self.current_power.value();
-
-        self.state = should_be_high;
-        should_be_high
+        let position = self.start_time.elapsed().as_millis() % CYCLE_DURATION_MS;
+        let threshold = (self.current_power.value() * CYCLE_DURATION_MS_F32) as u128;
+        self.state = position < threshold;
+        self.state
     }
 }
 
@@ -55,5 +55,29 @@ mod tests {
     fn duty_cycle_ratio() {
         assert_approx_eq!(calculate_cycle_ratio(17.0, 10.0), 0.7);
         assert_approx_eq!(calculate_cycle_ratio(27.0, 10.0), 0.7);
+    }
+
+    #[test]
+    fn integer_tick_matches_tick() {
+        let powers = [0.0, 0.1, 0.25, 0.5, 0.7, 1.0];
+        for &p in &powers {
+            let mut gpio_a = PwmGpio::new();
+            let mut gpio_b = PwmGpio::new();
+            gpio_a.set_power(Power::new(p));
+            gpio_b.set_power(Power::new(p));
+            // Synchronize start times
+            gpio_b.start_time = gpio_a.start_time;
+
+            for _ in 0..100 {
+                let float_result = gpio_a.tick();
+                let int_result = gpio_b.integer_tick();
+                assert_eq!(
+                    float_result,
+                    int_result,
+                    "Mismatch at power={p}, elapsed={}ms",
+                    gpio_a.start_time.elapsed().as_millis()
+                );
+            }
+        }
     }
 }

@@ -10,6 +10,7 @@ pub struct BreweryState {
     pub vessel_temp_bottom: Option<Temperature>,
     pub heater_power: Power,
     pub pump_on: bool,
+    pub target_temperature: Option<Temperature>,
     pub timestamp: u64,
 }
 
@@ -21,6 +22,7 @@ impl Default for BreweryState {
             vessel_temp_bottom: None,
             heater_power: Power::off(),
             pump_on: false,
+            target_temperature: None,
             timestamp: 0,
         }
     }

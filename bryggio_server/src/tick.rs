@@ -1,5 +1,6 @@
 //! The async tick loop — bridges the HAL and the sync core.
 use bryggio_core::command::Command;
+use bryggio_core::control::hysteresis::HysteresisController;
 use bryggio_core::hal::Hal;
 use bryggio_core::state::BreweryState;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -15,6 +16,7 @@ pub async fn run_tick_loop<H: Hal>(
     state_tx: watch::Sender<BreweryState>,
 ) {
     let mut state = BreweryState::default();
+    let mut controller = HysteresisController::try_new(20.0, 2.0, 1.0).unwrap();
     let mut interval = tokio::time::interval(Duration::from_millis(1000));
 
     tracing::info!("Tick loop started");
@@ -36,7 +38,7 @@ pub async fn run_tick_loop<H: Hal>(
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0);
-        let (new_state, outputs) = bryggio_core::tick::tick(&state, &readings, &commands, now);
+        let (new_state, outputs) = bryggio_core::tick::tick(&state, &readings, &commands, now, &mut controller);
         state = new_state;
 
         // Apply actor outputs to hardware
