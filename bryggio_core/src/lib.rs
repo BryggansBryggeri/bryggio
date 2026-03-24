@@ -8,8 +8,11 @@
 #![cfg_attr(all(not(test)), warn(clippy::unwrap_used))]
 
 pub mod actor;
+pub mod command;
 pub mod control;
-pub(crate) mod hardware;
+pub mod hal;
+pub mod model;
 pub mod sensor;
-pub mod time;
-pub mod utils;
+pub mod state;
+pub mod tick;
+pub mod types;
