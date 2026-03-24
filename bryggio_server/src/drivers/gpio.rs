@@ -34,7 +34,7 @@ impl PwmGpio {
     /// Returns whether the pin should be high or low.
     pub fn tick(&mut self) -> bool {
         let elapsed_ms = self.start_time.elapsed().as_millis();
-        let cycle_ratio = (elapsed_ms % CYCLE_DURATION_MS) / CYCLE_DURATION_MS as f32;
+        let cycle_ratio = (elapsed_ms % CYCLE_DURATION_MS) as f32 / CYCLE_DURATION_MS as f32;
         let should_be_high = cycle_ratio < self.current_power.value();
 
         self.state = should_be_high;

@@ -1,5 +1,6 @@
 //! Mock HAL — simulates thermal dynamics for integration testing.
-use bryggio_core::hal::{ActorOutputs, HalError, SensorReadings};
+use bryggio_core::hal::{ActorOutputs, HalError};
+use bryggio_core::sensor::SensorReadings;
 use bryggio_core::types::Temperature;
 use std::sync::Mutex;
 use std::time::Instant;

@@ -8,3 +8,8 @@ target
 
 # Misc
 svg_instructions.md
+
+# Nix
+.direnv/
+.envrc
+shell.nix
