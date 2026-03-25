@@ -1,10 +1,7 @@
 [workspace]
-resolver="2"
+resolver = "2"
 
 members = [
     "bryggio_core",
-    "bryggio_cli",
-    "bryggio_supervisor",
-    "bryggio_sensor_box",
-    "tests"
+    "bryggio_server",
 ]

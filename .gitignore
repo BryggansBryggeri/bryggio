@@ -1,27 +1,15 @@
-Cargo.lock
 target
-**/*.rs.bk
-
-# OS
-tags
-tags.lock
-tags.temp
-
-# WEB
-*.html
 
 # ARCHIVES
 *.zip
 
-# BryggIO
-bryggio.json
-sensor-box.json
-!sample-*.yaml
-!sample-*.json
-nats.conf
-log_file.csv
-nats/nats-server
-dummy_ds18/
-
 # Cross
 *.core
+
+# Misc
+svg_instructions.md
+
+# Nix
+.direnv/
+.envrc
+shell.nix

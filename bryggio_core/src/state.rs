@@ -1,0 +1,41 @@
+//! Full system state — the snapshot broadcast via SSE.
+use crate::types::{Power, Temperature};
+use serde::{Deserialize, Serialize};
+
+/// The full state of the brewery, sent to the UI on every tick.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BreweryState {
+    pub phase: BrewPhase,
+    pub vessel_temp_top: Option<Temperature>,
+    pub vessel_temp_bottom: Option<Temperature>,
+    pub heater_power: Power,
+    pub pump_on: bool,
+    pub target_temperature: Option<Temperature>,
+    pub timestamp: u64,
+}
+
+impl Default for BreweryState {
+    fn default() -> Self {
+        BreweryState {
+            phase: BrewPhase::Idle,
+            vessel_temp_top: None,
+            vessel_temp_bottom: None,
+            heater_power: Power::off(),
+            pump_on: false,
+            target_temperature: None,
+            timestamp: 0,
+        }
+    }
+}
+
+/// Brewing process phase.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BrewPhase {
+    Idle,
+    Prep,
+    Mashing,
+    Lautering,
+    Boiling,
+    Cooling,
+    Done,
+}
