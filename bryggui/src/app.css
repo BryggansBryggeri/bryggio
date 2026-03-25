@@ -10,7 +10,7 @@ body {
 }
 
 #app {
-	max-width: 800px;
+	max-width: 1200px;
 	margin: 0 auto;
 }
 
@@ -20,9 +20,64 @@ h1 {
 	margin-bottom: 1rem;
 }
 
+.top-row {
+	display: flex;
+	gap: 1rem;
+	align-items: stretch;
+	margin: 1rem 0;
+}
+
 .vessel-svg {
-	display: block;
-	margin: 1rem auto;
+	flex: 1;
+	min-width: 0;
+	height: auto;
+}
+
+.chart-wrapper {
+	flex: 1;
+	min-width: 0;
+}
+
+.chart-container {
+	width: 100%;
+	height: 260px;
+	margin: 1rem 0;
+	background: #2a2a4a;
+	border: 1px solid #444;
+	padding: 0.5rem;
+	box-sizing: border-box;
+}
+
+.chart-wrapper .chart-container {
+	height: 100%;
+	margin: 0;
+}
+
+.pump-toggle {
+	cursor: pointer;
+}
+
+.aux-row {
+	display: flex;
+	gap: 1rem;
+	margin: 1rem 0;
+}
+
+.control-panel {
+	flex: 1;
+	background: #2a2a4a;
+	padding: 1rem;
+	border: 1px solid #444;
+}
+
+.control-panel h3 {
+	margin: 0 0 0.5rem 0;
+	font-size: 0.9rem;
+	color: #888;
+}
+
+.control-panel h3:not(:first-child) {
+	margin-top: 1rem;
 }
 
 .controls {
@@ -51,17 +106,35 @@ h1 {
 	border-color: #e8a838;
 }
 
-.chart-container {
-	width: 100%;
-	height: 260px;
-	margin: 1rem 0;
-	background: #2a2a4a;
+.target-input {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.target-input input {
+	font-family: monospace;
+	padding: 0.4rem 0.8rem;
+	background: #1a1a2e;
+	color: #e0e0e0;
 	border: 1px solid #444;
-	padding: 0.5rem;
-	box-sizing: border-box;
+	width: 5rem;
+}
+
+.target-input button {
+	font-family: monospace;
+	padding: 0.4rem 0.8rem;
+	background: #2a2a4a;
+	color: #e0e0e0;
+	border: 1px solid #444;
+	cursor: pointer;
+}
+
+.target-input button:hover {
+	background: #3a3a5a;
 }
 
 .state-panel {
+	flex: 1;
 	background: #2a2a4a;
 	padding: 1rem;
 	border: 1px solid #444;
