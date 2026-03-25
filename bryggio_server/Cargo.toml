@@ -2,7 +2,7 @@
 name = "bryggio-server"
 version = "0.1.0"
 authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 bryggio-core = { path = "../bryggio_core" }

@@ -8,6 +8,7 @@ target
 
 # Misc
 svg_instructions.md
+CLAUDE.md
 
 # Nix
 .direnv/

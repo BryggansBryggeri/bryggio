@@ -1,34 +1,24 @@
 //! Mock HAL — simulates thermal dynamics for integration testing.
+//!
+//! Physics-based model using real thermodynamic parameters:
+//! - Heating: P·power / (m·cₚ)
+//! - Cooling: Newton's law — h·A·(T - T_amb) / (m·cₚ)
+//! - Basic stratification: bottom zone receives heater energy directly,
+//!   top zone equilibrates via conduction and (when pump is on) convection.
 use bryggio_core::hal::{ActorOutputs, HalError};
+use bryggio_core::model::BrewerySimulation;
 use bryggio_core::sensor::SensorReadings;
 use bryggio_core::types::Temperature;
 use std::sync::Mutex;
-use std::time::Instant;
 
 pub struct MockHal {
     sim: Mutex<BrewerySimulation>,
 }
 
-struct BrewerySimulation {
-    vessel_temp: f32,
-    heater_power: f32,
-    ambient_temp: f32,
-    heating_rate: f32, // °C/s at full power
-    cooling_rate: f32, // °C/s passive loss coefficient
-    last_update: Instant,
-}
-
 impl MockHal {
-    pub fn new() -> Self {
+    pub fn with_params(sim: BrewerySimulation) -> Self {
         MockHal {
-            sim: Mutex::new(BrewerySimulation {
-                vessel_temp: 20.0,
-                heater_power: 0.0,
-                ambient_temp: 20.0,
-                heating_rate: 0.5,
-                cooling_rate: 0.01,
-                last_update: Instant::now(),
-            }),
+            sim: Mutex::new(sim),
         }
     }
 }
@@ -37,23 +27,17 @@ impl bryggio_core::hal::Hal for MockHal {
     async fn read_sensors(&self) -> SensorReadings {
         let mut sim = self.sim.lock().unwrap_or_else(|e| e.into_inner());
 
-        // Advance physics
-        let dt = sim.last_update.elapsed().as_secs_f32();
-        sim.last_update = Instant::now();
-        sim.vessel_temp += (sim.heating_rate * sim.heater_power
-            - sim.cooling_rate * (sim.vessel_temp - sim.ambient_temp))
-            * dt;
-
-        let temp = Temperature(sim.vessel_temp);
+        *sim = sim.update_sensors();
+        let (temp_top, temp_bottom) = sim.temp();
         SensorReadings {
-            vessel_temp_top: Some(temp),
-            vessel_temp_bottom: Some(temp),
+            vessel_temp_top: Some(Temperature(temp_top)),
+            vessel_temp_bottom: Some(Temperature(temp_bottom)),
         }
     }
 
     async fn apply_outputs(&self, outputs: &ActorOutputs) -> Result<(), HalError> {
         let mut sim = self.sim.lock().unwrap_or_else(|e| e.into_inner());
-        sim.heater_power = outputs.heater_power.value();
+        *sim = sim.update_actors(outputs);
         Ok(())
     }
 }

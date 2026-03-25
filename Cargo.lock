@@ -131,7 +131,6 @@ name = "bryggio-core"
 version = "0.2.0"
 dependencies = [
  "assert_approx_eq",
- "pid",
  "serde",
  "serde_json",
  "thiserror",
@@ -937,15 +936,6 @@ name = "percent-encoding"
 version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
-
-[[package]]
-name = "pid"
-version = "4.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7c931ef9756cd5e3fa3d395bfe09df4dfa6f0612c6ca8f6b12927d17ca34e36"
-dependencies = [
- "num-traits",
-]
 
 [[package]]
 name = "pin-project-lite"

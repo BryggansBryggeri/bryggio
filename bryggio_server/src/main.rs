@@ -15,6 +15,7 @@ mod tick;
 use api::AppState;
 use axum::routing::{get, post};
 use axum::Router;
+use bryggio_core::model::BrewerySimulation;
 use bryggio_core::state::BreweryState;
 use drivers::mock::MockHal;
 use std::sync::Arc;
@@ -36,7 +37,7 @@ async fn main() {
     let (state_tx, state_rx) = watch::channel(BreweryState::default());
 
     // HAL
-    let hal = Arc::new(MockHal::new());
+    let hal = Arc::new(MockHal::with_params(BrewerySimulation::new()));
 
     // Spawn tick loop
     let tick_hal = hal.clone();
