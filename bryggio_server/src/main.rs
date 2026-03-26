@@ -13,8 +13,8 @@ mod drivers;
 mod tick;
 
 use api::AppState;
-use axum::routing::{get, post};
 use axum::Router;
+use axum::routing::{get, post};
 use bryggio_core::model::BrewerySimulation;
 use bryggio_core::state::BreweryState;
 use drivers::mock::MockHal;
@@ -32,6 +32,16 @@ async fn main() {
 
     tracing::info!("Starting bryggio server");
 
+    // Database
+    let db_path = std::env::var("BRYGGIO_DB").unwrap_or_else(|_| "bryggio.db".into());
+    let db = db::Db::connect(&db_path)
+        .await
+        .expect("failed to connect to database");
+    let (db_tx, db_rx) = mpsc::channel::<BreweryState>(128);
+    tokio::spawn(async move {
+        db::run_db_writer(db, db_rx).await;
+    });
+
     // Channels
     let (command_tx, command_rx) = mpsc::channel::<bryggio_core::command::Command>(64);
     let (state_tx, state_rx) = watch::channel(BreweryState::default());
@@ -42,7 +52,7 @@ async fn main() {
     // Spawn tick loop
     let tick_hal = hal.clone();
     tokio::spawn(async move {
-        tick::run_tick_loop(&*tick_hal, command_rx, state_tx).await;
+        tick::run_tick_loop(&*tick_hal, command_rx, state_tx, db_tx).await;
     });
 
     // Axum router

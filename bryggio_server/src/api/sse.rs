@@ -2,8 +2,8 @@
 use axum::extract::State;
 use axum::response::sse::{Event, Sse};
 use std::convert::Infallible;
-use tokio_stream::wrappers::WatchStream;
 use tokio_stream::StreamExt;
+use tokio_stream::wrappers::WatchStream;
 
 use super::AppState;
 

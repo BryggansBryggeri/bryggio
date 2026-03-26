@@ -38,7 +38,8 @@ impl PidController {
             let error = self.target - measurement;
 
             // Integrate with anti-windup clamp
-            self.integral = (self.integral + error * dt).clamp(-self.integral_limit, self.integral_limit);
+            self.integral =
+                (self.integral + error * dt).clamp(-self.integral_limit, self.integral_limit);
 
             // Derivative of error (zero on first call)
             let derivative = match self.prev_error {

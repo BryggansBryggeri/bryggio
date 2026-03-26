@@ -22,13 +22,11 @@ impl BreweryState {
         match self.control_source {
             ControlSource::Top => self.vessel_temp_top,
             ControlSource::Bottom => self.vessel_temp_bottom,
-            ControlSource::Average => {
-                match (self.vessel_temp_top, self.vessel_temp_bottom) {
-                    (Some(top), Some(bottom)) => Some((top + bottom) / 2.0),
-                    (Some(t), None) | (None, Some(t)) => Some(t),
-                    (None, None) => None,
-                }
-            }
+            ControlSource::Average => match (self.vessel_temp_top, self.vessel_temp_bottom) {
+                (Some(top), Some(bottom)) => Some((top + bottom) / 2.0),
+                (Some(t), None) | (None, Some(t)) => Some(t),
+                (None, None) => None,
+            },
         }
     }
 }

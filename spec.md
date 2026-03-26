@@ -7,19 +7,19 @@ It has a basket insert so that it can act as both a mash tun and a boil kettle.
 The vessel is connected with pipes, hoses and valves, via a pump, conducting fluid to allow different forms of circulation.
 
 The vessel has a heater and (multiple) _sensors_, mainly temperature sensors.
-The heater is essentially a binary _actor_ ON/OFF but pulse width modulation is also a possibility to emulate continuous power output on [0, 1].
-The temperature sensor will likely be of the types:
+The heater is essentially a binary _actor_ ON/OFF but pulse width modulation allows emulation of continuous power output on [0, 1].
+The temperature sensor are of the types:
 - PT100
 - DS18B20
 They continuously (and in principle asynchronously) provide temperature measurements at different parts of the vessels or pipes
 
-There is a cooling system, by which the pump drives hot wort through some kind of heat exchanger.
+There is a cooling system, by which the pump drives hot wort through a heat exchanger.
 Future extensions are likely to be of:
 - Automatic valves
 - Automatic pump control
 - Additional sensors
 
-Sensors and actors are connected to a Raspberry Pi or similar minicomputer.
+Sensors and actors are connected to a Raspberry Pi.
 
 ## The brewing process
 A typical brew follows these steps:
@@ -46,23 +46,23 @@ The wort is cooled by pumping it through a heat exchanger.
 When sufficiently cooled, we do a final transfer to a fermentation tank and the brewing process is done.
 
 ## Architecture
-The backend software, called `bryggio`, that does the controlling must be written in rust.
-The codebase will be a Cargo workspace consisting of multiple crates, the most prominent being:
-- `bryggio_core`: Lib, containing logic and type defs, if possible completely sync;
-- `bryggio_server`: the executable which actually runs on the device.
+The backend software, called `bryggio`, that does the controlling is written in rust.
+The codebase is a Cargo workspace consisting of multiple crates, the most prominent being:
+- `bryggio_core`: Lib, containing logic and type defs. This is pure sync code, using functional constructs as much as possible;
+- `bryggio_server`: the executable which actually runs on the device it is driven by a tokio main loop which polls sensors and command inputs and requests a new state from `bryggio_core`.
 
 ### Specific modelling
-I want a tight coupling between the physical layout and the rust model. I.e., I don't want to create a generic brewing software, instead I want something tailored:
-For instance I don't want any trait objects describing a generic Sensor type, instead I want an enum laying out exactly which sensors I have access to.
+The design principle is a tight coupling between the physical layout and the rust model. I.e., this is not a generic brewing software, but tailored to our specific hardware setup.
+Trait objects, for instance describing a generic Sensor type, are avoided; instead enums represent all valid choices.
 
-This will inform the whole design. The physical brewery will be defined in rust code:
+This informs the whole design. The physical brewery will is defined in rust code:
 ```rust
 struct Brewery {
     vessel: Vessel
 }
 
 struct Vessel {
-    top_temp_sensor: TempSensor // enum
+    top_temp_sensor: TempSensor 
     bottom_temp_sensor: TempSensor
     heater: Heater
 }
@@ -74,15 +74,20 @@ The control problem is simple, as in stable and slow.
 We read a temperature and adapt the output of the heater to match the temperature target.
 For fun, I want the possibility to add more complex control methods, such as model predictive control, but it is not strictly necessary.
 
-One complication is that while the hardware is modelled in quite a static way, we want some dynamism in the control processes.
-We want the freedom to control different actors based on the input of arbitrary sensors (of the ones implemented of course).
-This complicates the internal sub-processes as they need the abilitiy to switch control logic, during the brewing process.
+The control processes are the most "dynamic" part of the system in that a controller (e.g. the heater controller) can select an arbitrary temperature sensor as measurement input.
+This is still implemented with an enum over available temperature sensors.
+
+Initially the controller will have two modes:
+- PID: automatic control towards a set target;
+- Manual: Simply set the heater power, independent of temperature readings.
+
+Later we can experiment with other control methods.
 
 ### Hardware abstraction layer (HAL)
 The tick loop is generic over a `Hal` trait (defined in `bryggio_core`), with two implementations in `bryggio_server`:
 - **`RpiHal`** real hardware: reads DS18B20 via 1-Wire sysfs, PT100 via SPI/ADC, writes heaters via GPIO/PWM.
   Internally spawns background tasks to poll sensors and caches latest values behind a lock.
-- **`MockHal`** software simulation: models thermal dynamics (heating rate, passive cooling, sensor noise).
+- **`MockHal`** software simulation: a thin wrapper against a physical model of the brewery. We strive to have realistic thermal dynamics (heating rate, passive cooling, sensor noise).
   The mock advances its physics model on each `read_sensors()` call using the last applied heater power.
   Supports injecting sensor failures.
 

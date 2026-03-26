@@ -26,6 +26,7 @@ pub async fn run_tick_loop<H: Hal>(
     hal: &H,
     mut command_rx: mpsc::Receiver<Command>,
     state_tx: watch::Sender<BreweryState>,
+    db_tx: mpsc::Sender<BreweryState>,
 ) {
     let mut state = BreweryState::default();
     let mut controller = Controller::from_type(&ControllerType::Pid {
@@ -34,7 +35,10 @@ pub async fn run_tick_loop<H: Hal>(
         kd: 0.002,
     })
     .unwrap_or_else(|e| {
-        tracing::error!(?e, "Failed to create default controller, falling back to manual");
+        tracing::error!(
+            ?e,
+            "Failed to create default controller, falling back to manual"
+        );
         Controller::from_type(&ControllerType::Manual).expect("Manual controller cannot fail")
     });
     let mut interval = tokio::time::interval(Duration::from_millis(1000));
@@ -80,5 +84,10 @@ pub async fn run_tick_loop<H: Hal>(
 
         // Broadcast state to SSE subscribers
         let _ = state_tx.send(state.clone());
+
+        // Send to DB writer (non-blocking — drop if channel full)
+        if let Err(e) = db_tx.try_send(state.clone()) {
+            tracing::warn!("DB channel full, dropping reading: {e}");
+        }
     }
 }

@@ -1,7 +1,7 @@
 //! POST command endpoints.
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Json;
 use bryggio_core::command::Command;
 
 use super::AppState;
