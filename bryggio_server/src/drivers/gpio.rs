@@ -12,6 +12,7 @@ const CYCLE_DURATION_MS_F32: f32 = CYCLE_DURATION_MS as f32;
 const _: () = assert!(CYCLE_DURATION_MS_F32 as u128 == CYCLE_DURATION_MS);
 
 /// PWM-emulating GPIO actor.
+#[derive(Debug, Clone)]
 pub struct PwmGpio {
     state: bool,
     current_power: Power,

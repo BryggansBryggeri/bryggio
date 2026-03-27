@@ -17,7 +17,7 @@ pub struct MockHal {
 
 impl MockHal {
     pub fn with_params(sim: BrewerySimulation) -> Self {
-        MockHal {
+        Self {
             sim: Mutex::new(sim),
         }
     }

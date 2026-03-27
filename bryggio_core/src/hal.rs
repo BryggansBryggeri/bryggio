@@ -23,10 +23,10 @@ pub enum HalError {
 ///
 /// Uses static dispatch via generics, not trait objects.
 pub trait Hal: Send + Sync + 'static {
-    fn read_sensors(&self) -> impl std::future::Future<Output = SensorReadings> + Send;
+    fn read_sensors(&self) -> impl Future<Output = SensorReadings> + Send;
 
     fn apply_outputs(
         &self,
         outputs: &ActorOutputs,
-    ) -> impl std::future::Future<Output = Result<(), HalError>> + Send;
+    ) -> impl Future<Output = Result<(), HalError>> + Send;
 }

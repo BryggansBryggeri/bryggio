@@ -7,7 +7,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Directory where the filesystem API registers DS18B20 sensors.
-pub const DS18B20_DIR: &str = "/sys/bus/w1/devices/";
+const DS18B20_DIR: &str = "/sys/bus/w1/devices/";
 
 /// DS18B20 temperature sensor handle.
 #[derive(Debug, Clone)]

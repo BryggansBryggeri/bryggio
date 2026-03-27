@@ -7,6 +7,26 @@ pub struct Brewery {
     pub vessel: Vessel,
 }
 
+impl Default for Brewery {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Brewery {
+    pub fn new() -> Self {
+        let vessel = Vessel {
+            top_temp_sensor: TempSensor::Ds18b20 {
+                address: String::from("test_top"),
+            },
+            bottom_temp_sensor: TempSensor::Ds18b20 {
+                address: String::from("test_bottom"),
+            },
+        };
+        Self { vessel }
+    }
+}
+
 /// The single vessel (mash tun + boil kettle with basket insert).
 pub struct Vessel {
     pub top_temp_sensor: TempSensor,
@@ -27,6 +47,12 @@ pub struct BrewerySimulation {
 
     water_mass: f32,
     vessel: VesselParams,
+}
+
+impl Default for BrewerySimulation {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BrewerySimulation {
