@@ -1,6 +1,6 @@
 //! The physical brewery model — concrete, not generic.
 use crate::{hal::ActorOutputs, sensor::TempSensor};
-use std::{f64::consts::PI, time::Instant};
+use std::f64::consts::PI;
 
 /// Top-level brewery definition.
 pub struct Brewery {
@@ -35,7 +35,6 @@ pub struct Vessel {
 
 #[derive(Debug, Clone, Copy)]
 pub struct BrewerySimulation {
-    last_update: Instant,
     // Two-zone model: bottom (near heater) and top.
     // Each zone holds half the volume.
     temp_top: f32,
@@ -60,7 +59,6 @@ impl BrewerySimulation {
         let ambient = 20.0;
         let vessel = VesselParams::default();
         Self {
-            last_update: Instant::now(),
             temp_top: ambient,
             temp_bottom: ambient,
             heater_power: 0.0,
@@ -71,10 +69,8 @@ impl BrewerySimulation {
         }
     }
 
-    pub fn update_sensors(self) -> Self {
-        let dt = self.dt();
-        let update_time = Instant::now();
-
+    /// Advance the physics simulation by `dt` seconds.
+    pub fn update_sensors(self, dt: f32) -> Self {
         if dt <= 0.0 {
             return self;
         }
@@ -105,7 +101,6 @@ impl BrewerySimulation {
         Self {
             temp_top,
             temp_bottom,
-            last_update: update_time,
             ..self
         }
     }
@@ -120,10 +115,6 @@ impl BrewerySimulation {
 
     pub fn temp(&self) -> (f32, f32) {
         (self.temp_top, self.temp_bottom)
-    }
-
-    fn dt(&self) -> f32 {
-        self.last_update.elapsed().as_secs_f32()
     }
 
     /// Estimate thermal relaxation rate

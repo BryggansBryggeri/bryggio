@@ -1,14 +1,14 @@
 <script lang="ts" module>
-    export interface BreweryState {
-        phase: string;
-        vessel_temp_top: number | null;
-        vessel_temp_bottom: number | null;
-        heater_power: number;
-        pump_on: boolean;
-        target_temperature: number | null;
-        control_source: string;
-        timestamp: number;
-    }
+export interface BreweryState {
+	phase: string;
+	vessel_temp_top: number | null;
+	vessel_temp_bottom: number | null;
+	heater_power: number;
+	pump_on: boolean;
+	target_temperature: number | null;
+	control_source: string;
+	timestamp: number;
+}
 </script>
 
 <script lang="ts">
@@ -38,7 +38,12 @@
         es.onerror = () => {
             isConnected = false;
         };
-        return () => es.close();
+        const onBeforeUnload = () => es.close();
+        window.addEventListener("beforeunload", onBeforeUnload);
+        return () => {
+            window.removeEventListener("beforeunload", onBeforeUnload);
+            es.close();
+        };
     });
 
     function sendCommand(cmd: object) {

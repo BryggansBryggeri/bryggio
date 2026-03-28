@@ -238,8 +238,9 @@ Adding a new measurement kind means adding a new enum, a new newtype, a new cont
 For developing without hardware it is useful to have a somewhat accurate physical model of the brewery.
 The principle is straightforward: Knowing the mass of the liquid and the power of the heater we can estimate how heating will affect the temperature of the liquid.
 From measurements we can estimate more uncertain quantities such as heat loss.
-The interesting part is modelling the distribution of heat within the vessel,
-this modelling is done in two stages:
+The interesting part is modelling the distribution of heat within the vessel, which is done in two stages:
 - Already implemented is a simpler two-zone model corresponding to temperature sensors at the top and bottom.
   It accounts for the power of the heater as well as the state of the pump (more or less mixing of the temperatures).
 - Later, a more principled heat equation FEM model, this can be very sparse but I want a principled model as a learning project.
+
+The more accurate the model the closer we can develop without hardware, in particular for developing complex control methods.

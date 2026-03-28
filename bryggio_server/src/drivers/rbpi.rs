@@ -8,6 +8,7 @@
 use bryggio_core::hal::{ActorOutputs, HalError};
 use bryggio_core::model::Brewery;
 use bryggio_core::sensor::SensorReadings;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::drivers::ds18b20::Ds18b20;
 use crate::drivers::gpio::PwmGpio;
@@ -52,5 +53,12 @@ impl bryggio_core::hal::Hal for RbpiHal {
     async fn apply_outputs(&self, _outputs: &ActorOutputs) -> Result<(), HalError> {
         // self.heater.set_power(outputs.heater_power);
         Ok(())
+    }
+
+    fn now(&self) -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0)
     }
 }

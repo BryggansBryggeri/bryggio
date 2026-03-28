@@ -37,6 +37,7 @@ async fn main() {
     let db = db::Db::connect(&db_path)
         .await
         .expect("failed to connect to database");
+    let db_pool = db.pool.clone();
     let (db_tx, db_rx) = mpsc::channel::<BreweryState>(128);
     tokio::spawn(async move {
         db::run_db_writer(db, db_rx).await;
@@ -47,7 +48,14 @@ async fn main() {
     let (state_tx, state_rx) = watch::channel(BreweryState::default());
 
     // HAL
-    let hal = Arc::new(MockHal::with_params(BrewerySimulation::new()));
+    let time_scale: u32 = std::env::var("BRYGGIO_TIME_SCALE")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(1);
+    if time_scale > 1 {
+        tracing::info!(time_scale, "Running mock HAL with accelerated time");
+    }
+    let hal = Arc::new(MockHal::new(BrewerySimulation::new(), time_scale));
 
     // Spawn tick loop
     let tick_hal = hal.clone();
@@ -59,11 +67,13 @@ async fn main() {
     let app_state = AppState {
         command_tx,
         state_rx,
+        db_pool,
     };
 
     let app = Router::new()
         .route("/events", get(api::sse::state_stream))
         .route("/command", post(api::commands::handle_command))
+        .route("/readings", get(api::readings::get_readings))
         .with_state(app_state);
 
     let bind_addr = "0.0.0.0:8080";

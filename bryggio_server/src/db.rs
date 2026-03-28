@@ -1,6 +1,7 @@
 //! SQLite persistence via sqlx.
 //!
-//! Buffers readings in memory and flushes in batched transactions.
+//! Stores one row per tick with columns matching `BreweryState` fields directly.
+//! Buffers in memory and flushes in batched transactions.
 //! Automatically creates/ends brews on phase transitions.
 
 use bryggio_core::state::{BrewPhase, BreweryState};
@@ -11,15 +12,8 @@ use tokio::sync::mpsc;
 
 const FLUSH_INTERVAL_SECS: u64 = 5;
 
-struct Reading {
-    brew_id: i64,
-    timestamp: i64,
-    source: &'static str,
-    value: f64,
-}
-
 pub struct Db {
-    pool: SqlitePool,
+    pub(crate) pool: SqlitePool,
 }
 
 impl Db {
@@ -44,12 +38,17 @@ impl Db {
         .await?;
 
         sqlx::query(
-            "CREATE TABLE IF NOT EXISTS readings (
-                brew_id     INTEGER NOT NULL REFERENCES brews(id),
-                timestamp   INTEGER NOT NULL,
-                source      TEXT NOT NULL,
-                value       REAL NOT NULL,
-                PRIMARY KEY (brew_id, timestamp, source)
+            "CREATE TABLE IF NOT EXISTS snapshots (
+                brew_id            INTEGER NOT NULL REFERENCES brews(id),
+                timestamp          INTEGER NOT NULL,
+                phase              TEXT NOT NULL,
+                vessel_temp_top    REAL,
+                vessel_temp_bottom REAL,
+                heater_power       REAL NOT NULL,
+                pump_on            INTEGER NOT NULL,
+                target_temperature REAL,
+                control_source     TEXT NOT NULL,
+                PRIMARY KEY (brew_id, timestamp)
             )",
         )
         .execute(&pool)
@@ -77,16 +76,27 @@ impl Db {
         Ok(())
     }
 
-    async fn flush_readings(&self, readings: &[Reading]) -> Result<(), sqlx::Error> {
+    async fn flush_snapshots(&self, buffer: &[(i64, BreweryState)]) -> Result<(), sqlx::Error> {
         let mut tx = self.pool.begin().await?;
-        for r in readings {
+        for (brew_id, state) in buffer {
+            let ts = i64::try_from(state.timestamp).unwrap_or(0);
+            let phase = serde_json::to_value(state.phase).unwrap_or_default();
+            let source = serde_json::to_value(state.control_source).unwrap_or_default();
             sqlx::query(
-                "INSERT OR IGNORE INTO readings (brew_id, timestamp, source, value) VALUES (?, ?, ?, ?)",
+                "INSERT OR IGNORE INTO snapshots
+                 (brew_id, timestamp, phase, vessel_temp_top, vessel_temp_bottom,
+                  heater_power, pump_on, target_temperature, control_source)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             )
-            .bind(r.brew_id)
-            .bind(r.timestamp)
-            .bind(r.source)
-            .bind(r.value)
+            .bind(brew_id)
+            .bind(ts)
+            .bind(phase.as_str())
+            .bind(state.vessel_temp_top.map(|t| f64::from(t.0)))
+            .bind(state.vessel_temp_bottom.map(|t| f64::from(t.0)))
+            .bind(f64::from(state.heater_power.value()))
+            .bind(state.pump_on)
+            .bind(state.target_temperature.map(|t| f64::from(t.0)))
+            .bind(source.as_str())
             .execute(&mut *tx)
             .await?;
         }
@@ -99,49 +109,13 @@ fn is_brewing(phase: BrewPhase) -> bool {
     !matches!(phase, BrewPhase::Idle | BrewPhase::Done)
 }
 
-fn readings_from_state(brew_id: i64, state: &BreweryState) -> Vec<Reading> {
-    let ts = i64::try_from(state.timestamp).unwrap_or(0);
-    let mut readings = Vec::with_capacity(4);
-
-    if let Some(temp) = state.vessel_temp_top {
-        readings.push(Reading {
-            brew_id,
-            timestamp: ts,
-            source: "vessel_temp_top",
-            value: f64::from(temp.0),
-        });
-    }
-    if let Some(temp) = state.vessel_temp_bottom {
-        readings.push(Reading {
-            brew_id,
-            timestamp: ts,
-            source: "vessel_temp_bottom",
-            value: f64::from(temp.0),
-        });
-    }
-    readings.push(Reading {
-        brew_id,
-        timestamp: ts,
-        source: "heater_power",
-        value: f64::from(state.heater_power.value()),
-    });
-    readings.push(Reading {
-        brew_id,
-        timestamp: ts,
-        source: "pump_on",
-        value: if state.pump_on { 1.0 } else { 0.0 },
-    });
-
-    readings
-}
-
 /// Receives brewery state snapshots and persists them to SQLite.
 ///
 /// Creates a new brew row when phase transitions from Idle/Done to an active phase.
 /// Ends the brew when phase returns to Idle or Done.
-/// Buffers readings and flushes every [`FLUSH_INTERVAL_SECS`] seconds.
+/// Buffers snapshots and flushes every [`FLUSH_INTERVAL_SECS`] seconds.
 pub async fn run_db_writer(db: Db, mut rx: mpsc::Receiver<BreweryState>) {
-    let mut buffer: Vec<Reading> = Vec::new();
+    let mut buffer: Vec<(i64, BreweryState)> = Vec::new();
     let mut current_brew_id: Option<i64> = None;
     let mut last_brewing = false;
     let mut flush_interval = tokio::time::interval(Duration::from_secs(FLUSH_INTERVAL_SECS));
@@ -180,7 +154,7 @@ pub async fn run_db_writer(db: Db, mut rx: mpsc::Receiver<BreweryState>) {
                 last_brewing = brewing;
 
                 if let Some(brew_id) = current_brew_id {
-                    buffer.extend(readings_from_state(brew_id, &state));
+                    buffer.push((brew_id, state));
                 }
             }
             _ = flush_interval.tick() => {
@@ -193,15 +167,15 @@ pub async fn run_db_writer(db: Db, mut rx: mpsc::Receiver<BreweryState>) {
     flush(&db, &mut buffer).await;
 }
 
-async fn flush(db: &Db, buffer: &mut Vec<Reading>) {
+async fn flush(db: &Db, buffer: &mut Vec<(i64, BreweryState)>) {
     if buffer.is_empty() {
         return;
     }
-    match db.flush_readings(buffer).await {
+    match db.flush_snapshots(buffer).await {
         Ok(()) => {
-            tracing::debug!(count = buffer.len(), "Flushed readings");
+            tracing::debug!(count = buffer.len(), "Flushed snapshots");
             buffer.clear();
         }
-        Err(e) => tracing::error!(?e, "Failed to flush readings"),
+        Err(e) => tracing::error!(?e, "Failed to flush snapshots"),
     }
 }

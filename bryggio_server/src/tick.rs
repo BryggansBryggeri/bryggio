@@ -3,7 +3,6 @@ use bryggio_core::command::Command;
 use bryggio_core::control::{Controller, ControllerType};
 use bryggio_core::hal::Hal;
 use bryggio_core::state::BreweryState;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::{mpsc, watch};
 
 fn swap_controller(controller: &mut Controller, ct: &ControllerType) {
@@ -41,7 +40,7 @@ pub async fn run_tick_loop<H: Hal>(
         );
         Controller::from_type(&ControllerType::Manual).expect("Manual controller cannot fail")
     });
-    let mut interval = tokio::time::interval(Duration::from_millis(1000));
+    let mut interval = tokio::time::interval(hal.tick_interval());
 
     tracing::info!("Tick loop started");
 
@@ -69,10 +68,7 @@ pub async fn run_tick_loop<H: Hal>(
         }
 
         // Sync core tick
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
+        let now = hal.now();
         let (new_state, outputs) =
             bryggio_core::tick::tick(&state, &commands, now, &mut controller);
         state = new_state;
