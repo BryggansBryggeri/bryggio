@@ -1,57 +1,72 @@
-//! Mock HAL — simulates thermal dynamics for integration testing.
+//! Raspberry Pi HAL
 //!
-//! Physics-based model using real thermodynamic parameters:
-//! - Heating: P·power / (m·cₚ)
-//! - Cooling: Newton's law — h·A·(T - T_amb) / (m·cₚ)
-//! - Basic stratification: bottom zone receives heater energy directly,
-//!   top zone equilibrates via conduction and (when pump is on) convection.
+//! GPIO character device and 1-wire sensors.
 use bryggio_core::hal::{ActorOutputs, HalError};
-use bryggio_core::model::Brewery;
 use bryggio_core::sensor::SensorReadings;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::drivers::ds18b20::Ds18b20;
-use crate::drivers::gpio::PwmGpio;
+use crate::drivers::gpio::{BinaryGpio, PwmGpio};
 
-#[derive(Debug, Clone)]
+/// Raspberry Pi hardware abstraction.
+///
+/// All fields use interior mutability (`Mutex` inside each GPIO driver),
+/// so the `Hal` trait's `&self` methods work without outer locking.
 pub struct RbpiHal {
     temp_top: Ds18b20,
     temp_bottom: Ds18b20,
     heater: PwmGpio,
+    pump: BinaryGpio,
 }
 
 impl RbpiHal {
-    pub fn try_from_brewery_spec(spec: Brewery) -> Result<Self, HalError> {
-        let _vessel = spec.vessel;
-        let hal = Self {
-            temp_top: Ds18b20::try_new("ababa1").expect("Will fail"),
-            temp_bottom: Ds18b20::try_new("ababa2").expect("Will fail"),
-            heater: PwmGpio::new(),
-        };
-        Ok(hal)
+    pub fn new(
+        top_address: &str,
+        bottom_address: &str,
+        heater_pin: u32,
+        pump_pin: u32,
+    ) -> Result<Self, HalError> {
+        let temp_top =
+            Ds18b20::try_new(top_address).map_err(|e| HalError::SensorRead(e.to_string()))?;
+        let temp_bottom =
+            Ds18b20::try_new(bottom_address).map_err(|e| HalError::SensorRead(e.to_string()))?;
+        let heater = PwmGpio::new(heater_pin, "bryggio-heater")
+            .map_err(|e| HalError::ActorWrite(format!("heater GPIO {heater_pin}: {e}")))?;
+        let pump = BinaryGpio::new(pump_pin, "bryggio-pump")
+            .map_err(|e| HalError::ActorWrite(format!("pump GPIO {pump_pin}: {e}")))?;
+        Ok(Self {
+            temp_top,
+            temp_bottom,
+            heater,
+            pump,
+        })
     }
 }
 
 impl bryggio_core::hal::Hal for RbpiHal {
     async fn read_sensors(&self) -> SensorReadings {
-        let temp_top = self
-            .temp_top
-            .get_measurement()
-            .map_err(|err| HalError::SensorRead(err.to_string()))
-            .expect("Tmp expect before trait redesign");
-        let temp_bottom = self
-            .temp_bottom
-            .get_measurement()
-            .map_err(|err| HalError::SensorRead(err.to_string()))
-            .expect("Tmp expect before trait redesign");
+        let top = self.temp_top.get_measurement().ok();
+        let bottom = self.temp_bottom.get_measurement().ok();
+        if top.is_none() {
+            tracing::warn!("Failed to read top temperature sensor");
+        }
+        if bottom.is_none() {
+            tracing::warn!("Failed to read bottom temperature sensor");
+        }
         SensorReadings {
-            vessel_temp_top: Some(temp_top),
-            vessel_temp_bottom: Some(temp_bottom),
+            vessel_temp_top: top,
+            vessel_temp_bottom: bottom,
         }
     }
 
-    async fn apply_outputs(&self, _outputs: &ActorOutputs) -> Result<(), HalError> {
-        // self.heater.set_power(outputs.heater_power);
+    async fn apply_outputs(&self, outputs: &ActorOutputs) -> Result<(), HalError> {
+        self.heater.set_power(outputs.heater_power);
+        self.heater
+            .tick()
+            .map_err(|e| HalError::ActorWrite(format!("heater: {e}")))?;
+        self.pump
+            .set(outputs.pump_on)
+            .map_err(|e| HalError::ActorWrite(format!("pump: {e}")))?;
         Ok(())
     }
 
