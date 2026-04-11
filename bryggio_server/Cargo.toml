@@ -1,6 +1,6 @@
 [package]
 name = "bryggio-server"
-version = "0.1.0"
+version.workspace = true
 authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
 edition = "2024"
 

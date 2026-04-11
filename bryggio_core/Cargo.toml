@@ -1,6 +1,6 @@
 [package]
 name = "bryggio-core"
-version = "0.2.0"
+version.workspace = true
 authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
 edition = "2024"
 
