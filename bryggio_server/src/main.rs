@@ -33,7 +33,19 @@ async fn main() {
     tracing::info!("Starting bryggio server");
 
     // Database
-    let db_path = std::env::var("BRYGGIO_DB").unwrap_or_else(|_| "bryggio.db".into());
+    let db_path =
+        std::env::var("BRYGGIO_DB").unwrap_or_else(|_| "/var/lib/bryggio/bryggio.db".into());
+    if let Some(parent) = std::path::Path::new(&db_path).parent() {
+        if !parent.as_os_str().is_empty() {
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                tracing::warn!(
+                    error = ?e,
+                    parent = %parent.display(),
+                    "Failed to create db parent directory",
+                );
+            }
+        }
+    }
     let db = db::Db::connect(&db_path)
         .await
         .expect("failed to connect to database");
