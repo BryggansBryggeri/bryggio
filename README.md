@@ -1,3 +1,3 @@
 # BRYGGIO
 
-Bryggans bryggeris very own brewery software
+Bryggans bryggeri's very own brewery software

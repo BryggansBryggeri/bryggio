@@ -1,4 +1,5 @@
 //! Commands sent from the UI (or future recipe system) to the control loop.
+use crate::control::{ControlConfig, ControlSource, ControllerType};
 use crate::state::BrewPhase;
 use crate::types::Temperature;
 use serde::{Deserialize, Serialize};
@@ -12,4 +13,10 @@ pub enum Command {
     SetPhase(BrewPhase),
     /// Turn the pump on or off.
     SetPump(bool),
+    /// Switch the controller algorithm.
+    SetController(ControllerType),
+    /// Switch which sensor the controller reads from.
+    SetControlSource(ControlSource),
+    /// Set the full control configuration at once.
+    SetControlConfig(ControlConfig),
 }

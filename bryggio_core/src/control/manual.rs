@@ -14,7 +14,7 @@ impl ManualController {
     }
 
     /// Signal equals target directly — manual power control.
-    pub fn calculate_signal(&mut self) -> f32 {
+    pub fn calculate_signal(&mut self, _dt: f32) -> f32 {
         self.current_signal = self.target;
         self.current_signal
     }

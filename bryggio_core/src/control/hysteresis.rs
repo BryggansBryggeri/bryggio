@@ -37,7 +37,7 @@ impl HysteresisController {
 
     /// Calculate control signal from measurement.
     /// Returns 0.0 or 1.0.
-    pub fn calculate_signal(&mut self, measurement: Option<f32>) -> f32 {
+    pub fn calculate_signal(&mut self, measurement: Option<f32>, _dt: f32) -> f32 {
         let measurement = measurement.or(self.previous_measurement);
         if let Some(measurement) = measurement {
             self.previous_measurement = Some(measurement);
@@ -94,21 +94,21 @@ mod tests {
     fn test_control_under() {
         let mut controller = HysteresisController::try_new(0.0, 2.0, 1.0).unwrap();
         controller.set_target(100.0);
-        assert_approx_eq!(controller.calculate_signal(Some(90.0)), 1.0);
+        assert_approx_eq!(controller.calculate_signal(Some(90.0), 1.0), 1.0);
     }
 
     #[test]
     fn test_control_over() {
         let mut controller = HysteresisController::try_new(0.0, 2.0, 1.0).unwrap();
         controller.set_target(100.0);
-        assert_approx_eq!(controller.calculate_signal(Some(110.0)), 0.0);
+        assert_approx_eq!(controller.calculate_signal(Some(110.0), 1.0), 0.0);
     }
 
     #[test]
     fn test_control_over_offset_on() {
         let mut controller = HysteresisController::try_new(0.0, 2.0, 1.0).unwrap();
         controller.set_target(100.0);
-        assert_approx_eq!(controller.calculate_signal(Some(98.5)), 0.0);
+        assert_approx_eq!(controller.calculate_signal(Some(98.5), 1.0), 0.0);
     }
 
     #[test]
@@ -116,9 +116,9 @@ mod tests {
         let mut controller = HysteresisController::try_new(0.0, 2.0, 1.0).unwrap();
         controller.set_target(100.0);
 
-        assert_approx_eq!(controller.calculate_signal(Some(30.0)), 1.0);
-        assert_approx_eq!(controller.calculate_signal(Some(98.5)), 1.0);
-        assert_approx_eq!(controller.calculate_signal(Some(99.5)), 0.0);
-        assert_approx_eq!(controller.calculate_signal(Some(98.5)), 0.0);
+        assert_approx_eq!(controller.calculate_signal(Some(30.0), 1.0), 1.0);
+        assert_approx_eq!(controller.calculate_signal(Some(98.5), 1.0), 1.0);
+        assert_approx_eq!(controller.calculate_signal(Some(99.5), 1.0), 0.0);
+        assert_approx_eq!(controller.calculate_signal(Some(98.5), 1.0), 0.0);
     }
 }

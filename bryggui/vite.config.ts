@@ -8,6 +8,7 @@ export default defineConfig({
 		proxy: {
 			"/events": "http://localhost:8080",
 			"/command": "http://localhost:8080",
+			"/readings": "http://localhost:8080",
 		},
 	},
 	test: {

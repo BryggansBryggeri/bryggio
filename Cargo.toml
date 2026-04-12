@@ -1,7 +1,12 @@
 [workspace]
 resolver = "2"
-
 members = [
     "bryggio_core",
     "bryggio_server",
 ]
+
+[workspace.package]
+version = "0.2.0"
+
+[workspace.metadata.crane]
+name = "bryggio"

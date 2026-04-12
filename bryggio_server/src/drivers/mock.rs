@@ -1,34 +1,30 @@
-//! Mock HAL — simulates thermal dynamics for integration testing.
+//! Mock HAL — simulates thermal dynamics for development without hardware.
+//!
+//! Owns a virtual clock that advances by `time_scale` seconds per tick,
+//! allowing the simulation to run faster than real time.
 use bryggio_core::hal::{ActorOutputs, HalError};
+use bryggio_core::model::BrewerySimulation;
 use bryggio_core::sensor::SensorReadings;
 use bryggio_core::types::Temperature;
 use std::sync::Mutex;
-use std::time::Instant;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct MockHal {
     sim: Mutex<BrewerySimulation>,
-}
-
-struct BrewerySimulation {
-    vessel_temp: f32,
-    heater_power: f32,
-    ambient_temp: f32,
-    heating_rate: f32, // °C/s at full power
-    cooling_rate: f32, // °C/s passive loss coefficient
-    last_update: Instant,
+    virtual_time: Mutex<u64>,
+    time_scale: u32,
 }
 
 impl MockHal {
-    pub fn new() -> Self {
-        MockHal {
-            sim: Mutex::new(BrewerySimulation {
-                vessel_temp: 20.0,
-                heater_power: 0.0,
-                ambient_temp: 20.0,
-                heating_rate: 0.5,
-                cooling_rate: 0.01,
-                last_update: Instant::now(),
-            }),
+    pub fn new(sim: BrewerySimulation, time_scale: u32) -> Self {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        Self {
+            sim: Mutex::new(sim),
+            virtual_time: Mutex::new(now),
+            time_scale,
         }
     }
 }
@@ -36,24 +32,32 @@ impl MockHal {
 impl bryggio_core::hal::Hal for MockHal {
     async fn read_sensors(&self) -> SensorReadings {
         let mut sim = self.sim.lock().unwrap_or_else(|e| e.into_inner());
+        let mut vt = self.virtual_time.lock().unwrap_or_else(|e| e.into_inner());
 
-        // Advance physics
-        let dt = sim.last_update.elapsed().as_secs_f32();
-        sim.last_update = Instant::now();
-        sim.vessel_temp += (sim.heating_rate * sim.heater_power
-            - sim.cooling_rate * (sim.vessel_temp - sim.ambient_temp))
-            * dt;
+        // Advance virtual clock by 1 second (always)
+        *vt += 1;
 
-        let temp = Temperature(sim.vessel_temp);
+        // Run physics for 1 second
+        *sim = sim.update_sensors(1.0);
+
+        let (temp_top, temp_bottom) = sim.temp();
         SensorReadings {
-            vessel_temp_top: Some(temp),
-            vessel_temp_bottom: Some(temp),
+            vessel_temp_top: Some(Temperature(temp_top)),
+            vessel_temp_bottom: Some(Temperature(temp_bottom)),
         }
     }
 
     async fn apply_outputs(&self, outputs: &ActorOutputs) -> Result<(), HalError> {
         let mut sim = self.sim.lock().unwrap_or_else(|e| e.into_inner());
-        sim.heater_power = outputs.heater_power.value();
+        *sim = sim.update_actors(outputs);
         Ok(())
+    }
+
+    fn now(&self) -> u64 {
+        *self.virtual_time.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    fn tick_interval(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(1) / self.time_scale
     }
 }

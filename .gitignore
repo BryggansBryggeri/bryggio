@@ -1,4 +1,6 @@
 target
+result
+*.db
 
 # ARCHIVES
 *.zip
@@ -8,6 +10,7 @@ target
 
 # Misc
 svg_instructions.md
+CLAUDE.md
 
 # Nix
 .direnv/

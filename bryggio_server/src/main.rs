@@ -13,8 +13,9 @@ mod drivers;
 mod tick;
 
 use api::AppState;
-use axum::routing::{get, post};
 use axum::Router;
+use axum::routing::{get, post};
+use bryggio_core::model::BrewerySimulation;
 use bryggio_core::state::BreweryState;
 use drivers::mock::MockHal;
 use std::sync::Arc;
@@ -31,28 +32,60 @@ async fn main() {
 
     tracing::info!("Starting bryggio server");
 
+    // Database
+    let db_path =
+        std::env::var("BRYGGIO_DB").unwrap_or_else(|_| "/var/lib/bryggio/bryggio.db".into());
+    if let Some(parent) = std::path::Path::new(&db_path).parent() {
+        if !parent.as_os_str().is_empty() {
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                tracing::warn!(
+                    error = ?e,
+                    parent = %parent.display(),
+                    "Failed to create db parent directory",
+                );
+            }
+        }
+    }
+    let db = db::Db::connect(&db_path)
+        .await
+        .expect("failed to connect to database");
+    let db_pool = db.pool.clone();
+    let (db_tx, db_rx) = mpsc::channel::<BreweryState>(128);
+    tokio::spawn(async move {
+        db::run_db_writer(db, db_rx).await;
+    });
+
     // Channels
     let (command_tx, command_rx) = mpsc::channel::<bryggio_core::command::Command>(64);
     let (state_tx, state_rx) = watch::channel(BreweryState::default());
 
     // HAL
-    let hal = Arc::new(MockHal::new());
+    let time_scale: u32 = std::env::var("BRYGGIO_TIME_SCALE")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(1);
+    if time_scale > 1 {
+        tracing::info!(time_scale, "Running mock HAL with accelerated time");
+    }
+    let hal = Arc::new(MockHal::new(BrewerySimulation::new(), time_scale));
 
     // Spawn tick loop
     let tick_hal = hal.clone();
     tokio::spawn(async move {
-        tick::run_tick_loop(&*tick_hal, command_rx, state_tx).await;
+        tick::run_tick_loop(&*tick_hal, command_rx, state_tx, db_tx).await;
     });
 
     // Axum router
     let app_state = AppState {
         command_tx,
         state_rx,
+        db_pool,
     };
 
     let app = Router::new()
         .route("/events", get(api::sse::state_stream))
         .route("/command", post(api::commands::handle_command))
+        .route("/readings", get(api::readings::get_readings))
         .with_state(app_state);
 
     let bind_addr = "0.0.0.0:8080";

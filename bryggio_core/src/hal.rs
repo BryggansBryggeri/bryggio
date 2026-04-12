@@ -23,10 +23,24 @@ pub enum HalError {
 ///
 /// Uses static dispatch via generics, not trait objects.
 pub trait Hal: Send + Sync + 'static {
-    fn read_sensors(&self) -> impl std::future::Future<Output = SensorReadings> + Send;
+    fn read_sensors(&self) -> impl Future<Output = SensorReadings> + Send;
 
     fn apply_outputs(
         &self,
         outputs: &ActorOutputs,
-    ) -> impl std::future::Future<Output = Result<(), HalError>> + Send;
+    ) -> impl Future<Output = Result<(), HalError>> + Send;
+
+    /// Current time as unix epoch seconds.
+    ///
+    /// Real HALs return wall-clock time. The mock HAL returns virtual time,
+    /// allowing the simulation to run faster than real time.
+    fn now(&self) -> u64;
+
+    /// How long the tick loop should sleep between ticks.
+    ///
+    /// Real HALs return 1s. The mock HAL returns a shorter duration
+    /// to speed up simulation without changing the physics dt.
+    fn tick_interval(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(1)
+    }
 }
